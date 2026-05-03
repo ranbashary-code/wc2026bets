@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>WC 2026 Bets</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 <style>
 :root{
   --navy:#09111f;--card:#0f1a2e;--card2:#162236;
@@ -71,7 +72,8 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 .today-match::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(60,59,110,0.1),transparent);pointer-events:none;}
 .tm-teams-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-bottom:12px;}
 .tm-team{display:flex;flex-direction:column;align-items:center;gap:6px;}
-.tm-flag{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1;}
+.tm-flag{width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);}
+.tm-flag .fi{width:44px!important;height:44px!important;background-size:cover!important;border-radius:50%;}
 .tm-team-name{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;text-align:center;}
 .tm-center{display:flex;flex-direction:column;align-items:center;gap:6px;}
 .tm-vs{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:rgba(255,255,255,0.2);letter-spacing:2px;}
@@ -449,80 +451,130 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { getDatabase, ref, set, get, push, onValue, update, remove }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-function getFlag(name) {
-  if(!name) return '';
-  const n = name.toLowerCase();
-  const flags = {
-    'ארגנטינה':'🇦🇷','argentina':'🇦🇷',
-    'ברזיל':'🇧🇷','brazil':'🇧🇷',
-    'צרפת':'🇫🇷','france':'🇫🇷',
-    'אנגליה':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','england':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-    'ספרד':'🇪🇸','spain':'🇪🇸',
-    'גרמניה':'🇩🇪','germany':'🇩🇪',
-    'פורטוגל':'🇵🇹','portugal':'🇵🇹',
-    'הולנד':'🇳🇱','netherlands':'🇳🇱','holland':'🇳🇱',
-    'בלגיה':'🇧🇪','belgium':'🇧🇪',
-    'איטליה':'🇮🇹','italy':'🇮🇹',
-    'קרואטיה':'🇭🇷','croatia':'🇭🇷',
-    'מרוקו':'🇲🇦','morocco':'🇲🇦',
-    'יפן':'🇯🇵','japan':'🇯🇵',
-    'קוריאה':'🇰🇷','korea':'🇰🇷',
-    'ארה"ב':'🇺🇸','usa':'🇺🇸','united states':'🇺🇸','ארהב':'🇺🇸',
-    'מקסיקו':'🇲🇽','mexico':'🇲🇽',
-    'קנדה':'🇨🇦','canada':'🇨🇦',
-    'אורוגוואי':'🇺🇾','uruguay':'🇺🇾',
-    'קולומביה':'🇨🇴','colombia':'🇨🇴',
-    'שוויץ':'🇨🇭','switzerland':'🇨🇭',
-    'דנמרק':'🇩🇰','denmark':'🇩🇰',
-    'שוודיה':'🇸🇪','sweden':'🇸🇪',
-    'פולין':'🇵🇱','poland':'🇵🇱',
-    'סנגל':'🇸🇳','senegal':'🇸🇳',
-    'גאנה':'🇬🇭','ghana':'🇬🇭',
-    'קמרון':'🇨🇲','cameroon':'🇨🇲',
-    'ניגריה':'🇳🇬','nigeria':'🇳🇬',
-    'אוסטרליה':'🇦🇺','australia':'🇦🇺',
-    'איראן':'🇮🇷','iran':'🇮🇷',
-    'ערב הסעודית':'🇸🇦','saudi':'🇸🇦',
-    'קטר':'🇶🇦','qatar':'🇶🇦',
-    'טוניסיה':'🇹🇳','tunisia':'🇹🇳',
-    'אקוודור':'🇪🇨','ecuador':'🇪🇨',
-    'wales':'🏴',
-    'scotland':'🏴',
-    'אוסטריה':'🇦🇹','austria':'🇦🇹',
-    'czech':'🇨🇿','czechia':'🇨🇿',
-    'טורקיה':'🇹🇷','turkey':'🇹🇷',
-    'אוקראינה':'🇺🇦','ukraine':'🇺🇦',
-    'סרביה':'🇷🇸','serbia':'🇷🇸',
-    'רומניה':'🇷🇴','romania':'🇷🇴',
-    'סלובקיה':'🇸🇰','slovakia':'🇸🇰',
-    'אלבניה':'🇦🇱','albania':'🇦🇱',
-    'הונגריה':'🇭🇺','hungary':'🇭🇺',
-    'גיאורגיה':'🇬🇪','georgia':'🇬🇪',
-    'סלובניה':'🇸🇮','slovenia':'🇸🇮',
-    'פרגוואי':'🇵🇾','paraguay':'🇵🇾',
-    'chile':'🇨🇱',
-    'פרו':'🇵🇪','peru':'🇵🇪',
-    'בוליביה':'🇧🇴','bolivia':'🇧🇴',
-    'ונצואלה':'🇻🇪','venezuela':'🇻🇪',
-    'קוסטה ריקה':'🇨🇷','costa rica':'🇨🇷',
-    'פנמה':'🇵🇦','panama':'🇵🇦',
-    'הונדורס':'🇭🇳','honduras':'🇭🇳',
-    'אל סלבדור':'🇸🇻','el salvador':'🇸🇻',
-    'jamaica':'🇯🇲',
-    'טרינידד':'🇹🇹','trinidad':'🇹🇹',
-    'ניו זילנד':'🇳🇿','new zealand':'🇳🇿',
-    'fiji':'🇫🇯',
-    'סין':'🇨🇳','china':'🇨🇳',
-    'הודו':'🇮🇳','india':'🇮🇳',
-    'תאילנד':'🇹🇭','thailand':'🇹🇭',
-    'אינדונזיה':'🇮🇩','indonesia':'🇮🇩',
-    'וייטנאם':'🇻🇳','vietnam':'🇻🇳',
-    'ישראל':'🇮🇱','israel':'🇮🇱',
+
+// Country code map: team name -> ISO 2-letter code
+function getCountryCode(name) {
+  if(!name) return null;
+  const n = name.toLowerCase().trim();
+  const codes = {
+    'ארגנטינה':'ar','argentina':'ar',
+    'ברזיל':'br','brazil':'br',
+    'צרפת':'fr','france':'fr',
+    'אנגליה':'gb-eng','england':'gb-eng',
+    'ספרד':'es','spain':'es',
+    'גרמניה':'de','germany':'de',
+    'פורטוגל':'pt','portugal':'pt',
+    'הולנד':'nl','netherlands':'nl','holland':'nl',
+    'בלגיה':'be','belgium':'be',
+    'איטליה':'it','italy':'it',
+    'קרואטיה':'hr','croatia':'hr',
+    'מרוקו':'ma','morocco':'ma',
+    'יפן':'jp','japan':'jp',
+    'קוריאה':'kr','korea':'kr','south korea':'kr',
+    'ארהב':'us','ארה"ב':'us','usa':'us','united states':'us',
+    'מקסיקו':'mx','mexico':'mx',
+    'קנדה':'ca','canada':'ca',
+    'אורוגוואי':'uy','uruguay':'uy',
+    'קולומביה':'co','colombia':'co',
+    'שוויץ':'ch','switzerland':'ch',
+    'דנמרק':'dk','denmark':'dk',
+    'שוודיה':'se','sweden':'se',
+    'פולין':'pl','poland':'pl',
+    'סנגל':'sn','senegal':'sn',
+    'גאנה':'gh','ghana':'gh',
+    'קמרון':'cm','cameroon':'cm',
+    'ניגריה':'ng','nigeria':'ng',
+    'אוסטרליה':'au','australia':'au',
+    'איראן':'ir','iran':'ir',
+    'ערב הסעודית':'sa','saudi':'sa','saudi arabia':'sa',
+    'קטר':'qa','qatar':'qa',
+    'טוניסיה':'tn','tunisia':'tn',
+    'אקוודור':'ec','ecuador':'ec',
+    'וולס':'gb-wls','wales':'gb-wls',
+    'סקוטלנד':'gb-sct','scotland':'gb-sct',
+    'אוסטריה':'at','austria':'at',
+    'צ\'כיה':'cz','czech':'cz','czechia':'cz',
+    'טורקיה':'tr','turkey':'tr',
+    'אוקראינה':'ua','ukraine':'ua',
+    'סרביה':'rs','serbia':'rs',
+    'רומניה':'ro','romania':'ro',
+    'סלובקיה':'sk','slovakia':'sk',
+    'אלבניה':'al','albania':'al',
+    'הונגריה':'hu','hungary':'hu',
+    'גיאורגיה':'ge','georgia':'ge',
+    'סלובניה':'si','slovenia':'si',
+    'פרגוואי':'py','paraguay':'py',
+    'צ\'ילה':'cl','chile':'cl',
+    'פרו':'pe','peru':'pe',
+    'בוליביה':'bo','bolivia':'bo',
+    'ונצואלה':'ve','venezuela':'ve',
+    'קוסטה ריקה':'cr','costa rica':'cr',
+    'פנמה':'pa','panama':'pa',
+    'הונדורס':'hn','honduras':'hn',
+    'אל סלבדור':'sv','el salvador':'sv',
+    'ג\'מייקה':'jm','jamaica':'jm',
+    'טרינידד':'tt','trinidad':'tt',
+    'ניו זילנד':'nz','new zealand':'nz',
+    'פיג\'י':'fj','fiji':'fj',
+    'סין':'cn','china':'cn',
+    'הודו':'in','india':'in',
+    'תאילנד':'th','thailand':'th',
+    'אינדונזיה':'id','indonesia':'id',
+    'וייטנאם':'vn','vietnam':'vn',
+    'ישראל':'il','israel':'il',
+    'אירלנד':'ie','ireland':'ie',
+    'יוון':'gr','greece':'gr',
+    'נורווגיה':'no','norway':'no',
+    'פינלנד':'fi','finland':'fi',
+    'רוסיה':'ru','russia':'ru',
+    'ארצות הברית':'us',
+    'קוט דאיבואר':'ci','ivory coast':'ci',
+    'מצרים':'eg','egypt':'eg',
+    'אלג\'יריה':'dz','algeria':'dz',
+    'ליבריה':'lr','liberia':'lr',
+    'מאלי':'ml','mali':'ml',
+    'בורקינה פאסו':'bf','burkina faso':'bf',
+    'גינאה':'gn','guinea':'gn',
+    'קאבו וורדה':'cv','cape verde':'cv',
+    'גמביה':'gm','gambia':'gm',
+    'בנין':'bj','benin':'bj',
+    'טוגו':'tg','togo':'tg',
+    'קונגו':'cg','congo':'cg',
+    'אנגולה':'ao','angola':'ao',
+    'זמביה':'zm','zambia':'zm',
+    'זימבבואה':'zw','zimbabwe':'zw',
+    'מוזמביק':'mz','mozambique':'mz',
+    'טנזניה':'tz','tanzania':'tz',
+    'קניה':'ke','kenya':'ke',
+    'אתיופיה':'et','ethiopia':'et',
+    'סומליה':'so','somalia':'so',
+    'רואנדה':'rw','rwanda':'rw',
+    'אוגנדה':'ug','uganda':'ug',
+    'ליבנה':'ly','libya':'ly',
+    'סודן':'sd','sudan':'sd',
+    'מלאווי':'mw','malawi':'mw',
+    'בוצוואנה':'bw','botswana':'bw',
+    'נמיביה':'na','namibia':'na',
+    'לסוטו':'ls','lesotho':'ls',
+    'אסוואטיני':'sz','eswatini':'sz',
   };
-  for(const [key,flag] of Object.entries(flags)){
-    if(n.includes(key)) return flag;
+  for(const [key,code] of Object.entries(codes)){
+    if(n===key || n.includes(key)) return code;
   }
-  return '⚽';
+  return null;
+}
+
+function getFlagHtml(name) {
+  const code = getCountryCode(name);
+  if(!code) return '<span style="font-size:22px;">⚽</span>';
+  // Use flag-icons CSS library
+  return '<span class="fi fi-' + code + '" style="width:32px;height:32px;border-radius:50%;display:inline-block;background-size:cover;"></span>';
+}
+
+function getFlag(name) {
+  const code = getCountryCode(name);
+  if(!code) return '⚽';
+  return code;
 }
 
 const FB = {
@@ -699,7 +751,7 @@ function renderToday(){
     // Teams row with flags
     const teamsRow=document.createElement('div'); teamsRow.className='tm-teams-row';
     const t1=document.createElement('div'); t1.className='tm-team';
-    const f1=document.createElement('div'); f1.className='tm-flag'; f1.textContent=getFlag(m.team1);
+    const f1=document.createElement('div'); f1.className='tm-flag'; f1.innerHTML=getFlagHtml(m.team1);
     const n1=document.createElement('div'); n1.className='tm-team-name'; n1.textContent=m.team1||'?';
     t1.appendChild(f1); t1.appendChild(n1);
 
@@ -711,7 +763,7 @@ function renderToday(){
     tickM(); setInterval(tickM,1000);
 
     const t2=document.createElement('div'); t2.className='tm-team';
-    const f2=document.createElement('div'); f2.className='tm-flag'; f2.textContent=getFlag(m.team2);
+    const f2=document.createElement('div'); f2.className='tm-flag'; f2.innerHTML=getFlagHtml(m.team2);
     const n2=document.createElement('div'); n2.className='tm-team-name'; n2.textContent=m.team2||'?';
     t2.appendChild(f2); t2.appendChild(n2);
 
