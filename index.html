@@ -535,8 +535,11 @@ async function resolveFlag(name) {
   // Check cache
   if(_flagCache[key] !== undefined) return _flagCache[key];
   // Check static map
+  // Strip apostrophes/geresh for fuzzy matching
+  const keyClean = key.replace(/['\'\u05F3]/g, '');
   for(const [k,v] of Object.entries(_knownCodes)){
-    if(key === k || key.includes(k) || k.includes(key)) {
+    const kClean = k.replace(/['\'\u05F3]/g, '');
+    if(key === k || keyClean === kClean || key.includes(k) || k.includes(key) || keyClean.includes(kClean) || kClean.includes(keyClean)) {
       _flagCache[key] = v; return v;
     }
   }
@@ -561,8 +564,10 @@ function getCountryCode(name) {
   if(!name) return null;
   const key = name.toLowerCase().trim();
   if(_flagCache[key] !== undefined) return _flagCache[key];
+  const keyClean = key.replace(/['\u05F3]/g, '');
   for(const [k,v] of Object.entries(_knownCodes)){
-    if(key === k || key.includes(k) || k.includes(key)) return v;
+    const kClean = k.replace(/['\u05F3]/g, '');
+    if(key === k || keyClean === kClean || key.includes(k) || k.includes(key) || keyClean.includes(kClean) || kClean.includes(keyClean)) return v;
   }
   return null;
 }
