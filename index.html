@@ -351,7 +351,7 @@ select.inp option{background:var(--card2);}
 
   <div class="hero">
     <div class="hero-inner">
-      <div class="hero-day-label">⚽ משחקי היום — המר עכשיו</div>
+      <div class="hero-day-label">משחקי היום — המר עכשיו</div>
       <div class="today-matches" id="today-matches"></div>
     </div>
   </div>
@@ -1076,35 +1076,102 @@ document.querySelectorAll('.btab').forEach(btn=>{
     btn.className='btn btn-grad btn-xs btab'; btn.style.flexShrink='0';
   });
 });
+
+function flagCircle(name, size) {
+  // size in px, default 20
+  const sz = size || 20;
+  const code = getCountryCode(name);
+  if(!code) return '';
+  return '<span class="fi fi-' + code + '" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15);vertical-align:middle;margin-left:5px;"></span>';
+}
+
 function renderBracket(){
+  // ── GROUPS ──
   const groups={};
   Object.entries(MATCHES).filter(([,m])=>m.stage==='group'&&m.group).forEach(([,m])=>{
     const g=m.group.toUpperCase();
     if(!groups[g]) groups[g]={};
-    ['team1','team2'].forEach(tk=>{ if(!groups[g][m[tk]]) groups[g][m[tk]]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; });
+    ['team1','team2'].forEach(tk=>{ if(!groups[g][m[tk]]) groups[g][m[tk]]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0,vs:{}}; });
     if(m.result){
       const [g1,g2]=m.result,t1=groups[g][m.team1],t2=groups[g][m.team2];
       t1.p++;t2.p++;t1.gf+=g1;t1.ga+=g2;t2.gf+=g2;t2.ga+=g1;
-      if(g1>g2){t1.w++;t1.pts+=3;t2.l++;}else if(g1<g2){t2.w++;t2.pts+=3;t1.l++;}else{t1.d++;t1.pts++;t2.d++;t2.pts++;}
+      if(g1>g2){t1.w++;t1.pts+=3;t2.l++;t1.vs[m.team2]='W';t2.vs[m.team1]='L';}
+      else if(g1<g2){t2.w++;t2.pts+=3;t1.l++;t2.vs[m.team1]='W';t1.vs[m.team2]='L';}
+      else{t1.d++;t1.pts++;t2.d++;t2.pts++;t1.vs[m.team2]='D';t2.vs[m.team1]='D';}
     }
   });
+
   const bg=el('bracket-groups');
   if(!Object.keys(groups).length){ bg.innerHTML="<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>עדיין אין משחקי בתים</div>"; }
-  else{
+  else {
     let h='';
     Object.entries(groups).sort().forEach(([gn,teams])=>{
-      const sorted=Object.entries(teams).sort(([,a],[,b])=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga));
-      h+="<div class='card' style='padding:12px;margin-bottom:12px;'><div style='font-size:16px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;font-weight:900;'>בית "+gn+"</div><table style='width:100%;border-collapse:collapse;font-size:12px;'><thead><tr style='color:var(--text2);font-size:10px;'><th style='text-align:right;padding:4px 6px;'>קבוצה</th><th style='text-align:center;'>מ</th><th style='text-align:center;'>נ</th><th style='text-align:center;'>ת</th><th style='text-align:center;'>ה</th><th style='text-align:center;'>שע</th><th style='text-align:center;color:var(--gold);'>נק</th></tr></thead><tbody>";
-      sorted.forEach(([name,s],i)=>{ h+="<tr style='border-top:1px solid rgba(255,255,255,0.04);color:"+(i<2?'#fff':'var(--text2)')+";'><td style='padding:5px 6px;font-weight:"+(i<2?700:400)+";'>"+(i<2?'✅ ':'')+name+"</td><td style='text-align:center;'>"+s.p+"</td><td style='text-align:center;'>"+s.w+"</td><td style='text-align:center;'>"+s.d+"</td><td style='text-align:center;'>"+s.l+"</td><td style='text-align:center;'>"+s.gf+":"+s.ga+"</td><td style='text-align:center;font-weight:700;color:var(--gold);'>"+s.pts+"</td></tr>"; });
+      // Sort: pts desc, goal diff desc, h2h, then alphabetical
+      const sorted=Object.entries(teams).sort(([nameA,a],[nameB,b])=>{
+        if(b.pts!==a.pts) return b.pts-a.pts;
+        const gdA=a.gf-a.ga, gdB=b.gf-b.ga;
+        if(gdB!==gdA) return gdB-gdA;
+        // h2h: did A beat B?
+        const h2hA=a.vs[nameB], h2hB=b.vs[nameA];
+        if(h2hA==='W') return -1;
+        if(h2hB==='W') return 1;
+        // alphabetical
+        return nameA.localeCompare(nameB, 'he');
+      });
+
+      h+="<div class='card' style='padding:12px;margin-bottom:12px;'>";
+      h+="<div style='font-size:16px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;font-weight:900;'>בית "+gn+"</div>";
+      h+="<table style='width:100%;border-collapse:collapse;font-size:12px;'>";
+      h+="<thead><tr style='color:var(--text2);font-size:10px;text-transform:uppercase;'>";
+      h+="<th style='text-align:right;padding:4px 6px;width:24px;'>#</th>";
+      h+="<th style='text-align:right;padding:4px 6px;'>קבוצה</th>";
+      h+="<th style='text-align:center;'>מ</th><th style='text-align:center;'>נ</th><th style='text-align:center;'>ת</th><th style='text-align:center;'>ה</th><th style='text-align:center;'>שע</th>";
+      h+="<th style='text-align:center;color:var(--gold);'>נק</th></tr></thead><tbody>";
+
+      sorted.forEach(([name,s],i)=>{
+        const isTop2 = i<2;
+        const rankColor = i===0?'var(--gold)':i===1?'#60a5fa':i===2?'#a78bfa':'var(--text2)';
+        const rowColor = isTop2?'#fff':'var(--text2)';
+        const fw = isTop2?700:400;
+        const flag = flagCircle(name, 18);
+        h+="<tr style='border-top:1px solid rgba(255,255,255,0.04);color:"+rowColor+";'>";
+        h+="<td style='padding:5px 6px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:14px;color:"+rankColor+";font-weight:700;'>"+(i+1)+"</td>";
+        h+="<td style='padding:5px 6px;font-weight:"+fw+";'><div style='display:flex;align-items:center;gap:6px;'>"+flag+"<span>"+name+"</span></div></td>";
+        h+="<td style='text-align:center;'>"+s.p+"</td>";
+        h+="<td style='text-align:center;'>"+s.w+"</td>";
+        h+="<td style='text-align:center;'>"+s.d+"</td>";
+        h+="<td style='text-align:center;'>"+s.l+"</td>";
+        h+="<td style='text-align:center;'>"+s.gf+":"+s.ga+"</td>";
+        h+="<td style='text-align:center;font-weight:700;color:var(--gold);'>"+s.pts+"</td></tr>";
+      });
       h+="</tbody></table></div>";
     });
     bg.innerHTML=h;
   }
+
+  // ── KNOCKOUT ──
   const bk=el('bracket-ko');
   const stages=['r32','r16','qf','sf','3rd','final'];
   const slbls={r32:'שמינית גמר',r16:'שמינית פינאל',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
   let koH="<div style='display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;'>",hasKo=false;
-  stages.forEach(stage=>{ const ms=Object.entries(MATCHES).filter(([,m])=>m.stage===stage); if(!ms.length) return; hasKo=true; koH+="<div style='min-width:160px;flex-shrink:0;'><div style='font-size:13px;color:var(--gold);margin-bottom:8px;text-align:center;font-weight:900;'>"+slbls[stage]+"</div>"; ms.forEach(([,m])=>{ const hr=m.result!==undefined; const w=hr?(m.result[0]>m.result[1]?m.team1:m.result[1]>m.result[0]?m.team2:null):null; koH+="<div style='background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;'><div style='display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:"+(w===m.team1?'var(--gold)':'var(--text2)')+";font-weight:"+(w===m.team1?700:400)+";'>"+m.team1+"<span>"+(hr?m.result[0]:'')+"</span></div><div style='display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:"+(w===m.team2?'var(--gold)':'var(--text2)')+";font-weight:"+(w===m.team2?700:400)+";'>"+m.team2+"<span>"+(hr?m.result[1]:'')+"</span></div></div>"; }); koH+="</div>"; });
+  stages.forEach(stage=>{
+    const ms=Object.entries(MATCHES).filter(([,m])=>m.stage===stage);
+    if(!ms.length) return; hasKo=true;
+    koH+="<div style='min-width:170px;flex-shrink:0;'>";
+    koH+="<div style='font-size:13px;color:var(--gold);margin-bottom:8px;text-align:center;font-weight:900;'>"+slbls[stage]+"</div>";
+    ms.forEach(([,m])=>{
+      const hr=m.result!==undefined;
+      const w=hr?(m.result[0]>m.result[1]?m.team1:m.result[1]>m.result[0]?m.team2:null):null;
+      koH+="<div style='background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;'>";
+      koH+="<div style='display:flex;align-items:center;justify-content:space-between;padding:3px 0;font-size:12px;color:"+(w===m.team1?'var(--gold)':'var(--text2)')+";font-weight:"+(w===m.team1?700:400)+";'>";
+      koH+="<div style='display:flex;align-items:center;gap:5px;'>"+flagCircle(m.team1,16)+"<span>"+m.team1+"</span></div>";
+      koH+="<span>"+(hr?m.result[0]:'')+"</span></div>";
+      koH+="<div style='display:flex;align-items:center;justify-content:space-between;padding:3px 0;font-size:12px;color:"+(w===m.team2?'var(--gold)':'var(--text2)')+";font-weight:"+(w===m.team2?700:400)+";'>";
+      koH+="<div style='display:flex;align-items:center;gap:5px;'>"+flagCircle(m.team2,16)+"<span>"+m.team2+"</span></div>";
+      koH+="<span>"+(hr?m.result[1]:'')+"</span></div></div>";
+    });
+    koH+="</div>";
+  });
   koH+="</div>";
   bk.innerHTML=hasKo?koH:"<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>עדיין אין משחקי נוקאאוט</div>";
 }
