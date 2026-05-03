@@ -163,11 +163,11 @@ select.inp option{background:var(--dark2);}
   <div class="login-card">
     <div style="border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.12);background:rgba(20,30,50,0.97);">
       <div style="padding:14px 24px;background:linear-gradient(135deg,#3C3B6E,#B22234);">
-        <h2 style="color:#fff;font-weight:900;font-size:1.2rem;text-align:center;font-family:'Heebo',sans-serif;margin:0;">כניסה לאזור השחקנים</h2>
+        <h2 style="color:#fff;font-weight:900;font-size:1.2rem;text-align:center;margin:0;">כניסה לאזור השחקנים</h2>
       </div>
       <div style="padding:18px 20px;">
         <p style="font-size:13px;text-align:center;color:rgba(255,255,255,0.55);margin-bottom:14px;">כניסה מאובטחת עם חשבון Google</p>
-        <button id="google-login-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1e2d40;color:white;border:2px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 20px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;transition:all 0.2s;">
+        <button id="google-login-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1e2d40;color:white;border:2px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 20px;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;">
           <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-2.9-11.3-7.1l-6.6 5C9.7 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.5l6.2 5.2C40.5 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
           <strong>המשך עם Google</strong>
         </button>
@@ -328,7 +328,7 @@ select.inp option{background:var(--dark2);}
 
   <div id="pending-approval-banner" class="pending-banner">
     <span id="pending-count-text" style="font-size:13px;font-weight:700;color:#fff;"></span>
-    <button id="open-pending-modal-btn" style="background:#fff;color:#ea580c;border:none;border-radius:8px;padding:5px 12px;font-weight:900;font-size:12px;cursor:pointer;font-family:'Heebo',sans-serif;">נהל</button>
+    <button id="open-pending-modal-btn" style="background:#fff;color:#ea580c;border:none;border-radius:8px;padding:5px 12px;font-weight:900;font-size:12px;cursor:pointer;">נהל</button>
   </div>
 
   <div class="hero" id="hero-section">
@@ -810,7 +810,7 @@ function renderMatches(){
       const adminRow = document.createElement("div");
       adminRow.style.cssText = "display:flex;gap:6px;margin-top:10px;";
       const resBtn = document.createElement("button");
-      resBtn.style.cssText = "flex:1;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:7px;color:var(--gold);font-weight:700;font-size:12px;cursor:pointer;font-family:'Heebo',sans-serif;";
+      resBtn.style.cssText = "flex:1;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:7px;color:var(--gold);font-weight:700;font-size:12px;cursor:pointer;";
       resBtn.textContent = hasResult ? "✏️ עדכן תוצאה" : "📝 הכנס תוצאה";
       resBtn.addEventListener("click", () => openResultModal(id));
       const delBtn = document.createElement("button");
@@ -882,7 +882,7 @@ function renderMyBets(){
     const ptsClass = pts ? (pts.hit?"score-hit":pts.dir?"score-dir":"score-miss") : "score-wait";
     const ptsText = pts ? (pts.total>0?"+"+pts.total:"0")+" נק'" : "⏳";
     const locked = isLocked(m);
-    const editPart = !locked ? "<button style='background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;text-decoration:underline;font-family:"Heebo",sans-serif;' data-edit-bet='" + id + "'>ערוך</button>" : "";
+    const editPart = !locked ? "<button style='background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;text-decoration:underline;' data-edit-bet='" + id + "'>ערוך</button>" : "";
     html += "<div class='match-card'>" +
       "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'><span class='stage-pill " + (STAGE_CSS[m.stage]||"sg") + "'>" + (STAGE_LABELS[m.stage]||m.stage) + "</span><span class='" + ptsClass + "'>" + ptsText + "</span></div>" +
       "<div style='display:flex;align-items:center;justify-content:space-between;'><span style='font-weight:700;'>" + m.team1 + " vs " + m.team2 + "</span>" + editPart + "</div>" +
