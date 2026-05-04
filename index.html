@@ -453,79 +453,208 @@ import { getDatabase, ref, set, get, push, onValue, update, remove }
 
 
 // ── FLAG SYSTEM ──
+
+// ── TROPHY SVG for unknown flags ──
+const _TROPHY_INLINE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><path d="M7 3h10v2h1.5c.2 1.5-.4 3-1.5 4C16.5 10.5 15 11.5 13.5 12V13.5H15l.5 1.5H8.5L9 13.5h1.5V12C9 11.5 7.5 10.5 7 9 5.9 8 5.3 6.5 5.5 5H7V3z" fill="#FFD700"/><rect x="9.5" y="15" width="5" height="1.2" rx=".4" fill="#FFD700"/><rect x="8" y="16.2" width="8" height="1.3" rx=".4" fill="#FFD700"/></svg>';
 // Cache: name -> ISO code (populated on demand via REST Countries API)
 const _flagCache = {};
 
 // Static known map for speed (common teams) - keys are lowercase
 const _knownCodes = {
-  'ארגנטינה':'ar','argentina':'ar','ברזיל':'br','brazil':'br',
-  'צרפת':'fr','france':'fr','ספרד':'es','spain':'es',
-  'גרמניה':'de','germany':'de','פורטוגל':'pt','portugal':'pt',
-  'הולנד':'nl','netherlands':'nl','holland':'nl','בלגיה':'be','belgium':'be',
-  'איטליה':'it','italy':'it','קרואטיה':'hr','croatia':'hr',
-  'מרוקו':'ma','morocco':'ma','יפן':'jp','japan':'jp',
-  'קוריאה':'kr','korea':'kr','south korea':'kr',
-  'ארהב':'us','ארה"ב':'us','usa':'us','united states':'us','ארצות הברית':'us',
-  'מקסיקו':'mx','mexico':'mx','קנדה':'ca','canada':'ca',
-  'אורוגוואי':'uy','uruguay':'uy','קולומביה':'co','colombia':'co',
-  'שוויץ':'ch','switzerland':'ch','דנמרק':'dk','denmark':'dk',
-  'שוודיה':'se','sweden':'se','פולין':'pl','poland':'pl',
-  'סנגל':'sn','senegal':'sn','גאנה':'gh','ghana':'gh',
-  'קמרון':'cm','cameroon':'cm','ניגריה':'ng','nigeria':'ng',
-  'אוסטרליה':'au','australia':'au','איראן':'ir','iran':'ir',
+  // ── אמריקה לטינית ──
+  'ארגנטינה':'ar','argentina':'ar',
+  'ברזיל':'br','brazil':'br',
+  'אורוגוואי':'uy','uruguay':'uy',
+  'פרגוואי':'py','paraguay':'py',
+  'chile':'cl','צ׳ילה':'cl','צילה':'cl',
+  'פרו':'pe','peru':'pe',
+  'בוליביה':'bo','bolivia':'bo',
+  'קולומביה':'co','colombia':'co',
+  'ונצואלה':'ve','venezuela':'ve',
+  'אקוודור':'ec','ecuador':'ec',
+  'גויאנה':'gy','guyana':'gy',
+  'סורינאם':'sr','suriname':'sr',
+  'מקסיקו':'mx','mexico':'mx',
+  'קובה':'cu','cuba':'cu',
+  'קוסטה ריקה':'cr','costa rica':'cr',
+  'פנמה':'pa','panama':'pa',
+  'הונדורס':'hn','honduras':'hn',
+  'גואטמלה':'gt','guatemala':'gt',
+  'בליז':'bz','belize':'bz',
+  'אל סלבדור':'sv','el salvador':'sv',
+  'ניקרגואה':'ni','nicaragua':'ni',
+  'jamaica':'jm','ג׳מייקה':'jm','גמייקה':'jm',
+  'טרינידד':'tt','trinidad':'tt','trinidad and tobago':'tt',
+  'ברבדוס':'bb','barbados':'bb',
+  'בהאמה':'bs','bahamas':'bs',
+  'האיטי':'ht','haiti':'ht',
+  'הרפובליקה הדומיניקנית':'do','dominican republic':'do',
+  'פורטו ריקו':'pr','puerto rico':'pr',
+  
+  // ── אירופה ──
+  'צרפת':'fr','france':'fr',
+  'ספרד':'es','spain':'es',
+  'גרמניה':'de','germany':'de',
+  'איטליה':'it','italy':'it',
+  'פורטוגל':'pt','portugal':'pt',
+  'הולנד':'nl','netherlands':'nl','holland':'nl',
+  'בלגיה':'be','belgium':'be',
+  'שוויץ':'ch','switzerland':'ch',
+  'אוסטריה':'at','austria':'at',
+  'דנמרק':'dk','denmark':'dk',
+  'שוודיה':'se','sweden':'se',
+  'נורווגיה':'no','norway':'no',
+  'פינלנד':'fi','finland':'fi',
+  'איסלנד':'is','iceland':'is',
+  'אירלנד':'ie','ireland':'ie',
+  'אנגליה':'gb-eng','england':'gb-eng',
+  'וולס':'gb-wls','wales':'gb-wls',
+  'סקוטלנד':'gb-sct','scotland':'gb-sct',
+  'צפון אירלנד':'gb-nir','northern ireland':'gb-nir',
+  'בריטניה':'gb','uk':'gb','great britain':'gb','united kingdom':'gb',
+  'פולין':'pl','poland':'pl',
+  'czech':'cz','czechia':'cz','צ׳כיה':'cz','צכיה':'cz',
+  'סלובקיה':'sk','slovakia':'sk',
+  'הונגריה':'hu','hungary':'hu',
+  'רומניה':'ro','romania':'ro',
+  'בולגריה':'bg','bulgaria':'bg',
+  'סרביה':'rs','serbia':'rs',
+  'קרואטיה':'hr','croatia':'hr',
+  'סלובניה':'si','slovenia':'si',
+  'בוסניה':'ba','bosnia':'ba','bosnia and herzegovina':'ba',
+  'מונטנגרו':'me','montenegro':'me',
+  'צפון מקדוניה':'mk','north macedonia':'mk','macedonia':'mk',
+  'אלבניה':'al','albania':'al',
+  'קוסובו':'xk','kosovo':'xk',
+  'יוון':'gr','greece':'gr',
+  'קפריסין':'cy','cyprus':'cy',
+  'מלטה':'mt','malta':'mt',
+  'לוקסמבורג':'lu','luxembourg':'lu',
+  'אנדורה':'ad','andorra':'ad',
+  'מונקו':'mc','monaco':'mc',
+  'ליכטנשטיין':'li','liechtenstein':'li',
+  'סן מרינו':'sm','san marino':'sm',
+  'וטיקן':'va','vatican':'va',
+  'גיברלטר':'gi','gibraltar':'gi',
+  'אוקראינה':'ua','ukraine':'ua',
+  'בלארוס':'by','belarus':'by',
+  'מולדובה':'md','moldova':'md',
+  'ליטא':'lt','lithuania':'lt',
+  'לטביה':'lv','latvia':'lv',
+  'אסטוניה':'ee','estonia':'ee',
+  'פינלנד':'fi',
+  'ארמניה':'am','armenia':'am',
+  'גיאורגיה':'ge','georgia':'ge',
+  'azerbaijan':'az','אזרבייג׳ן':'az',
+  'קזחסטן':'kz','kazakhstan':'kz',
+  'אוזבקיסטן':'uz','uzbekistan':'uz',
+  'טורקמניסטן':'tm','turkmenistan':'tm',
+  'קירגיזסטן':'kg','kyrgyzstan':'kg',
+  'tajikistan':'tj','טג׳יקיסטן':'tj','טגיקיסטן':'tj',
+  'טורקיה':'tr','turkey':'tr','türkiye':'tr',
+  'רוסיה':'ru','russia':'ru',
+  'פארו':'fo','faroe':'fo','faroe islands':'fo',
+  // ── מזרח תיכון ──
+  'ישראל':'il','israel':'il',
+  'ירדן':'jo','jordan':'jo',
+  'לבנון':'lb','lebanon':'lb',
+  'סוריה':'sy','syria':'sy',
+  'עיראק':'iq','iraq':'iq',
+  'איראן':'ir','iran':'ir',
   'ערב הסעודית':'sa','saudi':'sa','saudi arabia':'sa',
-  'קטר':'qa','qatar':'qa','טוניסיה':'tn','tunisia':'tn',
-  'אקוודור':'ec','ecuador':'ec','וולס':'gb-wls','wales':'gb-wls',
-  'סקוטלנד':'gb-sct','scotland':'gb-sct','אנגליה':'gb-eng','england':'gb-eng',
-  'אוסטריה':'at','austria':'at','צכיה':'cz','czech':'cz','czechia':'cz',
-  'טורקיה':'tr','turkey':'tr','אוקראינה':'ua','ukraine':'ua',
-  'סרביה':'rs','serbia':'rs','רומניה':'ro','romania':'ro',
-  'סלובקיה':'sk','slovakia':'sk','אלבניה':'al','albania':'al',
-  'הונגריה':'hu','hungary':'hu','גיאורגיה':'ge','georgia':'ge',
-  'סלובניה':'si','slovenia':'si','פרגוואי':'py','paraguay':'py',
-  'צ\'ילה':'cl','chile':'cl','פרו':'pe','peru':'pe',
-  'בוליביה':'bo','bolivia':'bo','ונצואלה':'ve','venezuela':'ve',
-  'קוסטה ריקה':'cr','costa rica':'cr','פנמה':'pa','panama':'pa',
-  'הונדורס':'hn','honduras':'hn','אל סלבדור':'sv','el salvador':'sv',
-  'ג\'מייקה':'jm','jamaica':'jm','טרינידד':'tt','trinidad':'tt',
-  'ניו זילנד':'nz','new zealand':'nz','פיג\'י':'fj','fiji':'fj',
-  'סין':'cn','china':'cn','הודו':'in','india':'in',
-  'תאילנד':'th','thailand':'th','אינדונזיה':'id','indonesia':'id',
-  'וייטנאם':'vn','vietnam':'vn','ישראל':'il','israel':'il',
-  'אנדורה':'ad','andorra':'ad','אירלנד':'ie','ireland':'ie',
-  'יוון':'gr','greece':'gr','נורווגיה':'no','norway':'no',
-  'פינלנד':'fi','finland':'fi','בולגריה':'bg','bulgaria':'bg',
-  'צפון מקדוניה':'mk','north macedonia':'mk','מונטנגרו':'me','montenegro':'me',
-  'בוסניה':'ba','bosnia':'ba','לוקסמבורג':'lu','luxembourg':'lu',
-  'מלטה':'mt','malta':'mt','ליטא':'lt','lithuania':'lt',
-  'לטביה':'lv','latvia':'lv','אסטוניה':'ee','estonia':'ee',
-  'קפריסין':'cy','cyprus':'cy','ליכטנשטיין':'li','liechtenstein':'li',
-  'סן מרינו':'sm','san marino':'sm','גיברלטר':'gi','gibraltar':'gi',
-  'קוסובו':'xk','kosovo':'xk','בלארוס':'by','belarus':'by',
-  'ארמניה':'am','armenia':'am','אנגולה':'ao','angola':'ao',
-  'מצרים':'eg','egypt':'eg','קניה':'ke','kenya':'ke',
-  'מאלי':'ml','mali':'ml','קוט דאיבואר':'ci','ivory coast':'ci',
-  'ליבריה':'lr','liberia':'lr','רוסיה':'ru','russia':'ru',
-  'מוזמביק':'mz','mozambique':'mz','טנזניה':'tz','tanzania':'tz',
-  'זמביה':'zm','zambia':'zm','זימבבואה':'zw','zimbabwe':'zw',
-  'רואנדה':'rw','rwanda':'rw','אוגנדה':'ug','uganda':'ug',
-  'בורקינה פאסו':'bf','burkina faso':'bf','גינאה':'gn','guinea':'gn',
-  'קאבו וורדה':'cv','cape verde':'cv','גמביה':'gm','gambia':'gm',
-  'קונגו':'cg','congo':'cg','אנגולה':'ao','angola':'ao',
-  'נמיביה':'na','namibia':'na','בוצוואנה':'bw','botswana':'bw',
-  'איסלנד':'is','iceland':'is','פורטו ריקו':'pr','puerto rico':'pr',
-  'קובה':'cu','cuba':'cu','ג\'מייקה':'jm','jamaica':'jm',
-  'הונג קונג':'hk','hong kong':'hk','מקאו':'mo','macao':'mo',
-  'ממלכת ירדן':'jo','jordan':'jo','לבנון':'lb','lebanon':'lb',
-  'סוריה':'sy','syria':'sy','עיראק':'iq','iraq':'iq',
-  'כוויית':'kw','kuwait':'kw','אמירויות':'ae','uae':'ae',
-  'בחריין':'bh','bahrain':'bh','עומאן':'om','oman':'om',
-  'תימן':'ye','yemen':'ye','פקיסטן':'pk','pakistan':'pk',
-  'בנגלדש':'bd','bangladesh':'bd','סרי לנקה':'lk','sri lanka':'lk',
-  'מיאנמר':'mm','myanmar':'mm','קמבודיה':'kh','cambodia':'kh',
-  'מלזיה':'my','malaysia':'my','סינגפור':'sg','singapore':'sg',
-  'פיליפינים':'ph','philippines':'ph','מונגוליה':'mn','mongolia':'mn',
-  'קזחסטן':'kz','kazakhstan':'kz','אוזבקיסטן':'uz','uzbekistan':'uz',
+  'אמירויות':'ae','uae':'ae','united arab emirates':'ae',
+  'קטר':'qa','qatar':'qa',
+  'כוויית':'kw','kuwait':'kw',
+  'בחריין':'bh','bahrain':'bh',
+  'עומאן':'om','oman':'om',
+  'תימן':'ye','yemen':'ye',
+  'פלסטין':'ps','palestine':'ps',
+  // ── אסיה ──
+  'יפן':'jp','japan':'jp',
+  'קוריאה':'kr','korea':'kr','south korea':'kr',
+  'צפון קוריאה':'kp','north korea':'kp',
+  'סין':'cn','china':'cn',
+  'הודו':'in','india':'in',
+  'פקיסטן':'pk','pakistan':'pk',
+  'בנגלדש':'bd','bangladesh':'bd',
+  'סרי לנקה':'lk','sri lanka':'lk',
+  'נפאל':'np','nepal':'np',
+  'בוטאן':'bt','bhutan':'bt',
+  'מלדיביים':'mv','maldives':'mv',
+  'מיאנמר':'mm','myanmar':'mm','burma':'mm',
+  'תאילנד':'th','thailand':'th',
+  'וייטנאם':'vn','vietnam':'vn',
+  'קמבודיה':'kh','cambodia':'kh',
+  'לאוס':'la','laos':'la',
+  'מלזיה':'my','malaysia':'my',
+  'סינגפור':'sg','singapore':'sg',
+  'אינדונזיה':'id','indonesia':'id',
+  'פיליפינים':'ph','philippines':'ph',
+  'ברוניי':'bn','brunei':'bn',
+  'אוסטרליה':'au','australia':'au',
+  'ניו זילנד':'nz','new zealand':'nz',
+  'fiji':'fj','פיג׳י':'fj','פיגי':'fj',
+  'פפואה גינאה החדשה':'pg','papua new guinea':'pg',
+  'מונגוליה':'mn','mongolia':'mn',
+  'הונג קונג':'hk','hong kong':'hk',
+  'טייוואן':'tw','taiwan':'tw',
+  'מקאו':'mo','macao':'mo','macau':'mo',
+  // ── אפריקה ──
+  'מרוקו':'ma','morocco':'ma',
+  'אלגריה':'dz','algeria':'dz',
+  'תוניסיה':'tn','tunisia':'tn',
+  'לוב':'ly','libya':'ly',
+  'מצרים':'eg','egypt':'eg',
+  'סודן':'sd','sudan':'sd',
+  'אתיופיה':'et','ethiopia':'et',
+  'אריתריאה':'er','eritrea':'er',
+  'סומליה':'so','somalia':'so',
+  'djibouti':'dj','ג׳יבוטי':'dj',
+  'קניה':'ke','kenya':'ke',
+  'טנזניה':'tz','tanzania':'tz',
+  'אוגנדה':'ug','uganda':'ug',
+  'רואנדה':'rw','rwanda':'rw',
+  'בורונדי':'bi','burundi':'bi',
+  'חוף השנהב':'ci','ivory coast':'ci','cote-d-ivoire':'ci','cote-divoire':'ci',
+  'גאנה':'gh','ghana':'gh',
+  'ניגריה':'ng','nigeria':'ng',
+  'קמרון':'cm','cameroon':'cm',
+  'סנגל':'sn','senegal':'sn',
+  'מאלי':'ml','mali':'ml',
+  'בורקינה פאסו':'bf','burkina faso':'bf',
+  'גינאה':'gn','guinea':'gn',
+  'גינאה ביסאו':'gw','guinea-bissau':'gw',
+  'גינאה המשוונית':'gq','equatorial guinea':'gq',
+  'קאבו וורדה':'cv','cape verde':'cv',
+  'גמביה':'gm','gambia':'gm',
+  'סיירה לאונה':'sl','sierra leone':'sl',
+  'ליבריה':'lr','liberia':'lr',
+  'טוגו':'tg','togo':'tg',
+  'בנין':'bj','benin':'bj',
+  'niger':'ne','ניז׳ר':'ne','ניזר':'ne',
+  'chad':'td','צ׳אד':'td','צאד':'td',
+  'מאוריטניה':'mr','mauritania':'mr',
+  'קונגו':'cg','congo':'cg',
+  'קונגו הדמוקרטית':'cd','democratic republic of the congo':'cd','dr congo':'cd',
+  'גבון':'ga','gabon':'ga',
+  'קמרון':'cm',
+  'הרפובליקה המרכז אפריקאית':'cf','central african republic':'cf',
+  'אנגולה':'ao','angola':'ao',
+  'זמביה':'zm','zambia':'zm',
+  'זימבבואה':'zw','zimbabwe':'zw',
+  'מוזמביק':'mz','mozambique':'mz',
+  'מלאווי':'mw','malawi':'mw',
+  'מדגסקר':'mg','madagascar':'mg',
+  'נמיביה':'na','namibia':'na',
+  'בוצוואנה':'bw','botswana':'bw',
+  'לסוטו':'ls','lesotho':'ls',
+  'אסוואטיני':'sz','eswatini':'sz','swaziland':'sz',
+  'דרום אפריקה':'za','south africa':'za',
+  'מאוריציוס':'mu','mauritius':'mu',
+  'סיישל':'sc','seychelles':'sc',
+  'קומורו':'km','comoros':'km',
+  'קנדה':'ca','canada':'ca',
+  'ארהב':'us','ארה"ב':'us','usa':'us','united states':'us','ארצות הברית':'us','אמריקה':'us',
 };
 
 // Resolve flag code: check static map first, then fetch from API
@@ -573,20 +702,22 @@ function getCountryCode(name) {
 }
 
 function getFlagHtml(name) {
+  // Generic fallback: WC trophy on blue circle
+  const FALLBACK = '<span style="width:32px;height:32px;border-radius:50%;display:inline-block;background:#1a3a6b;border:1px solid rgba(255,255,255,0.2);overflow:hidden;flex-shrink:0;"><img src=\"' + _TROPHY_URL + '\" style=\"width:100%;height:100%;\"></span>';
+
   const code = getCountryCode(name);
   if(!code) {
     // Try async resolution and update later
     resolveFlag(name).then(c => {
       if(c){
         document.querySelectorAll('[data-flagname="'+name+'"]').forEach(el=>{
-          el.className = 'fi fi-' + c;
+          el.outerHTML = '<span class="fi fi-' + c + '" style="width:32px;height:32px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;"></span>';
         });
       }
     });
-    // Return placeholder with data attribute for async update
-    return '<span data-flagname="'+name+'" style="width:32px;height:32px;border-radius:50%;display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);"></span>';
+    return '<span data-flagname="' + name + '" style="width:32px;height:32px;border-radius:50%;display:inline-block;background:#1a3a6b;border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;">' + _TROPHY_INLINE + '</span>';
   }
-  return '<span class="fi fi-' + code + '" style="width:32px;height:32px;border-radius:50%;display:inline-block;background-size:cover;"></span>';
+  return '<span class="fi fi-' + code + '" style="width:32px;height:32px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;"></span>';
 }
 
 function getFlag(name) {
@@ -1095,11 +1226,22 @@ document.querySelectorAll('.btab').forEach(btn=>{
 });
 
 function flagCircle(name, size) {
-  // size in px, default 20
   const sz = size || 20;
   const code = getCountryCode(name);
-  if(!code) return '';
-  return '<span class="fi fi-' + code + '" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15);vertical-align:middle;margin-left:5px;"></span>';
+  if(!code) {
+    // Async update
+    resolveFlag(name).then(c => {
+      if(c){
+        document.querySelectorAll('[data-flagcircle="'+name+'"]').forEach(el=>{
+          el.className = 'fi fi-' + c;
+          el.removeAttribute('data-flagcircle');
+        });
+      }
+    });
+    // Trophy fallback
+    return '<span data-flagcircle="'+name+'" style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#1a3a6b;border:1px solid rgba(255,255,255,0.2);flex-shrink:0;vertical-align:middle;margin-left:5px;overflow:hidden;"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"'+(sz*0.7)+'\" height=\"'+(sz*0.7)+'\"><path d=\"M7 3h10v2h1.5c.2 1.5-.4 3-1.5 4C16.5 10.5 15 11.5 13.5 12V13.5H15l.5 1.5H8.5L9 13.5h1.5V12C9 11.5 7.5 10.5 7 9 5.9 8 5.3 6.5 5.5 5H7V3z\" fill=\"#FFD700\"/><rect x=\"9.5\" y=\"15\" width=\"5\" height=\"1.2\" rx=\".4\" fill=\"#FFD700\"/><rect x=\"8\" y=\"16.2\" width=\"8\" height=\"1.3\" rx=\".4\" fill=\"#FFD700\"/></svg></span>';
+  }
+  return '<span class="fi fi-' + code + '" style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15);vertical-align:middle;margin-left:5px;"></span>';
 }
 
 function renderBracket(){
