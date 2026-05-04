@@ -171,6 +171,7 @@ select.inp option{background:var(--card2);}
 /* Toast & Confetti */
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card2);color:var(--text);padding:11px 22px;border-radius:12px;font-weight:700;font-size:13px;border:1px solid var(--border);z-index:999;animation:toastIn 0.3s ease;}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 #confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;}
 </style>
 </head>
@@ -341,6 +342,10 @@ select.inp option{background:var(--card2);}
     <span class="topbar-logo" id="topbar-logo">WC2026 BETS</span>
     <div style="display:flex;align-items:center;gap:8px;">
       <span class="topbar-user" id="topbar-user"></span>
+      <span id="online-count" style="font-size:11px;color:#34d399;font-weight:700;display:flex;align-items:center;gap:4px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;animation:pulse 2s infinite;"></span>
+        <span id="online-num">1</span>
+      </span>
       <button class="btn-sm-logout" id="logout-btn">יציאה</button>
     </div>
   </div>
@@ -487,6 +492,15 @@ select.inp option{background:var(--card2);}
 
     <div class="page" id="page-admin">
       <div class="sec-head"><span style="font-size:22px;">⚙️</span><div class="sec-title">פאנל אדמין</div></div>
+      <!-- Analytics -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <p style="font-size:15px;font-weight:700;color:var(--gold);">📊 אנליטיקס</p>
+          <button class="btn btn-ghost btn-xs" id="refresh-analytics">🔄 רענן</button>
+        </div>
+        <div id="analytics-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;"></div>
+        <div id="analytics-activity" style="margin-top:4px;"></div>
+      </div>
       <!-- Load WC 2026 Matches -->
       <div class="card" style="padding:18px;margin-bottom:14px;">
         <p style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px;">🌍 טעינת לוח משחקי מונדיאל 2026</p>
@@ -909,6 +923,117 @@ el('save-scorer-btn')&&el('save-scorer-btn').addEventListener('click', async()=>
   toast('✅ מלך שערים נשמר!'); loadSpecialBets();
 });
 
+
+// ── ONLINE PRESENCE & ANALYTICS ──
+function initPresence() {
+  if(!ME || ME.uid === BOT_UID) return;
+  const presRef = ref(db, 'presence/' + ME.uid);
+  // Set online status with user info
+  set(presRef, {
+    uid: ME.uid,
+    name: MEDATA.nickname || MEDATA.name,
+    online: true,
+    lastSeen: Date.now()
+  });
+  // Remove on disconnect (Firebase built-in)
+  // Update every 30s to keep alive
+  setInterval(()=> update(presRef, {lastSeen: Date.now()}), 30000);
+  // Listen to all presence
+  onValue(ref(db,'presence'), snap=>{
+    if(!snap.exists()){ el('online-num').textContent='1'; return; }
+    const now = Date.now();
+    // Count users active in last 2 minutes
+    const active = Object.values(snap.val()).filter(u =>
+      u.online && u.uid !== BOT_UID && (now - (u.lastSeen||0)) < 120000
+    );
+    el('online-num').textContent = Math.max(1, active.length);
+  });
+}
+
+async function loadAnalytics() {
+  const grid = el('analytics-grid'); if(!grid) return;
+  const activity = el('analytics-activity'); if(!activity) return;
+
+  // Gather stats
+  const usersSnap  = await get(ref(db,'users'));
+  const matchSnap  = await get(ref(db,'matches'));
+  const betsSnap   = await get(ref(db,'bets'));
+  const presSnap   = await get(ref(db,'presence'));
+  const specSnap   = await get(ref(db,'specialBets'));
+
+  const users   = usersSnap.exists()  ? Object.values(usersSnap.val())  : [];
+  const matches = matchSnap.exists()  ? Object.values(matchSnap.val())  : [];
+  const betsObj = betsSnap.exists()   ? betsSnap.val()                  : {};
+  const presObj = presSnap.exists()   ? presSnap.val()                  : {};
+  const specObj = specSnap.exists()   ? specSnap.val()                  : {};
+
+  const approved  = users.filter(u=>u.approved && !u.isBot);
+  const pending   = users.filter(u=>!u.approved);
+  const now       = Date.now();
+  const online    = Object.values(presObj).filter(u=> u.uid!==BOT_UID && (now-(u.lastSeen||0))<120000);
+  const finishedM = matches.filter(m=>m.result!==undefined);
+
+  // Count total bets
+  let totalBets=0, usersWhobet=0;
+  Object.entries(betsObj).forEach(([uid,ub])=>{
+    if(uid===BOT_UID) return;
+    const cnt = Object.keys(ub).length;
+    if(cnt>0){ usersWhobet++; totalBets+=cnt; }
+  });
+
+  // Special bets
+  let champBets=0, scorerBets=0;
+  Object.entries(specObj).forEach(([uid,d])=>{
+    if(uid===BOT_UID) return;
+    if(d.champion) champBets++;
+    if(d.scorer)   scorerBets++;
+  });
+
+  // Bet coverage %
+  const maxPossible = approved.length * matches.length;
+  const coverage = maxPossible>0 ? Math.round(totalBets/maxPossible*100) : 0;
+
+  // Render stat boxes
+  const stats = [
+    {icon:'👥', val:approved.length, lbl:'שחקנים פעילים'},
+    {icon:'🟢', val:online.length,   lbl:'מחוברים עכשיו'},
+    {icon:'⚽', val:matches.length,  lbl:'משחקים'},
+    {icon:'✅', val:finishedM.length, lbl:'משחקים שהסתיימו'},
+    {icon:'🎯', val:totalBets,        lbl:'הימורים סה"כ'},
+    {icon:'📈', val:coverage+'%',     lbl:'כיסוי הימורים'},
+    {icon:'🏆', val:champBets,        lbl:'הימרו על מנצחת'},
+    {icon:'👟', val:scorerBets,       lbl:'הימרו על מלך שערים'},
+  ];
+
+  grid.innerHTML = stats.map(s=>
+    "<div class='stat-box'><div class='stat-val' style='font-size:1.3rem;'>"+s.val+"</div><div class='stat-lbl'>"+s.icon+" "+s.lbl+"</div></div>"
+  ).join('');
+
+  // Per-user activity table
+  const rows = approved.map(u=>{
+    const ub = betsObj[u.uid] || {};
+    const betCount = Object.keys(ub).length;
+    const sb = specObj[u.uid] || {};
+    const isOnline = Object.values(presObj).some(p=> p.uid===u.uid && (now-(p.lastSeen||0))<120000);
+    const pct = matches.length>0 ? Math.round(betCount/matches.length*100) : 0;
+    return {name: u.nickname||u.name, betCount, pct, champ:!!sb.champion, scorer:!!sb.scorer, isOnline};
+  }).sort((a,b)=>b.betCount-a.betCount);
+
+  activity.innerHTML =
+    "<div style='font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;'>פעילות לפי שחקן</div>" +
+    "<table class='adm-tbl' style='width:100%;'>" +
+    "<thead><tr><th>שחקן</th><th>סטטוס</th><th>הימורים</th><th>כיסוי</th><th>מנצחת</th><th>מלך שערים</th></tr></thead><tbody>" +
+    rows.map(r=>
+      "<tr><td style='font-weight:700;'>"+r.name+"</td>" +
+      "<td><span style='color:"+(r.isOnline?'#34d399':'var(--text2)')+";font-size:11px;font-weight:700;'>"+(r.isOnline?'🟢 מחובר':'⚫ לא מחובר')+"</span></td>" +
+      "<td style='text-align:center;'>"+r.betCount+"</td>" +
+      "<td style='text-align:center;'><span style='color:"+(r.pct>=80?'#34d399':r.pct>=50?'#fbbf24':'#f87171')+"'>"+r.pct+"%</span></td>" +
+      "<td style='text-align:center;'>"+(r.champ?'✅':'—')+"</td>" +
+      "<td style='text-align:center;'>"+(r.scorer?'✅':'—')+"</td></tr>"
+    ).join('') +
+    "</tbody></table>";
+}
+
 // ── FLAG SYSTEM ──
 
 // ── TROPHY SVG for unknown flags ──
@@ -1261,6 +1386,7 @@ onAuthStateChanged(auth, async user=>{
   initData();
   startClock();
   initSpecialBets();
+  initPresence();
 });
 
 // ── PENDING ──
@@ -1314,7 +1440,7 @@ document.querySelectorAll('.tab[data-page]').forEach(tab=>{
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     el('page-'+tab.dataset.page).classList.add('active');
     tab.classList.add('active');
-    if(tab.dataset.page==='admin') loadUsers();
+    if(tab.dataset.page==='admin'){ loadUsers(); loadAnalytics(); }
   });
 });
 el('topbar-logo').addEventListener('click',()=>{
@@ -1679,6 +1805,7 @@ el('save-scoring')&&el('save-scoring').addEventListener('click', async()=>{
 
 // ── ADMIN USERS ──
 el('refresh-users').addEventListener('click', loadUsers);
+el('refresh-analytics')&&el('refresh-analytics').addEventListener('click', loadAnalytics);
 el('run-bot-btn')&&el('run-bot-btn').addEventListener('click', async()=>{
   const btn=el('run-bot-btn');
   btn.disabled=true; btn.textContent='⏳ מריץ...';
