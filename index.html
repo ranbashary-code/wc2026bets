@@ -954,85 +954,152 @@ async function loadAnalytics() {
   const grid = el('analytics-grid'); if(!grid) return;
   const activity = el('analytics-activity'); if(!activity) return;
 
-  // Gather stats
-  const usersSnap  = await get(ref(db,'users'));
-  const matchSnap  = await get(ref(db,'matches'));
-  const betsSnap   = await get(ref(db,'bets'));
-  const presSnap   = await get(ref(db,'presence'));
-  const specSnap   = await get(ref(db,'specialBets'));
+  const usersSnap = await get(ref(db,'users'));
+  const matchSnap = await get(ref(db,'matches'));
+  const betsSnap  = await get(ref(db,'bets'));
+  const presSnap  = await get(ref(db,'presence'));
+  const specSnap  = await get(ref(db,'specialBets'));
 
-  const users   = usersSnap.exists()  ? Object.values(usersSnap.val())  : [];
-  const matches = matchSnap.exists()  ? Object.values(matchSnap.val())  : [];
-  const betsObj = betsSnap.exists()   ? betsSnap.val()                  : {};
-  const presObj = presSnap.exists()   ? presSnap.val()                  : {};
-  const specObj = specSnap.exists()   ? specSnap.val()                  : {};
+  const users   = usersSnap.exists() ? Object.values(usersSnap.val()) : [];
+  const matches = matchSnap.exists() ? Object.values(matchSnap.val()) : [];
+  const betsObj = betsSnap.exists()  ? betsSnap.val() : {};
+  const presObj = presSnap.exists()  ? presSnap.val() : {};
+  const specObj = specSnap.exists()  ? specSnap.val() : {};
 
   const approved  = users.filter(u=>u.approved && !u.isBot);
   const pending   = users.filter(u=>!u.approved);
   const now       = Date.now();
-  const online    = Object.values(presObj).filter(u=> u.uid!==BOT_UID && (now-(u.lastSeen||0))<120000);
+  const onlineArr = Object.values(presObj).filter(u=> u.uid!==BOT_UID && (now-(u.lastSeen||0))<120000);
   const finishedM = matches.filter(m=>m.result!==undefined);
 
-  // Count total bets
-  let totalBets=0, usersWhobet=0;
+  let totalBets=0, usersWhoBet=0;
   Object.entries(betsObj).forEach(([uid,ub])=>{
     if(uid===BOT_UID) return;
-    const cnt = Object.keys(ub).length;
-    if(cnt>0){ usersWhobet++; totalBets+=cnt; }
+    const cnt=Object.keys(ub).length;
+    if(cnt>0){usersWhoBet++;totalBets+=cnt;}
   });
 
-  // Special bets
-  let champBets=0, scorerBets=0;
+  let champBetters=[], scorerBetters=[];
   Object.entries(specObj).forEach(([uid,d])=>{
     if(uid===BOT_UID) return;
-    if(d.champion) champBets++;
-    if(d.scorer)   scorerBets++;
+    const u = users.find(x=>x.uid===uid);
+    const name = u ? (u.nickname||u.name) : uid;
+    if(d.champion) champBetters.push({name, val:d.champion});
+    if(d.scorer)   scorerBetters.push({name, val:d.scorer});
   });
 
-  // Bet coverage %
   const maxPossible = approved.length * matches.length;
   const coverage = maxPossible>0 ? Math.round(totalBets/maxPossible*100) : 0;
 
-  // Render stat boxes
+  // Clickable details for each stat
+  function showDetail(title, html) {
+    const existing = el('analytics-detail');
+    if(existing) existing.remove();
+    const box = document.createElement('div');
+    box.id = 'analytics-detail';
+    box.style.cssText = 'margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;padding:14px;';
+    box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+      '<span style="font-weight:700;font-size:13px;color:var(--gold);">'+title+'</span>' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1;">×</button>' +
+      '</div>' + html;
+    grid.parentElement.insertBefore(box, grid.nextSibling);
+  }
+
   const stats = [
-    {icon:'👥', val:approved.length, lbl:'שחקנים פעילים'},
-    {icon:'🟢', val:online.length,   lbl:'מחוברים עכשיו'},
-    {icon:'⚽', val:matches.length,  lbl:'משחקים'},
-    {icon:'✅', val:finishedM.length, lbl:'משחקים שהסתיימו'},
-    {icon:'🎯', val:totalBets,        lbl:'הימורים סה"כ'},
-    {icon:'📈', val:coverage+'%',     lbl:'כיסוי הימורים'},
-    {icon:'🏆', val:champBets,        lbl:'הימרו על מנצחת'},
-    {icon:'👟', val:scorerBets,       lbl:'הימרו על מלך שערים'},
+    {
+      icon:'👥', val:approved.length, lbl:'שחקנים פעילים', clickable:true,
+      onClick:()=>showDetail('👥 שחקנים פעילים',
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+        approved.map(u=>'<div style="padding:5px 10px;background:rgba(255,255,255,0.06);border-radius:8px;font-size:13px;font-weight:700;">'+( u.nickname||u.name)+'</div>').join('') +
+        (pending.length ? '<div style="width:100%;margin-top:8px;font-size:11px;color:var(--text2);">ממתינים לאישור: '+pending.map(u=>u.nickname||u.name||u.email).join(', ')+'</div>' : '') +
+        '</div>'
+      )
+    },
+    {
+      icon:'🟢', val:onlineArr.length, lbl:'מחוברים עכשיו', clickable:true,
+      onClick:()=>showDetail('🟢 מחוברים עכשיו',
+        onlineArr.length
+          ? '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+            onlineArr.map(u=>'<div style="padding:5px 10px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:8px;font-size:13px;font-weight:700;color:#34d399;">🟢 '+u.name+'</div>').join('') +
+            '</div>'
+          : '<p style="color:var(--text2);font-size:13px;">אין משתמשים מחוברים כרגע</p>'
+      )
+    },
+    {icon:'⚽', val:matches.length,  lbl:'משחקים', clickable:false},
+    {icon:'✅', val:finishedM.length, lbl:'משחקים שהסתיימו', clickable:false},
+    {icon:'🎯', val:totalBets,        lbl:'הימורים סה"כ', clickable:false},
+    {icon:'📈', val:coverage+'%',     lbl:'כיסוי הימורים', clickable:false},
+    {
+      icon:'🏆', val:champBetters.length, lbl:'הימרו על מנצחת', clickable:true,
+      onClick:()=>showDetail('🏆 הימרו על נבחרת מנצחת',
+        champBetters.length
+          ? '<div style="display:flex;flex-direction:column;gap:6px;">' +
+            champBetters.map(b=>{
+              const code=getCountryCode(b.val);
+              const flag=code?'<span class="fi fi-'+code+'" style="width:18px;height:18px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;margin-left:6px;"></span>':'';
+              return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.04);border-radius:8px;">' +
+                '<span style="font-weight:700;font-size:13px;">'+b.name+'</span>' +
+                '<span style="display:flex;align-items:center;gap:6px;font-size:13px;">'+flag+b.val+'</span>' +
+                '</div>';
+            }).join('') +
+            '</div>'
+          : '<p style="color:var(--text2);font-size:13px;">אף אחד עדיין לא הימר</p>'
+      )
+    },
+    {
+      icon:'👟', val:scorerBetters.length, lbl:'הימרו על מלך שערים', clickable:true,
+      onClick:()=>showDetail('👟 הימרו על מלך שערים',
+        scorerBetters.length
+          ? '<div style="display:flex;flex-direction:column;gap:6px;">' +
+            scorerBetters.map(b=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.04);border-radius:8px;">' +
+              '<span style="font-weight:700;font-size:13px;">'+b.name+'</span>' +
+              '<span style="font-size:13px;color:var(--gold);">⚽ '+b.val+'</span>' +
+              '</div>').join('') +
+            '</div>'
+          : '<p style="color:var(--text2);font-size:13px;">אף אחד עדיין לא הימר</p>'
+      )
+    },
   ];
 
-  grid.innerHTML = stats.map(s=>
-    "<div class='stat-box'><div class='stat-val' style='font-size:1.3rem;'>"+s.val+"</div><div class='stat-lbl'>"+s.icon+" "+s.lbl+"</div></div>"
-  ).join('');
+  grid.innerHTML = '';
+  stats.forEach(s=>{
+    const box = document.createElement('div');
+    box.className = 'stat-box';
+    box.style.cssText = 'cursor:'+(s.clickable?'pointer':'default')+';transition:all 0.2s;'+(s.clickable?'border:1px solid rgba(255,215,0,0.15);':'');
+    box.innerHTML = '<div class="stat-val" style="font-size:1.6rem;">'+s.val+'</div><div class="stat-lbl" style="font-size:11px;margin-top:4px;">'+s.icon+' '+s.lbl+'</div>';
+    if(s.clickable){
+      box.addEventListener('click', s.onClick);
+      box.addEventListener('mouseenter',()=>box.style.borderColor='rgba(255,215,0,0.4)');
+      box.addEventListener('mouseleave',()=>box.style.borderColor='rgba(255,215,0,0.15)');
+    }
+    grid.appendChild(box);
+  });
 
   // Per-user activity table
   const rows = approved.map(u=>{
-    const ub = betsObj[u.uid] || {};
-    const betCount = Object.keys(ub).length;
-    const sb = specObj[u.uid] || {};
-    const isOnline = Object.values(presObj).some(p=> p.uid===u.uid && (now-(p.lastSeen||0))<120000);
-    const pct = matches.length>0 ? Math.round(betCount/matches.length*100) : 0;
-    return {name: u.nickname||u.name, betCount, pct, champ:!!sb.champion, scorer:!!sb.scorer, isOnline};
-  }).sort((a,b)=>b.betCount-a.betCount);
+    const ub = betsObj[u.uid]||{};
+    const cnt = Object.keys(ub).length;
+    const sb = specObj[u.uid]||{};
+    const isOn = onlineArr.some(p=>p.uid===u.uid);
+    const pct = matches.length>0 ? Math.round(cnt/matches.length*100) : 0;
+    return {name:u.nickname||u.name, cnt, pct, champ:!!sb.champion, scorer:!!sb.scorer, isOn};
+  }).sort((a,b)=>b.cnt-a.cnt);
 
   activity.innerHTML =
-    "<div style='font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;'>פעילות לפי שחקן</div>" +
+    '<div style="font-size:13px;font-weight:700;color:var(--text2);margin:14px 0 8px;">פעילות לפי שחקן</div>' +
     "<table class='adm-tbl' style='width:100%;'>" +
     "<thead><tr><th>שחקן</th><th>סטטוס</th><th>הימורים</th><th>כיסוי</th><th>מנצחת</th><th>מלך שערים</th></tr></thead><tbody>" +
     rows.map(r=>
-      "<tr><td style='font-weight:700;'>"+r.name+"</td>" +
-      "<td><span style='color:"+(r.isOnline?'#34d399':'var(--text2)')+";font-size:11px;font-weight:700;'>"+(r.isOnline?'🟢 מחובר':'⚫ לא מחובר')+"</span></td>" +
-      "<td style='text-align:center;'>"+r.betCount+"</td>" +
-      "<td style='text-align:center;'><span style='color:"+(r.pct>=80?'#34d399':r.pct>=50?'#fbbf24':'#f87171')+"'>"+r.pct+"%</span></td>" +
-      "<td style='text-align:center;'>"+(r.champ?'✅':'—')+"</td>" +
-      "<td style='text-align:center;'>"+(r.scorer?'✅':'—')+"</td></tr>"
+      "<tr><td style='font-weight:700;font-size:13px;'>"+r.name+"</td>" +
+      "<td><span style='color:"+(r.isOn?'#34d399':'var(--text2)')+";font-size:12px;font-weight:700;'>"+(r.isOn?'🟢 מחובר':'⚫ לא פעיל')+"</span></td>" +
+      "<td style='text-align:center;font-size:13px;'>"+r.cnt+"</td>" +
+      "<td style='text-align:center;'><span style='font-size:12px;font-weight:700;color:"+(r.pct>=80?'#34d399':r.pct>=50?'#fbbf24':'#f87171')+"'>"+r.pct+"%</span></td>" +
+      "<td style='text-align:center;font-size:14px;'>"+(r.champ?'✅':'—')+"</td>" +
+      "<td style='text-align:center;font-size:14px;'>"+(r.scorer?'✅':'—')+"</td></tr>"
     ).join('') +
     "</tbody></table>";
 }
+
 
 // ── FLAG SYSTEM ──
 
