@@ -175,6 +175,12 @@ select.inp option{background:var(--card2);}
 #confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;}
 
 /* ── VISUAL BRACKET ── */
+.ko-wrap{display:flex;align-items:center;gap:4px;overflow-x:auto;padding:12px 4px 16px;min-width:0;}
+.ko-side{display:flex;flex-direction:row;gap:4px;align-items:center;}
+.ko-center{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;min-width:116px;}
+.ko-logo-wrap{width:100px;height:100px;border-radius:50%;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,215,0,0.35);box-shadow:0 0 18px rgba(255,215,0,0.2);flex-shrink:0;margin:4px 0;}
+.ko-logo{width:100%;height:100%;object-fit:cover;object-position:center;}
+
 .ko-bracket{
   position:relative;
   width:100%;
@@ -2176,6 +2182,7 @@ function flagCircle(name, size) {
   return '<span class="fi fi-' + code + '" style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.15);vertical-align:middle;margin-left:5px;"></span>';
 }
 
+const WC_LOGO="data:image/png;base64,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";
 function renderBracket(){
   // ── GROUPS ──
   const groups={};
@@ -2228,129 +2235,80 @@ function renderBracket(){
   // ── KNOCKOUT ──
   const bk=el('bracket-ko');
   
-  // Get matches by stage
   function getStageMatches(stage) {
     return Object.entries(MATCHES).filter(([,m])=>m.stage===stage)
       .sort(([,a],[,b])=>(a.datetime||'')>(b.datetime||'')?1:-1);
   }
   
-  function matchCard(id, m, size) {
-    if(!m) return emptyCard();
-    const hasRes = m.result !== undefined;
-    const w = hasRes ? (m.result[0]>m.result[1]?m.team1:m.result[1]>m.result[0]?m.team2:null) : null;
-    const t1name = displayName(m.team1)||'TBD';
-    const t2name = displayName(m.team2)||'TBD';
-    const c1 = getCountryCode(m.team1);
-    const c2 = getCountryCode(m.team2);
-    const f1 = c1?'<span class="fi fi-'+c1+' ko-team-flag"></span>':'';
-    const f2 = c2?'<span class="fi fi-'+c2+' ko-team-flag"></span>':'';
-    const win1 = w===m.team1?'winner':'loser';
-    const win2 = w===m.team2?'winner':'loser';
+  function koCard(m) {
+    if(!m) return '<div class="ko-empty"><div class="ko-empty-team"></div><div class="ko-empty-team"></div></div>';
+    const hasRes=m.result!==undefined;
+    const w=hasRes?(m.result[0]>m.result[1]?m.team1:m.result[1]>m.result[0]?m.team2:null):null;
+    const t1=displayName(m.team1)||'TBD', t2=displayName(m.team2)||'TBD';
+    const c1=getCountryCode(m.team1), c2=getCountryCode(m.team2);
+    const f1=c1?'<span class="fi fi-'+c1+'" style="width:12px;height:12px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:3px;"></span>':'';
+    const f2=c2?'<span class="fi fi-'+c2+'" style="width:12px;height:12px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:3px;"></span>':'';
     return '<div class="ko-match">'+
-      '<div class="ko-team '+(hasRes?win1:'')+'" title="'+t1name+'">'+
-        f1+'<span class="ko-team-name">'+t1name+'</span>'+
-        '<span class="ko-score">'+(hasRes?m.result[0]:'')+'</span>'+
-      '</div>'+
-      '<div class="ko-team '+(hasRes?win2:'')+'" title="'+t2name+'">'+
-        f2+'<span class="ko-team-name">'+t2name+'</span>'+
-        '<span class="ko-score">'+(hasRes?m.result[1]:'')+'</span>'+
-      '</div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'">'+f1+'<span class="ko-team-name" title="'+t1+'">'+t1+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'">'+f2+'<span class="ko-team-name" title="'+t2+'">'+t2+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
     '</div>';
   }
   
-  function emptyCard() {
-    return '<div class="ko-empty"><div class="ko-empty-team"></div><div class="ko-empty-team"></div></div>';
+  function koCol(label, arr, flip) {
+    const items=flip?[...arr].reverse():arr;
+    let h='<div class="ko-col">';
+    if(label) h+='<div class="ko-round-label">'+label+'</div>';
+    if(!items.length) h+='<div class="ko-empty"><div class="ko-empty-team"></div><div class="ko-empty-team"></div></div>';
+    else items.forEach(([,m])=>{ h+=koCard(m); });
+    return h+'</div>';
   }
   
-  function colHtml(label, matches, ids) {
-    let h = '<div class="ko-col"><div class="ko-round-label">'+label+'</div>';
-    if(!matches.length) {
-      // show empty slots
-      for(let i=0;i<2;i++) h += emptyCard() + '<div style="height:8px;"></div>';
-    } else {
-      matches.forEach(([id,m])=>{ h += matchCard(id,m); h += '<div style="height:8px;"></div>'; });
-    }
-    return h + '</div>';
-  }
+  const r32=getStageMatches('r32'), r16=getStageMatches('r16');
+  const qf=getStageMatches('qf'),   sf=getStageMatches('sf');
+  const fin=getStageMatches('final'), t3=getStageMatches('3rd');
   
-  const r32 = getStageMatches('r32');
-  const r16 = getStageMatches('r16');
-  const qf  = getStageMatches('qf');
-  const sf  = getStageMatches('sf');
-  const fin = getStageMatches('final');
-  const t3  = getStageMatches('3rd');
-  
-  // Split into left/right halves
-  const half = n => Math.ceil(n/2);
-  const r32L = r32.slice(0, half(r32.length));
-  const r32R = r32.slice(half(r32.length));
-  const r16L = r16.slice(0, half(r16.length));
-  const r16R = r16.slice(half(r16.length));
-  const qfL  = qf.slice(0, half(qf.length));
-  const qfR  = qf.slice(half(qf.length));
-  const sfL  = sf.slice(0,1);
-  const sfR  = sf.slice(1);
+  const hasAny=r32.length||r16.length||qf.length||sf.length||fin.length;
+  if(!hasAny){
+    bk.innerHTML="<div style='text-align:center;padding:40px;color:var(--text2);font-size:14px;font-weight:700;'><div style='font-size:48px;margin-bottom:12px;'>🏆</div>שלב הנוקאאוט יופיע כאן לאחר סיום שלב הבתים</div>";
+  } else {
+    const half=a=>Math.ceil(a.length/2);
+    const r32L=r32.slice(0,half(r32.length)), r32R=r32.slice(half(r32.length));
+    const r16L=r16.slice(0,half(r16.length)), r16R=r16.slice(half(r16.length));
+    const qfL=qf.slice(0,half(qf.length)),    qfR=qf.slice(half(qf.length));
+    const sfL=sf.slice(0,1), sfR=sf.slice(1);
+    const finM=fin[0]||null, t3M=t3[0]||null;
 
-  let html = '<div class="ko-bracket"><div class="ko-bracket-inner">';
-  
-  // Col 1: R32 Left
-  html += colHtml('שמינית גמר', r32L, []);
-  // Col 2: R16 Left  
-  html += colHtml('שמינית פינאל', r16L, []);
-  // Col 3: QF Left
-  html += colHtml('רבע גמר', qfL, []);
-  // Col 4: Center (SF + Final + Trophy)
-  html += '<div class="ko-col-center">';
-  // SF Left
-  if(sfL.length){
-    html += '<div class="ko-round-label">חצי גמר</div>';
-    sfL.forEach(([id,m])=>{ html += matchCard(id,m); });
-  } else {
-    html += '<div class="ko-round-label">חצי גמר</div>' + emptyCard();
+    let html='<div class="ko-wrap">';
+    
+    // LEFT: R32 → R16 → QF → SF
+    html+='<div class="ko-side">';
+    html+=koCol('שמינית גמר',r32L,false);
+    html+=koCol('שמינית פינאל',r16L,false);
+    html+=koCol('רבע גמר',qfL,false);
+    html+=koCol('חצי גמר',sfL,false);
+    html+='</div>';
+    
+    // CENTER: Final + Logo + 3rd place
+    html+='<div class="ko-center">';
+    html+='<div class="ko-round-label" style="color:var(--gold);font-size:12px;letter-spacing:2px;">🏆 גמר</div>';
+    html+=koCard(finM?finM[1]:null);
+    html+='<div class="ko-logo-wrap"><img src="'+WC_LOGO+'" alt="WC2026" class="ko-logo"></div>';
+    html+='<div class="ko-round-label" style="font-size:10px;margin-top:2px;">מקום שלישי</div>';
+    html+=koCard(t3M?t3M[1]:null);
+    html+='</div>';
+    
+    // RIGHT: SF → QF → R16 → R32 (mirrored)
+    html+='<div class="ko-side">';
+    html+=koCol('חצי גמר',sfR,true);
+    html+=koCol('רבע גמר',qfR,true);
+    html+=koCol('שמינית פינאל',r16R,true);
+    html+=koCol('שמינית גמר',r32R,true);
+    html+='</div>';
+    
+    html+='</div>';
+    bk.innerHTML=html;
   }
-  html += '<div style="height:12px;"></div>';
-  // Trophy + Final
-  html += '<div class="ko-trophy">🏆</div>';
-  html += '<div class="ko-final-label">גמר</div>';
-  if(fin.length){
-    fin.forEach(([id,m])=>{ html += matchCard(id,m); });
-  } else {
-    html += emptyCard();
-  }
-  html += '<div style="height:12px;"></div>';
-  // 3rd place
-  if(t3.length||true){
-    html += '<div class="ko-round-label" style="margin-top:4px;">מקום שלישי</div>';
-    if(t3.length){ t3.forEach(([id,m])=>{ html += matchCard(id,m); }); }
-    else html += emptyCard();
-  }
-  html += '<div style="height:12px;"></div>';
-  // SF Right
-  if(sfR.length){
-    html += '<div class="ko-round-label">חצי גמר</div>';
-    sfR.forEach(([id,m])=>{ html += matchCard(id,m); });
-  } else {
-    html += '<div class="ko-round-label">חצי גמר</div>' + emptyCard();
-  }
-  html += '</div>';
-  // Col 5: QF Right (reversed for mirror)
-  html += colHtml('רבע גמר', qfR.reverse(), []);
-  // Col 6: R16 Right
-  html += colHtml('שמינית פינאל', r16R.reverse(), []);
-  // Col 7: R32 Right
-  html += colHtml('שמינית גמר', r32R.reverse(), []);
-  
-  html += '</div>';
-  
-  // If no knockout matches yet
-  const hasAny = r32.length||r16.length||qf.length||sf.length||fin.length;
-  if(!hasAny) {
-    bk.innerHTML = "<div style='text-align:center;padding:40px;color:var(--text2);font-size:14px;font-weight:700;'><div style='font-size:48px;margin-bottom:12px;'>🏆</div>שלב הנוקאאוט יופיע כאן לאחר סיום שלב הבתים</div>";
-  } else {
-    html += '</div>';
-    bk.innerHTML = html;
-  }
-  }
+}
 
 
 
