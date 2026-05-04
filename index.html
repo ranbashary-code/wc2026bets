@@ -1126,9 +1126,11 @@ function renderMatches(){
     const dtEl=document.createElement('span'); dtEl.style.cssText='font-size:11px;color:var(--text2);'; dtEl.textContent=dtStr;
     hdr.appendChild(pill); hdr.appendChild(dtEl); card.appendChild(hdr);
     const teams=document.createElement('div'); teams.style.cssText='display:flex;align-items:center;justify-content:space-between;';
-    const t1=document.createElement('span'); t1.style.cssText='font-weight:700;font-size:14px;'; t1.textContent=m.team1||'?';
-    const vs=document.createElement('span'); vs.style.cssText='font-size:22px;font-weight:900;color:'+(hasRes?'var(--gold)':'rgba(255,255,255,0.25)')+';'; vs.textContent=hasRes?m.result[0]+' : '+m.result[1]:'VS';
-    const t2=document.createElement('span'); t2.style.cssText='font-weight:700;font-size:14px;'; t2.textContent=m.team2||'?';
+    const t1=document.createElement('div'); t1.style.cssText='display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;';
+    t1.innerHTML=flagCircle(m.team1,20)+'<span>'+(m.team1||'?')+'</span>';
+    const vs=document.createElement('span'); vs.style.cssText='font-size:22px;font-weight:900;color:'+(hasRes?'var(--gold)':'rgba(255,255,255,0.25)')+';flex-shrink:0;'; vs.textContent=hasRes?m.result[0]+' : '+m.result[1]:'VS';
+    const t2=document.createElement('div'); t2.style.cssText='display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;direction:ltr;';
+    t2.innerHTML='<span>'+(m.team2||'?')+'</span>'+flagCircle(m.team2,20);
     teams.appendChild(t1); teams.appendChild(vs); teams.appendChild(t2); card.appendChild(teams);
     if(myBet!==undefined){
       const pts=hasRes?calcPts(m,myBet):null;
@@ -1220,7 +1222,7 @@ function renderMyBets(){
     const bc=p?(p.hit?'badge-hit':p.dir?'badge-dir':'badge-miss'):'badge-wait';
     const bt=p?((p.total>0?'+':'')+p.total+" נק'"):'⏳';
     const lk=locked(m);
-    html+="<div class='match-card'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'><span class='pill "+(SCSS[m.stage]||'pill-group')+"'>"+(SLBL[m.stage]||m.stage)+"</span><span class='"+bc+"'>"+bt+"</span></div><div style='display:flex;align-items:center;justify-content:space-between;'><span style='font-weight:700;'>"+m.team1+" vs "+m.team2+"</span>";
+    html+="<div class='match-card'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'><span class='pill "+(SCSS[m.stage]||'pill-group')+"'>"+(SLBL[m.stage]||m.stage)+"</span><span class='"+bc+"'>"+bt+"</span></div><div style='display:flex;align-items:center;justify-content:space-between;'><span style='display:flex;align-items:center;gap:5px;font-weight:700;'>"+flagCircle(m.team1,18)+"<span>"+m.team1+"</span><span style='color:var(--text2);font-size:11px;margin:0 2px;'>vs</span><span>"+m.team2+"</span>"+flagCircle(m.team2,18)+"</div>";
     if(!lk) html+="<button class='btn btn-ghost btn-xs' data-editbet='"+id+"'>ערוך</button>";
     html+="</div><div style='display:flex;gap:12px;margin-top:8px;font-size:13px;'><span style='color:var(--text2);'>הימור: <strong>"+bet[0]+" : "+bet[1]+"</strong></span>";
     if(hasRes) html+="<span style='color:var(--text2);'>תוצאה: <strong style='color:var(--gold);'>"+m.result[0]+" : "+m.result[1]+"</strong></span>";
@@ -1240,7 +1242,7 @@ function renderAllBets(){
   done.forEach(([id,m])=>{
     const bets=Object.entries(BETS).map(([uid,ub])=>{ const bet=ub&&ub[id]; if(bet===undefined) return null; const u=USERS[uid]||{}; return {name:u.nickname||u.name||uid,bet,pts:calcPts(m,bet)}; }).filter(Boolean);
     if(!bets.length) return;
-    html+="<div class='card' style='padding:13px;margin-bottom:10px;'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;'><span style='font-weight:700;font-size:13px;'>"+m.team1+" vs "+m.team2+"</span><span style='font-size:18px;color:var(--gold);font-weight:900;'>"+m.result[0]+" : "+m.result[1]+"</span></div>";
+    html+="<div class='card' style='padding:13px;margin-bottom:10px;'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;'><span style='display:flex;align-items:center;gap:5px;font-weight:700;font-size:13px;'>"+flagCircle(m.team1,16)+"<span>"+m.team1+" vs "+m.team2+"</span>"+flagCircle(m.team2,16)<span style='font-size:18px;color:var(--gold);font-weight:900;'>"+m.result[0]+" : "+m.result[1]+"</span></div>";
     bets.forEach(b=>{ const cls=b.pts.hit?'badge-hit':b.pts.dir?'badge-dir':'badge-miss'; html+="<div style='display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,0.03);border-radius:7px;margin-bottom:4px;font-size:13px;'><span>"+b.name+"</span><div style='display:flex;align-items:center;gap:8px;'><span style='font-weight:700;'>"+b.bet[0]+" : "+b.bet[1]+"</span><span class='"+cls+"'>"+(b.pts.total>0?'+':'')+b.pts.total+" נק'</span></div></div>"; });
     html+="</div>";
   });
@@ -1382,38 +1384,63 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
   status.style.display='block'; status.style.color='var(--text2)'; status.textContent='מוריד נתונים...';
 
   try {
-    // Translation map: English -> Hebrew for all 48 WC 2026 teams
+    // Translation map: English -> Hebrew
     const TEAM_HEB = {
       // Group A
-      'Mexico':'מקסיקו', 'South Africa':'דרום אפריקה', 'South Korea':'קוריאה הדרומית',
-      'UEFA Path D winner':'TBD',
+      'Mexico':'מקסיקו','South Africa':'דרום אפריקה','South Korea':'קוריאה הדרומית',
       // Group B
-      'Canada':'קנדה', 'Qatar':'קטר', 'Switzerland':'שוויץ', 'UEFA Path A winner':'TBD',
+      'Canada':'קנדה','Qatar':'קטר','Switzerland':'שוויץ',
       // Group C
-      'Brazil':'ברזיל', 'Morocco':'מרוקו', 'Haiti':'האיטי', 'Scotland':'סקוטלנד',
+      'Brazil':'ברזיל','Morocco':'מרוקו','Haiti':'האיטי','Scotland':'סקוטלנד',
       // Group D
-      'USA':'ארה"ב', 'Paraguay':'פרגוואי', 'Australia':'אוסטרליה', 'UEFA Path C winner':'TBD',
+      'USA':'ארה"ב','Paraguay':'פרגוואי','Australia':'אוסטרליה',
       // Group E
-      'Germany':'גרמניה', 'Curaçao':'קוראסאו', 'Ivory Coast':'חוף השנהב', 'Ecuador':'אקוודור',
+      'Germany':'גרמניה','Ivory Coast':'חוף השנהב','Ecuador':'אקוודור',
+      'Curacao':'קוראסאו','Curaçao':'קוראסאו',
       // Group F
-      'Netherlands':'הולנד', 'Japan':'יפן', 'UEFA Path B winner':'TBD', 'Tunisia':'תוניסיה',
+      'Netherlands':'הולנד','Japan':'יפן','Tunisia':'תוניסיה',
       // Group G
-      'Belgium':'בלגיה', 'Egypt':'מצרים', 'Iran':'איראן', 'New Zealand':'ניו זילנד',
+      'Belgium':'בלגיה','Egypt':'מצרים','Iran':'איראן','New Zealand':'ניו זילנד',
       // Group H
-      'Spain':'ספרד', 'Cape Verde':'כף ורדה', 'Saudi Arabia':'ערב הסעודית', 'Uruguay':'אורוגוואי',
+      'Spain':'ספרד','Cape Verde':'כף ורדה','Saudi Arabia':'ערב הסעודית','Uruguay':'אורוגוואי',
       // Group I
-      'France':'צרפת', 'Senegal':'סנגל', 'IC Path 2 winner':'TBD', 'Norway':'נורווגיה',
+      'France':'צרפת','Senegal':'סנגל','Norway':'נורווגיה',
       // Group J
-      'Argentina':'ארגנטינה', 'Algeria':'אלגריה', 'Austria':'אוסטריה', 'Jordan':'ירדן',
+      'Argentina':'ארגנטינה','Algeria':'אלגריה','Austria':'אוסטריה','Jordan':'ירדן',
       // Group K
-      'Portugal':'פורטוגל', 'IC Path 1 winner':'TBD', 'Uzbekistan':'אוזבקיסטן', 'Colombia':'קולומביה',
+      'Portugal':'פורטוגל','Uzbekistan':'אוזבקיסטן','Colombia':'קולומביה',
       // Group L
-      'England':'אנגליה', 'Croatia':'קרואטיה', 'Ghana':'גאנה', 'Panama':'פנמה',
-      // Extra teams that might appear
-      'Bosnia & Herzegovina':'בוסניה והרצגובינה',
-      'DR Congo':'קונגו הדמוקרטית',
-      'Curaçao':'קוראסאו',
-      'Curacao':'קוראסאו',
+      'England':'אנגליה','Croatia':'קרואטיה','Ghana':'גאנה','Panama':'פנמה',
+      // Additional countries
+      'Czech Republic':'צכיה','Czechia':'צכיה',
+      'Turkey':'טורקיה','Türkiye':'טורקיה',
+      'Sweden':'שוודיה','Denmark':'דנמרק','Finland':'פינלנד',
+      'Poland':'פולין','Ukraine':'אוקראינה','Serbia':'סרביה',
+      'Romania':'רומניה','Hungary':'הונגריה','Slovakia':'סלובקיה',
+      'Slovenia':'סלובניה','Albania':'אלבניה','Kosovo':'קוסובו',
+      'Greece':'יוון','Bulgaria':'בולגריה','Montenegro':'מונטנגרו',
+      'North Macedonia':'צפון מקדוניה','Bosnia & Herzegovina':'בוסניה',
+      'Bosnia and Herzegovina':'בוסניה','Croatia':'קרואטיה',
+      'Russia':'רוסיה','Belarus':'בלארוס',
+      'Venezuela':'ונצואלה','Chile':'צילה','Peru':'פרו','Bolivia':'בוליביה',
+      'Costa Rica':'קוסטה ריקה','Honduras':'הונדורס','Guatemala':'גואטמלה',
+      'Jamaica':'גמייקה','Trinidad and Tobago':'טרינידד וטובגו',
+      'China':'סין','South Korea':'קוריאה הדרומית','North Korea':'צפון קוריאה',
+      'India':'הודו','Thailand':'תאילנד','Vietnam':'וייטנאם',
+      'Indonesia':'אינדונזיה','Philippines':'פיליפינים',
+      'Nigeria':'ניגריה','Cameroon':'קמרון','Kenya':'קניה',
+      'Ethiopia':'אתיופיה','Tanzania':'טנזניה','Angola':'אנגולה',
+      'Senegal':'סנגל','Mali':'מאלי','Guinea':'גינאה',
+      'Zambia':'זמביה','Zimbabwe':'זימבבואה','Mozambique':'מוזמביק',
+      'DR Congo':'קונגו הדמוקרטית','Congo':'קונגו',
+      'Gabon':'גבון','Namibia':'נמיביה','Botswana':'בוצוואנה',
+      'Libya':'לוב','Sudan':'סודן','Somalia':'סומליה',
+      'Iraq':'עיראק','Syria':'סוריה','Lebanon':'לבנון',
+      'Kuwait':'כוויית','UAE':'אמירויות','Bahrain':'בחריין','Oman':'עומאן',
+      'Israel':'ישראל','Palestine':'פלסטין',
+      'New Zealand':'ניו זילנד','Fiji':'פיגי',
+      'Iceland':'איסלנד','Ireland':'אירלנד',
+      'Wales':'וולס','Northern Ireland':'צפון אירלנד',
     };
 
     function translateTeam(name) {
