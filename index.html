@@ -1287,13 +1287,27 @@ function renderMyBets(){
     const bt=p?((p.total>0?'+':'')+p.total+" נק'"):'⏳';
     const lk=locked(m);
     html+="<div class='match-card'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'><span class='pill "+(SCSS[m.stage]||'pill-group')+"'>"+(SLBL[m.stage]||m.stage)+"</span><span class='"+bc+"'>"+bt+"</span></div><div style='display:flex;align-items:center;justify-content:space-between;'><span style='display:flex;align-items:center;gap:5px;font-weight:700;'>"+flagCircle(m.team1,18)+"<span>"+displayName(m.team1)+"</span><span style='color:var(--text2);font-size:11px;margin:0 2px;'>vs</span><span>"+displayName(m.team2)+"</span>"+flagCircle(m.team2,18)+"</div>";
-    if(!lk) html+="<button class='btn btn-ghost btn-xs' data-editbet='"+id+"'>ערוך</button>";
+    if(!lk) {
+      html+="<div style='display:flex;gap:6px;'>";
+      html+="<button class='btn btn-ghost btn-xs' data-editbet='"+id+"'>✏️ ערוך</button>";
+      html+="<button class='btn btn-red btn-xs' data-deletebet='"+id+"'>🗑 מחק</button>";
+      html+="</div>";
+    }
     html+="</div><div style='display:flex;gap:12px;margin-top:8px;font-size:13px;'><span style='color:var(--text2);'>הימור: <strong>"+bet[0]+" : "+bet[1]+"</strong></span>";
     if(hasRes) html+="<span style='color:var(--text2);'>תוצאה: <strong style='color:var(--gold);'>"+m.result[0]+" : "+m.result[1]+"</strong></span>";
     html+="</div></div>";
   });
   lst.innerHTML=html;
   lst.querySelectorAll('[data-editbet]').forEach(b=>b.addEventListener('click',()=>openBetModal(b.dataset.editbet)));
+  lst.querySelectorAll('[data-deletebet]').forEach(b=>b.addEventListener('click', async()=>{
+    if(!ME) return;
+    const mid = b.dataset.deletebet;
+    const m = MATCHES[mid];
+    if(m && locked(m)){ toast('🔴 לא ניתן למחוק — המשחק כבר התחיל'); return; }
+    if(!confirm('למחוק את ההימור?')) return;
+    await remove(ref(db,'bets/'+ME.uid+'/'+mid));
+    toast('🗑 הימור נמחק');
+  }));
 }
 
 // ── ALL BETS ──
@@ -1698,7 +1712,7 @@ function renderBracket(){
         const flag = flagCircle(name, 18);
         h+="<tr style='border-top:1px solid rgba(255,255,255,0.04);color:"+rowColor+";'>";
         h+="<td style='padding:5px 6px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:14px;color:"+rankColor+";font-weight:700;'>"+(i+1)+"</td>";
-        h+="<td style='padding:5px 6px;font-weight:"+fw+";'><div style='display:flex;align-items:center;gap:6px;'>"+flag+"<span>"+name+"</span></div></td>";
+        h+="<td style='padding:5px 6px;font-weight:"+fw+";'><div style='display:flex;align-items:center;gap:6px;'>"+flag+"<span>"+displayName(name)+"</span></div></td>";
         h+="<td style='text-align:center;'>"+s.p+"</td>";
         h+="<td style='text-align:center;'>"+s.w+"</td>";
         h+="<td style='text-align:center;'>"+s.d+"</td>";
