@@ -1145,9 +1145,14 @@ el('confirm-add').addEventListener('click', async()=>{
   const dt=el('m-date').value,tm=el('m-time').value;
   const st=el('m-stage').value,gr=el('m-group').value.trim();
   if(!t1||!t2){ toast('❌ חסרים שמות'); return; }
-  await push(ref(db,'matches'),{team1:t1,team2:t2,datetime:dt&&tm?dt+'T'+tm:null,stage:st,group:gr||null,createdAt:Date.now()});
-  el('add-modal').classList.remove('open'); toast('✅ משחק נוסף!');
-  ['m-t1','m-t2','m-date','m-time','m-group'].forEach(id=>{ const e=el(id); if(e) e.value=''; });
+  try {
+    await push(ref(db,'matches'),{team1:t1,team2:t2,datetime:dt&&tm?dt+'T'+tm:null,stage:st,group:gr||null,createdAt:Date.now()});
+    el('add-modal').classList.remove('open'); toast('✅ משחק נוסף!');
+    ['m-t1','m-t2','m-date','m-time','m-group'].forEach(id=>{ const e=el(id); if(e) e.value=''; });
+  } catch(err) {
+    console.error('Add match error:', err);
+    toast('❌ שגיאה: ' + (err.message||err.code||'בעיית Firebase'));
+  }
 });
 
 // ── SCORING ──
