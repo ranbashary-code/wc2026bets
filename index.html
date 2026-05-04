@@ -463,7 +463,7 @@ select.inp option{background:var(--card2);}
 
       <!-- SPECIAL BETS -->
       <div class="sec-head"><span style="font-size:22px;">🏆</span><div class="sec-title">הימורים מיוחדים</div></div>
-      <div id="special-bets-section" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+      <div id="special-bets-section" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <!-- Champion bet -->
         <div class="card" style="padding:16px;">
           <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">🥇 נבחרת מנצחת</div>
@@ -483,6 +483,9 @@ select.inp option{background:var(--card2);}
           <div id="scorer-locked-msg" style="display:none;font-size:12px;color:var(--text2);text-align:center;margin-top:8px;">🔒 נעול — המונדיאל התחיל</div>
         </div>
       </div>
+
+      <!-- Special bets reveal after WC starts -->
+      <div id="special-bets-reveal" style="display:none;margin-bottom:20px;"></div>
 
       <div class="sec-divider"></div>
       <div class="sec-head"><span style="font-size:22px;">⚽</span><div class="sec-title">לוח משחקים</div></div>
@@ -559,8 +562,7 @@ select.inp option{background:var(--card2);}
         </div>
         <button class="btn btn-green" id="save-scoring" style="width:100%;margin-bottom:20px;">💾 שמור שינויים</button>
       </div>
-      <div class="sec-head"><span style="font-size:20px;">👥</span><div class="sec-title" style="font-size:17px;">כל הימורי הקבוצה</div></div>
-      <div id="all-bets-list"></div>
+
     </div>
 
     <div class="page" id="page-admin">
@@ -897,6 +899,75 @@ async function loadSpecialBets() {
   }
 
   renderMyBetsSpecial(data, lk);
+
+  // Show everyone's special bets after WC starts
+  renderSpecialBetsReveal(lk);
+}
+
+async function renderSpecialBetsReveal(lk) {
+  const revealDiv = el('special-bets-reveal');
+  if(!revealDiv) return;
+
+  if(!lk) {
+    revealDiv.style.display = 'none';
+    return;
+  }
+
+  // WC has started - show everyone's bets
+  const snap = await get(ref(db,'specialBets'));
+  if(!snap.exists()) { revealDiv.style.display='none'; return; }
+
+  const allSpecial = Object.entries(snap.val());
+  if(!allSpecial.length) { revealDiv.style.display='none'; return; }
+
+  // Build champion bets list
+  const champBets = [], scorerBets = [];
+  allSpecial.forEach(([uid, d])=>{
+    if(uid === BOT_UID) return;
+    const u = USERS[uid] || {};
+    const name = u.nickname || u.name || '?';
+    const isBot = u.isBot;
+    if(d.champion) champBets.push({name, val:d.champion, isBot});
+    if(d.scorer)   scorerBets.push({name, val:d.scorer, isBot});
+  });
+
+  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+
+  // Champion bets reveal
+  html += '<div class="card" style="padding:14px;">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">🥇 הימורי נבחרת מנצחת — כולם</div>';
+  if(!champBets.length) {
+    html += '<div style="font-size:12px;color:var(--text2);">אף אחד לא הימר</div>';
+  } else {
+    champBets.forEach(b=>{
+      const code = getCountryCode(b.val);
+      const flag = code ? '<span class="fi fi-'+code+'" style="width:18px;height:18px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;"></span>' : '';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+      html += '<span style="font-size:12px;font-weight:700;'+(b.isBot?'color:#74b9e0;':'')+'">'+b.name+'</span>';
+      html += '<div style="display:flex;align-items:center;gap:6px;">'+flag+'<span style="font-size:12px;font-weight:700;">'+b.val+'</span></div>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // Scorer bets reveal
+  html += '<div class="card" style="padding:14px;">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">👟 הימורי מלך שערים — כולם</div>';
+  if(!scorerBets.length) {
+    html += '<div style="font-size:12px;color:var(--text2);">אף אחד לא הימר</div>';
+  } else {
+    scorerBets.forEach(b=>{
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+      html += '<span style="font-size:12px;font-weight:700;'+(b.isBot?'color:#74b9e0;':'')+'">'+b.name+'</span>';
+      html += '<span style="font-size:12px;color:var(--gold);">⚽ '+b.val+'</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  html += '</div>';
+  revealDiv.innerHTML = html;
+  revealDiv.style.display = 'block';
 }
 
 function renderMyBetsSpecial(data, lk) {
@@ -1570,7 +1641,7 @@ function initData(){
   onValue(ref(db,'scoring'),s=>{ if(s.exists()){ SCORING=s.val(); renderScoringTable(); if(MEDATA&&MEDATA.isAdmin) renderScoringEdit(); } });
 }
 function refreshAll(){
-  renderToday(); renderMatches(); renderMyBets(); renderAllBets(); renderLeader(); renderBracket();
+  renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket();
 }
 
 // ── TABS ──
@@ -1731,6 +1802,31 @@ function renderMatches(){
       const db2=document.createElement('button'); db2.style.cssText='background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.2);border-radius:8px;padding:7px 12px;color:#f87171;cursor:pointer;'; db2.textContent='🗑'; db2.addEventListener('click',()=>delMatch(id));
       ar.appendChild(rb); ar.appendChild(eb); ar.appendChild(db2); card.appendChild(ar);
     }
+
+    // Show everyone's bets once match is locked
+    if(lk) {
+      const allBetsForMatch = Object.entries(BETS)
+        .map(([uid,ub])=>{ const bet=ub&&ub[id]; if(bet===undefined) return null; const u=USERS[uid]||{}; return {name:u.nickname||u.name||'?', bet, pts:hasRes?calcPts(m,bet):null, isBot:u.isBot}; })
+        .filter(Boolean)
+        .sort((a,b)=>{ if(a.isBot && !b.isBot) return 1; if(!a.isBot && b.isBot) return -1; return 0; });
+      if(allBetsForMatch.length) {
+        const betsDiv=document.createElement('div');
+        betsDiv.style.cssText='margin-top:10px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;';
+        betsDiv.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;">הימורי הקבוצה</div>'+
+          allBetsForMatch.map(b=>{
+            const cls=b.pts?(b.pts.hit?'badge-hit':b.pts.dir?'badge-dir':'badge-miss'):'badge-wait';
+            const pts=b.pts?((b.pts.total>0?'+':'')+b.pts.total+" נק'"):'⏳';
+            return "<div style='display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);'>" +
+              "<span style='font-size:12px;font-weight:700;"+(b.isBot?'color:#74b9e0;':'')+"'>"+b.name+"</span>" +
+              "<div style='display:flex;align-items:center;gap:8px;'>" +
+              "<span style='font-size:13px;font-weight:900;'>"+b.bet[0]+" : "+b.bet[1]+"</span>" +
+              "<span class='"+cls+"'>"+pts+"</span>" +
+              "</div></div>";
+          }).join('');
+        card.appendChild(betsDiv);
+      }
+    }
+
     lst.appendChild(card);
   });
 }
@@ -1821,23 +1917,6 @@ function renderMyBets(){
     await remove(ref(db,'bets/'+ME.uid+'/'+mid));
     toast('🗑 הימור נמחק');
   }));
-}
-
-// ── ALL BETS ──
-function renderAllBets(){
-  const lst=el('all-bets-list'); if(!lst) return;
-  // Only show bets for matches that have already started (locked)
-  const done=Object.entries(MATCHES).filter(([,m])=>locked(m)).sort(([,a],[,b])=>(a.datetime||'')>(b.datetime||'')?-1:1).slice(0,20);
-  if(!done.length){ lst.innerHTML="<div style='text-align:center;padding:24px;color:var(--text2);font-size:13px;'>ההימורים של כולם יופיעו כאן לאחר תחילת המשחק</div>"; return; }
-  let html='';
-  done.forEach(([id,m])=>{
-    const bets=Object.entries(BETS).map(([uid,ub])=>{ const bet=ub&&ub[id]; if(bet===undefined) return null; const u=USERS[uid]||{}; return {name:u.nickname||u.name||uid,bet,pts:calcPts(m,bet)}; }).filter(Boolean);
-    if(!bets.length) return;
-    html+="<div class='card' style='padding:13px;margin-bottom:10px;'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;'><div style='display:flex;align-items:center;gap:5px;font-weight:700;font-size:13px;'>"+flagCircle(m.team1,16)+"<span>"+displayName(m.team1)+" vs "+displayName(m.team2)+"</span>"+flagCircle(m.team2,16)+"</div><span style='font-size:18px;color:var(--gold);font-weight:900;'>"+m.result[0]+" : "+m.result[1]+"</span></div>";
-    bets.forEach(b=>{ const cls=b.pts.hit?'badge-hit':b.pts.dir?'badge-dir':'badge-miss'; html+="<div style='display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,0.03);border-radius:7px;margin-bottom:4px;font-size:13px;'><span>"+b.name+"</span><div style='display:flex;align-items:center;gap:8px;'><span style='font-weight:700;'>"+b.bet[0]+" : "+b.bet[1]+"</span><span class='"+cls+"'>"+(b.pts.total>0?'+':'')+b.pts.total+" נק'</span></div></div>"; });
-    html+="</div>";
-  });
-  lst.innerHTML=html;
 }
 
 // ── LEADERBOARD ──
