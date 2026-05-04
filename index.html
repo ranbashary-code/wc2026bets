@@ -1382,10 +1382,50 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
   status.style.display='block'; status.style.color='var(--text2)'; status.textContent='מוריד נתונים...';
 
   try {
-    // Fetch from openfootball via jsdelivr CDN (works without CORS issues)
+    // Translation map: English -> Hebrew for all 48 WC 2026 teams
+    const TEAM_HEB = {
+      // Group A
+      'Mexico':'מקסיקו', 'South Africa':'דרום אפריקה', 'South Korea':'קוריאה הדרומית',
+      'UEFA Path D winner':'TBD',
+      // Group B
+      'Canada':'קנדה', 'Qatar':'קטר', 'Switzerland':'שוויץ', 'UEFA Path A winner':'TBD',
+      // Group C
+      'Brazil':'ברזיל', 'Morocco':'מרוקו', 'Haiti':'האיטי', 'Scotland':'סקוטלנד',
+      // Group D
+      'USA':'ארה"ב', 'Paraguay':'פרגוואי', 'Australia':'אוסטרליה', 'UEFA Path C winner':'TBD',
+      // Group E
+      'Germany':'גרמניה', 'Curaçao':'קוראסאו', 'Ivory Coast':'חוף השנהב', 'Ecuador':'אקוודור',
+      // Group F
+      'Netherlands':'הולנד', 'Japan':'יפן', 'UEFA Path B winner':'TBD', 'Tunisia':'תוניסיה',
+      // Group G
+      'Belgium':'בלגיה', 'Egypt':'מצרים', 'Iran':'איראן', 'New Zealand':'ניו זילנד',
+      // Group H
+      'Spain':'ספרד', 'Cape Verde':'כף ורדה', 'Saudi Arabia':'ערב הסעודית', 'Uruguay':'אורוגוואי',
+      // Group I
+      'France':'צרפת', 'Senegal':'סנגל', 'IC Path 2 winner':'TBD', 'Norway':'נורווגיה',
+      // Group J
+      'Argentina':'ארגנטינה', 'Algeria':'אלגריה', 'Austria':'אוסטריה', 'Jordan':'ירדן',
+      // Group K
+      'Portugal':'פורטוגל', 'IC Path 1 winner':'TBD', 'Uzbekistan':'אוזבקיסטן', 'Colombia':'קולומביה',
+      // Group L
+      'England':'אנגליה', 'Croatia':'קרואטיה', 'Ghana':'גאנה', 'Panama':'פנמה',
+      // Extra teams that might appear
+      'Bosnia & Herzegovina':'בוסניה והרצגובינה',
+      'DR Congo':'קונגו הדמוקרטית',
+      'Curaçao':'קוראסאו',
+      'Curacao':'קוראסאו',
+    };
+
+    function translateTeam(name) {
+      if(!name) return name;
+      // If already has TBD patterns (W73, 2A, etc) keep as is
+      if(/^(W|L)\d+$|^\d[A-L]$|winner$|path/i.test(name)) return 'TBD';
+      return TEAM_HEB[name] || name; // fallback to English if not in map
+    }
+
     const urls = [
-      'https://cdn.jsdelivr.net/gh/openfootball/worldcup.json@master/2026/worldcup.json',
       'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json',
+      'https://cdn.jsdelivr.net/gh/openfootball/worldcup.json@master/2026/worldcup.json',
     ];
     let data = null;
     for(const url of urls){
@@ -1397,73 +1437,86 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
     if(!data || !data.matches) throw new Error('לא ניתן לטעון נתונים');
 
     const matches = data.matches;
-    status.textContent = 'מוצא ' + matches.length + ' משחקים, טוען ל-Firebase...';
+    status.textContent = 'מוצא ' + matches.length + ' משחקים, ממיר לשעון ישראל...';
+
+    // Convert match time to Israel time (UTC+3)
+    function toIsraelTime(dateStr, timeStr) {
+      if(!dateStr) return null;
+      if(!timeStr) return dateStr + 'T12:00';
+      const m = timeStr.match(/(\d+):(\d+)\s*UTC([+-]\d+(?:\.\d+)?)?/);
+      if(!m) return dateStr + 'T' + timeStr.substring(0,5);
+      const h = parseInt(m[1]), mn = parseInt(m[2]);
+      const offset = m[3] ? parseFloat(m[3]) : 0;
+      // Total minutes in Israel time (UTC+3)
+      const totalMins = h * 60 + mn - Math.round(offset * 60) + 3 * 60;
+      const daysDelta = Math.floor(totalMins / (24 * 60));
+      const ilH = Math.floor((totalMins % (24 * 60) + 24 * 60) % (24 * 60) / 60);
+      const ilM = ((totalMins % 60) + 60) % 60;
+      // Adjust date
+      const d = new Date(dateStr + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() + daysDelta);
+      const newDate = d.toISOString().substring(0, 10);
+      return newDate + 'T' + String(ilH).padStart(2,'0') + ':' + String(ilM).padStart(2,'0');
+    }
 
     // Stage mapping
-    const stageMap = (round, group) => {
+    function getStage(round, group) {
       if(group) return 'group';
       const r = (round||'').toLowerCase();
-      if(r.includes('round of 32') || r.includes('matchday 4') || r.includes('round of 16') && matches.length > 80) return 'r32';
+      if(r.includes('round of 32')) return 'r32';
       if(r.includes('round of 16')) return 'r16';
       if(r.includes('quarter')) return 'qf';
       if(r.includes('semi')) return 'sf';
       if(r.includes('third') || r.includes('3rd') || r.includes('place')) return '3rd';
       if(r.includes('final')) return 'final';
       return 'group';
-    };
+    }
 
-    // Group letter extraction
-    const groupLetter = (grp) => {
+    // Extract group letter from "Group A" -> "A"
+    function getGroupLetter(grp) {
       if(!grp) return null;
-      const m = grp.match(/[A-L]/);
-      return m ? m[0] : null;
-    };
+      const m = grp.match(/Group\s+([A-L])/i);
+      return m ? m[1] : null;
+    }
 
-    // Parse time to UTC
-    const parseDateTime = (date, time) => {
-      if(!date) return null;
-      if(!time) return date + 'T00:00';
-      // time format: "13:00 UTC-6" -> convert to local
-      const timeParts = time.match(/(\d+):(\d+)\s*UTC([+-]\d+)?/);
-      if(!timeParts) return date + 'T' + time.substring(0,5);
-      const h = parseInt(timeParts[1]);
-      const min = timeParts[2];
-      const offset = timeParts[3] ? parseInt(timeParts[3]) : 0;
-      // Convert to UTC
-      const utcH = ((h - offset) + 24) % 24;
-      return date + 'T' + String(utcH).padStart(2,'0') + ':' + min;
-    };
+    // Skip TBD teams in knockout (like W73, 2A, 1E, L101 etc)
+    function isKnownTeam(name) {
+      if(!name) return false;
+      return !/^(W|L)\d+$|^\d[A-L]$|winner$|path/i.test(name);
+    }
 
-    let added = 0, skipped = 0;
-    for(const m of matches){
-      // Skip matches where teams aren't determined yet (knockout with TBD)
-      const t1 = m.team1 && !m.team1.includes('W') && !m.team1.includes('A') ? m.team1 : m.team1;
-      const t2 = m.team2 && !m.team2.includes('W') && !m.team2.includes('A') ? m.team2 : m.team2;
+    let added = 0;
+    for(const m of matches) {
+      const stage = getStage(m.round, m.group);
+      const t1 = m.team1 || 'TBD';
+      const t2 = m.team2 || 'TBD';
 
       const matchData = {
-        team1: t1||'TBD',
-        team2: t2||'TBD',
-        datetime: parseDateTime(m.date, m.time),
-        stage: stageMap(m.round, m.group),
-        group: groupLetter(m.group),
+        team1: translateTeam(t1),
+        team2: translateTeam(t2),
+        datetime: toIsraelTime(m.date, m.time),
+        stage: stage,
+        group: getGroupLetter(m.group),
+        venue: m.ground || null,
         createdAt: Date.now(),
         source: 'openfootball'
       };
 
       // Add result if exists
-      if(m.score && m.score.ft){
+      if(m.score && m.score.ft) {
         matchData.result = [m.score.ft[0], m.score.ft[1]];
       }
 
       await push(ref(db,'matches'), matchData);
       added++;
-      if(added % 10 === 0) status.textContent = 'נטען ' + added + '/' + matches.length + ' משחקים...';
+      if(added % 10 === 0) status.textContent = 'נטען ' + added + '/' + matches.length + '...';
     }
 
     status.style.color = '#34d399';
-    status.textContent = '✅ נטענו ' + added + ' משחקים בהצלחה!';
+    status.textContent = '✅ נטענו ' + added + ' משחקים בהצלחה! (שעון ישראל)';
     btn.textContent = '✅ נטען!';
-    toast('✅ ' + added + ' משחקים נטענו!');
+    toast('✅ ' + added + ' משחקי מונדיאל 2026 נטענו!');
+
   } catch(err) {
     console.error(err);
     status.style.color = '#f87171';
