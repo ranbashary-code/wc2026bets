@@ -369,7 +369,7 @@ select.inp option{background:var(--card2);}
     <div class="page active" id="page-main">
       <div class="card" style="padding:18px;margin-bottom:14px;text-align:center;">
         <p style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:10px;letter-spacing:2px;text-transform:uppercase;">ספירה לאחור לפתיחת המונדיאל</p>
-        <div class="flip-clock">
+        <div class="flip-clock" style="direction:ltr;">
           <div class="flip-unit"><div class="flip-card" id="flip-d">00</div><div class="flip-lbl">ימים</div></div>
           <div class="flip-sep">:</div>
           <div class="flip-unit"><div class="flip-card" id="flip-h">00</div><div class="flip-lbl">שעות</div></div>
@@ -1286,7 +1286,7 @@ function renderMyBets(){
     const bc=p?(p.hit?'badge-hit':p.dir?'badge-dir':'badge-miss'):'badge-wait';
     const bt=p?((p.total>0?'+':'')+p.total+" נק'"):'⏳';
     const lk=locked(m);
-    html+="<div class='match-card'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'><span class='pill "+(SCSS[m.stage]||'pill-group')+"'>"+(SLBL[m.stage]||m.stage)+"</span><span class='"+bc+"'>"+bt+"</span></div><div style='display:flex;align-items:center;justify-content:space-between;'><span style='display:flex;align-items:center;gap:5px;font-weight:700;'>"+flagCircle(m.team1,18)+"<span>"+m.team1+"</span><span style='color:var(--text2);font-size:11px;margin:0 2px;'>vs</span><span>"+m.team2+"</span>"+flagCircle(m.team2,18)+"</div>";
+    html+="<div class='match-card'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'><span class='pill "+(SCSS[m.stage]||'pill-group')+"'>"+(SLBL[m.stage]||m.stage)+"</span><span class='"+bc+"'>"+bt+"</span></div><div style='display:flex;align-items:center;justify-content:space-between;'><span style='display:flex;align-items:center;gap:5px;font-weight:700;'>"+flagCircle(m.team1,18)+"<span>"+displayName(m.team1)+"</span><span style='color:var(--text2);font-size:11px;margin:0 2px;'>vs</span><span>"+displayName(m.team2)+"</span>"+flagCircle(m.team2,18)+"</div>";
     if(!lk) html+="<button class='btn btn-ghost btn-xs' data-editbet='"+id+"'>ערוך</button>";
     html+="</div><div style='display:flex;gap:12px;margin-top:8px;font-size:13px;'><span style='color:var(--text2);'>הימור: <strong>"+bet[0]+" : "+bet[1]+"</strong></span>";
     if(hasRes) html+="<span style='color:var(--text2);'>תוצאה: <strong style='color:var(--gold);'>"+m.result[0]+" : "+m.result[1]+"</strong></span>";
@@ -1726,10 +1726,10 @@ function renderBracket(){
       const w=hr?(m.result[0]>m.result[1]?m.team1:m.result[1]>m.result[0]?m.team2:null):null;
       koH+="<div style='background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;'>";
       koH+="<div style='display:flex;align-items:center;justify-content:space-between;padding:3px 0;font-size:12px;color:"+(w===m.team1?'var(--gold)':'var(--text2)')+";font-weight:"+(w===m.team1?700:400)+";'>";
-      koH+="<div style='display:flex;align-items:center;gap:5px;'>"+flagCircle(m.team1,16)+"<span>"+m.team1+"</span></div>";
+      koH+="<div style='display:flex;align-items:center;gap:5px;'>"+flagCircle(m.team1,16)+"<span>"+displayName(m.team1)+"</span></div>";
       koH+="<span>"+(hr?m.result[0]:'')+"</span></div>";
       koH+="<div style='display:flex;align-items:center;justify-content:space-between;padding:3px 0;font-size:12px;color:"+(w===m.team2?'var(--gold)':'var(--text2)')+";font-weight:"+(w===m.team2?700:400)+";'>";
-      koH+="<div style='display:flex;align-items:center;gap:5px;'>"+flagCircle(m.team2,16)+"<span>"+m.team2+"</span></div>";
+      koH+="<div style='display:flex;align-items:center;gap:5px;'>"+flagCircle(m.team2,16)+"<span>"+displayName(m.team2)+"</span></div>";
       koH+="<span>"+(hr?m.result[1]:'')+"</span></div></div>";
     });
     koH+="</div>";
