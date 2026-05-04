@@ -599,6 +599,70 @@ Rules:
   }
 }
 
+
+// ── TEAM NAME DISPLAY ──
+// Maps English names to Hebrew for display (works regardless of how stored in Firebase)
+const _DISPLAY_NAMES = {
+  'Czech Republic':'צכיה','Czechia':'צכיה',
+  'Turkey':'טורקיה','Türkiye':'טורקיה',
+  'Sweden':'שוודיה','Denmark':'דנמרק',
+  'Finland':'פינלנד','Norway':'נורווגיה',
+  'Poland':'פולין','Ukraine':'אוקראינה',
+  'Serbia':'סרביה','Romania':'רומניה',
+  'Hungary':'הונגריה','Slovakia':'סלובקיה',
+  'Slovenia':'סלובניה','Albania':'אלבניה',
+  'Greece':'יוון','Bulgaria':'בולגריה',
+  'Iceland':'איסלנד','Ireland':'אירלנד',
+  'Scotland':'סקוטלנד','Wales':'וולס',
+  'England':'אנגליה','Croatia':'קרואטיה',
+  'Iraq':'עיראק','Syria':'סוריה',
+  'Lebanon':'לבנון','Jordan':'ירדן',
+  'Russia':'רוסיה','Belarus':'בלארוס',
+  'Venezuela':'ונצואלה','Peru':'פרו',
+  'Bolivia':'בוליביה','Chile':'צילה',
+  'Jamaica':'גמייקה','Trinidad and Tobago':'טרינידד',
+  'Fiji':'פיגי','New Zealand':'ניו זילנד',
+  'Australia':'אוסטרליה','South Korea':'קוריאה הדרומית',
+  'North Korea':'צפון קוריאה','China':'סין',
+  'India':'הודו','Thailand':'תאילנד',
+  'Indonesia':'אינדונזיה','Vietnam':'וייטנאם',
+  'Nigeria':'ניגריה','Cameroon':'קמרון',
+  'Ghana':'גאנה','Egypt':'מצרים',
+  'Morocco':'מרוקו','Tunisia':'תוניסיה',
+  'Algeria':'אלגריה','Libya':'לוב',
+  'Senegal':'סנגל','Mali':'מאלי',
+  'Ivory Coast':'חוף השנהב',
+  'Cape Verde':'כף ורדה',
+  'South Africa':'דרום אפריקה',
+  'Mexico':'מקסיקו','Canada':'קנדה',
+  'USA':'ארה"ב','United States':'ארה"ב',
+  'Brazil':'ברזיל','Argentina':'ארגנטינה',
+  'Colombia':'קולומביה','Ecuador':'אקוודור',
+  'Uruguay':'אורוגוואי','Paraguay':'פרגוואי',
+  'France':'צרפת','Spain':'ספרד',
+  'Germany':'גרמניה','Italy':'איטליה',
+  'Portugal':'פורטוגל','Netherlands':'הולנד',
+  'Belgium':'בלגיה','Switzerland':'שוויץ',
+  'Austria':'אוסטריה','Japan':'יפן',
+  'Iran':'איראן','Saudi Arabia':'ערב הסעודית',
+  'Qatar':'קטר','Kuwait':'כוויית',
+  'UAE':'אמירויות','Bahrain':'בחריין',
+  'Oman':'עומאן','Israel':'ישראל',
+  'Haiti':'האיטי','Panama':'פנמה',
+  'Honduras':'הונדורס','Costa Rica':'קוסטה ריקה',
+  'Uzbekistan':'אוזבקיסטן','Kazakhstan':'קזחסטן',
+  'Curacao':'קוראסאו','Curaçao':'קוראסאו',
+  'Bosnia & Herzegovina':'בוסניה','Bosnia and Herzegovina':'בוסניה',
+  'North Macedonia':'צפון מקדוניה',
+  'DR Congo':'קונגו הדמוקרטית','Congo':'קונגו',
+  'Saudi Arabia':'ערב הסעודית',
+};
+
+function displayName(name) {
+  if(!name) return name;
+  return _DISPLAY_NAMES[name] || name;
+}
+
 // ── FLAG SYSTEM ──
 
 // ── TROPHY SVG for unknown flags ──
@@ -1044,7 +1108,7 @@ function renderToday(){
     const teamsRow=document.createElement('div'); teamsRow.className='tm-teams-row';
     const t1=document.createElement('div'); t1.className='tm-team';
     const f1=document.createElement('div'); f1.className='tm-flag'; f1.innerHTML=getFlagHtml(m.team1);
-    const n1=document.createElement('div'); n1.className='tm-team-name'; n1.textContent=m.team1||'?';
+    const n1=document.createElement('div'); n1.className='tm-team-name'; n1.textContent=displayName(m.team1)||'?';
     t1.appendChild(f1); t1.appendChild(n1);
 
     const ctr=document.createElement('div'); ctr.className='tm-center';
@@ -1056,7 +1120,7 @@ function renderToday(){
 
     const t2=document.createElement('div'); t2.className='tm-team';
     const f2=document.createElement('div'); f2.className='tm-flag'; f2.innerHTML=getFlagHtml(m.team2);
-    const n2=document.createElement('div'); n2.className='tm-team-name'; n2.textContent=m.team2||'?';
+    const n2=document.createElement('div'); n2.className='tm-team-name'; n2.textContent=displayName(m.team2)||'?';
     t2.appendChild(f2); t2.appendChild(n2);
 
     teamsRow.appendChild(t1); teamsRow.appendChild(ctr); teamsRow.appendChild(t2);
@@ -1127,10 +1191,10 @@ function renderMatches(){
     hdr.appendChild(pill); hdr.appendChild(dtEl); card.appendChild(hdr);
     const teams=document.createElement('div'); teams.style.cssText='display:flex;align-items:center;justify-content:space-between;';
     const t1=document.createElement('div'); t1.style.cssText='display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;';
-    t1.innerHTML=flagCircle(m.team1,20)+'<span>'+(m.team1||'?')+'</span>';
+    t1.innerHTML=flagCircle(m.team1,20)+'<span>'+(displayName(m.team1)||'?')+'</span>';
     const vs=document.createElement('span'); vs.style.cssText='font-size:22px;font-weight:900;color:'+(hasRes?'var(--gold)':'rgba(255,255,255,0.25)')+';flex-shrink:0;'; vs.textContent=hasRes?m.result[0]+' : '+m.result[1]:'VS';
     const t2=document.createElement('div'); t2.style.cssText='display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;direction:ltr;';
-    t2.innerHTML='<span>'+(m.team2||'?')+'</span>'+flagCircle(m.team2,20);
+    t2.innerHTML='<span>'+(displayName(m.team2)||'?')+'</span>'+flagCircle(m.team2,20);
     teams.appendChild(t1); teams.appendChild(vs); teams.appendChild(t2); card.appendChild(teams);
     if(myBet!==undefined){
       const pts=hasRes?calcPts(m,myBet):null;
@@ -1163,8 +1227,8 @@ function openBetModal(id){
   betId=id; const m=MATCHES[id]; if(!m) return;
   const ex=BETS[ME&&ME.uid]&&BETS[ME.uid][id];
   betS=ex?[ex[0],ex[1]]:[0,0];
-  el('bet-title').textContent=m.team1+' vs '+m.team2;
-  el('bet-t1').textContent=m.team1; el('bet-t2').textContent=m.team2;
+  el('bet-title').textContent=displayName(m.team1)+' vs '+displayName(m.team2);
+  el('bet-t1').textContent=displayName(m.team1); el('bet-t2').textContent=displayName(m.team2);
   el('bet-s1').textContent=betS[0]; el('bet-s2').textContent=betS[1];
   el('bet-modal').classList.add('open');
 }
@@ -1242,7 +1306,7 @@ function renderAllBets(){
   done.forEach(([id,m])=>{
     const bets=Object.entries(BETS).map(([uid,ub])=>{ const bet=ub&&ub[id]; if(bet===undefined) return null; const u=USERS[uid]||{}; return {name:u.nickname||u.name||uid,bet,pts:calcPts(m,bet)}; }).filter(Boolean);
     if(!bets.length) return;
-    html+="<div class='card' style='padding:13px;margin-bottom:10px;'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;'><div style='display:flex;align-items:center;gap:5px;font-weight:700;font-size:13px;'>"+flagCircle(m.team1,16)+"<span>"+m.team1+" vs "+m.team2+"</span>"+flagCircle(m.team2,16)+"</div><span style='font-size:18px;color:var(--gold);font-weight:900;'>"+m.result[0]+" : "+m.result[1]+"</span></div>";
+    html+="<div class='card' style='padding:13px;margin-bottom:10px;'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;'><div style='display:flex;align-items:center;gap:5px;font-weight:700;font-size:13px;'>"+flagCircle(m.team1,16)+"<span>"+displayName(m.team1)+" vs "+displayName(m.team2)+"</span>"+flagCircle(m.team2,16)+"</div><span style='font-size:18px;color:var(--gold);font-weight:900;'>"+m.result[0]+" : "+m.result[1]+"</span></div>";
     bets.forEach(b=>{ const cls=b.pts.hit?'badge-hit':b.pts.dir?'badge-dir':'badge-miss'; html+="<div style='display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,0.03);border-radius:7px;margin-bottom:4px;font-size:13px;'><span>"+b.name+"</span><div style='display:flex;align-items:center;gap:8px;'><span style='font-weight:700;'>"+b.bet[0]+" : "+b.bet[1]+"</span><span class='"+cls+"'>"+(b.pts.total>0?'+':'')+b.pts.total+" נק'</span></div></div>"; });
     html+="</div>";
   });
@@ -1269,8 +1333,8 @@ function renderLeader(){
 function openResModal(id){
   resId=id; const m=MATCHES[id];
   resS=m.result?[m.result[0],m.result[1]]:[0,0];
-  el('res-title').textContent=m.team1+' vs '+m.team2;
-  el('res-t1').textContent=m.team1; el('res-t2').textContent=m.team2;
+  el('res-title').textContent=displayName(m.team1)+' vs '+displayName(m.team2);
+  el('res-t1').textContent=displayName(m.team1); el('res-t2').textContent=displayName(m.team2);
   el('res-s1').textContent=resS[0]; el('res-s2').textContent=resS[1];
   el('res-modal').classList.add('open');
 }
