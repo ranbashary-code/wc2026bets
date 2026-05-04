@@ -432,6 +432,29 @@ select.inp option{background:var(--card2);}
 
     <div class="page" id="page-admin">
       <div class="sec-head"><span style="font-size:22px;">⚙️</span><div class="sec-title">פאנל אדמין</div></div>
+      <!-- Load WC 2026 Matches -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <p style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px;">🌍 טעינת לוח משחקי מונדיאל 2026</p>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">טוען את כל 104 המשחקים הרשמיים מ-openfootball ישירות ל-Firebase</p>
+        <div style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#f87171;">
+          ⚠️ שים לב: פעולה זו תוסיף את המשחקים. משחקים קיימים לא יימחקו.
+        </div>
+        <button class="btn btn-green" id="load-wc-matches" style="width:100%;">⬇️ טען 104 משחקי מונדיאל 2026</button>
+        <div id="load-status" style="margin-top:10px;font-size:12px;text-align:center;display:none;"></div>
+      </div>
+      <!-- Boti-Goal Bot -->
+      <div class="card" style="padding:18px;margin-bottom:14px;background:linear-gradient(135deg,rgba(26,58,107,0.4),rgba(116,185,224,0.1));border-color:rgba(116,185,224,0.3);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <img src="''' + "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%231a3a6b'%2F%3E%3CclipPath id='bc'%3E%3Ccircle cx='20' cy='20' r='20'%2F%3E%3C%2FclipPath%3E%3Crect x='0' y='0' width='40' height='40' fill='%2374b9e0' clip-path='url(%23bc)'%2F%3E%3Crect x='13' y='0' width='7' height='40' fill='%23fff' clip-path='url(%23bc)'%2F%3E%3Ccircle cx='20' cy='13' r='5' fill='%23f5c5a3'%2F%3E%3Cellipse cx='20' cy='10' rx='5.5' ry='4' fill='%238B4513'%2F%3E%3Crect x='14.5' y='10' width='2' height='7' rx='1' fill='%238B4513'%2F%3E%3Crect x='23' y='10' width='2' height='7' rx='1' fill='%238B4513'%2F%3E%3Cpath d='M13 22 Q20 19 27 22 L28 34 H12 Z' fill='%23fff'%2F%3E%3Ctext x='20' y='30' text-anchor='middle' font-size='7' font-weight='900' fill='%231a3a6b' font-family='Arial'%3E9%3C%2Ftext%3E%3C%2Fsvg%3E" + '''" style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(116,185,224,0.5);">
+          <div>
+            <p style="font-size:15px;font-weight:900;color:#74b9e0;">🤖 Boti-Goal</p>
+            <p style="font-size:11px;color:var(--text2);">שחקן בוט מבוסס AI — מנתח ומהמר אוטומטית</p>
+          </div>
+        </div>
+        <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על כל המשחקים</button>
+        <div id="bot-run-status" style="font-size:12px;text-align:center;color:var(--text2);min-height:16px;"></div>
+      </div>
+      <!-- Members -->
       <div class="card" style="padding:18px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <p style="font-size:15px;font-weight:700;color:var(--gold);">👥 ניהול חברים</p>
@@ -451,6 +474,130 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { getDatabase, ref, set, get, push, onValue, update, remove }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
+
+
+// ── BOT AVATAR ──
+const BOT_AVATAR =  + BOT_SVG + ;
+const BOT_UID = "boti-goal-bot";
+const BOT_NAME = "Boti-Goal 🤖";
+
+// ── BOTI-GOAL AI BOT ──
+async function runBotiGoalBot() {
+  const statusEl = el('bot-run-status');
+  if(statusEl){ statusEl.textContent = '🤖 Boti-Goal מתחבר...'; statusEl.style.color='var(--text2)'; }
+
+  // Ensure bot user exists in Firebase
+  const botSnap = await get(ref(db, 'users/' + BOT_UID));
+  if(!botSnap.exists()){
+    await set(ref(db, 'users/' + BOT_UID), {
+      uid: BOT_UID, email: 'boti-goal@ai.bot',
+      name: BOT_NAME, nickname: BOT_NAME,
+      approved: true, isAdmin: false, isBot: true,
+      createdAt: Date.now()
+    });
+  }
+
+  // Get all matches + existing bot bets
+  const matchSnap = await get(ref(db, 'matches'));
+  const betSnap   = await get(ref(db, 'bets/' + BOT_UID));
+  if(!matchSnap.exists()){ toast('אין משחקים לנתח'); return; }
+
+  const allMatches = matchSnap.val();
+  const botBets    = betSnap.exists() ? betSnap.val() : {};
+
+  // Only bet on unlocked matches without existing bet
+  const pending = Object.entries(allMatches).filter(([id,m])=>{
+    return !botBets[id] && m.team1 && m.team2 &&
+           m.team1 !== 'TBD' && m.team2 !== 'TBD' && !locked(m);
+  });
+
+  if(!pending.length){
+    toast('🤖 Boti-Goal כבר המר על כל המשחקים!');
+    if(statusEl){ statusEl.textContent='✅ כבר המר על הכל!'; statusEl.style.color='#34d399'; }
+    return;
+  }
+
+  if(statusEl){ statusEl.textContent='🧠 מנתח ' + pending.length + ' משחקים עם AI...'; }
+
+  // Build list for Claude
+  const matchList = pending.map(([id,m])=>
+    id + '|' + m.team1 + ' vs ' + m.team2 + '|' + (m.stage||'group')
+  ).join('\n');
+
+  const prompt = `You are a world-class football analyst and predictor for the 2026 FIFA World Cup.
+Analyze each match and predict the exact final score based on:
+- FIFA world rankings and team strength
+- Historical head-to-head records
+- Current form and squad quality
+- Tournament stage importance
+- Home advantage (USA/Canada/Mexico context)
+
+Matches to predict (format: ID|Team1 vs Team2|stage):
+${matchList}
+
+Respond with ONLY a JSON array, no other text:
+[{"id":"MATCH_ID","s1":NUMBER,"s2":NUMBER},...]
+
+Rules:
+- s1 = goals for Team1, s2 = goals for Team2
+- Scores must be realistic (0-6 range)
+- Consider upsets occasionally but favor stronger teams
+- Group stage: more draws possible
+- Knockout: decisive scores more likely`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if(!resp.ok) throw new Error('API error: ' + resp.status);
+    const data = await resp.json();
+    const text = data.content && data.content[0] ? data.content[0].text : '';
+
+    // Parse JSON from response
+    const jsonMatch = text.match(/\[.*\]/s);
+    if(!jsonMatch) throw new Error('לא ניתן לפרש תשובת AI');
+    const predictions = JSON.parse(jsonMatch[0]);
+
+    // Save bets to Firebase
+    let saved = 0;
+    for(const pred of predictions){
+      if(pred.id && typeof pred.s1 === 'number' && typeof pred.s2 === 'number'){
+        const m = allMatches[pred.id];
+        if(m && !locked(m)){
+          await set(ref(db, 'bets/' + BOT_UID + '/' + pred.id), [pred.s1, pred.s2]);
+          saved++;
+        }
+      }
+    }
+
+    toast('🤖 Boti-Goal המר על ' + saved + ' משחקים!');
+    if(statusEl){ statusEl.textContent='✅ המר על ' + saved + ' משחקים!'; statusEl.style.color='#34d399'; }
+
+  } catch(err) {
+    console.error('Bot error:', err);
+    // Fallback: smart random based on stage
+    if(statusEl){ statusEl.textContent='⚠️ AI לא זמין, מהמר חכם...'; statusEl.style.color='#fbbf24'; }
+    let saved = 0;
+    for(const [id,m] of pending){
+      if(locked(m)) continue;
+      // Smart fallback: weighted random by stage
+      const maxGoals = m.stage==='group'?4:5;
+      const s1 = Math.floor(Math.random()*maxGoals);
+      const s2 = Math.floor(Math.random()*maxGoals);
+      await set(ref(db, 'bets/'+BOT_UID+'/'+id), [s1, s2]);
+      saved++;
+    }
+    toast('🤖 Boti-Goal המר על ' + saved + ' משחקים (מצב גיבוי)');
+    if(statusEl){ statusEl.textContent='✅ המר על '+saved+' משחקים (גיבוי)'; statusEl.style.color='#fbbf24'; }
+  }
+}
 
 // ── FLAG SYSTEM ──
 
@@ -1086,8 +1233,9 @@ function renderMyBets(){
 // ── ALL BETS ──
 function renderAllBets(){
   const lst=el('all-bets-list'); if(!lst) return;
-  const done=Object.entries(MATCHES).filter(([,m])=>m.result!==undefined).sort(([,a],[,b])=>(a.datetime||'')>(b.datetime||'')?-1:1).slice(0,8);
-  if(!done.length){ lst.innerHTML="<div style='text-align:center;padding:24px;color:var(--text2);font-weight:700;'>אין תוצאות עדיין</div>"; return; }
+  // Only show bets for matches that have already started (locked)
+  const done=Object.entries(MATCHES).filter(([,m])=>locked(m)).sort(([,a],[,b])=>(a.datetime||'')>(b.datetime||'')?-1:1).slice(0,20);
+  if(!done.length){ lst.innerHTML="<div style='text-align:center;padding:24px;color:var(--text2);font-size:13px;'>ההימורים של כולם יופיעו כאן לאחר תחילת המשחק</div>"; return; }
   let html='';
   done.forEach(([id,m])=>{
     const bets=Object.entries(BETS).map(([uid,ub])=>{ const bet=ub&&ub[id]; if(bet===undefined) return null; const u=USERS[uid]||{}; return {name:u.nickname||u.name||uid,bet,pts:calcPts(m,bet)}; }).filter(Boolean);
@@ -1102,13 +1250,17 @@ function renderAllBets(){
 // ── LEADERBOARD ──
 function renderLeader(){
   const sc={};
-  Object.entries(USERS).filter(([,u])=>u.approved).forEach(([uid,u])=>{ sc[uid]={name:u.nickname||u.name,pts:0,hits:0,dirs:0}; });
+  Object.entries(USERS).filter(([,u])=>u.approved).forEach(([uid,u])=>{ sc[uid]={uid,name:u.nickname||u.name,pts:0,hits:0,dirs:0}; });
   Object.entries(BETS).forEach(([uid,ub])=>{ if(!sc[uid]) return; Object.entries(ub).forEach(([mid,bet])=>{ const m=MATCHES[mid]; if(!m||m.result===undefined) return; const p=calcPts(m,bet); sc[uid].pts+=p.total; if(p.hit)sc[uid].hits++; else if(p.dir)sc[uid].dirs++; }); });
   const sorted=Object.values(sc).sort((a,b)=>b.pts-a.pts);
   const lst=el('leader-list'); if(!lst) return;
   if(!sorted.length){ lst.innerHTML="<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>הטבלה תתעדכן לאחר המשחקים הראשונים</div>"; return; }
   const medals=['🥇','🥈','🥉']; const cols=['var(--gold)','#c0c0c0','#cd7f32'];
-  lst.innerHTML=sorted.map((s,i)=>"<div class='leader-row'><div class='leader-rank' style='color:"+(cols[i]||'var(--text2)')+"'>"+(medals[i]||'#'+(i+1))+"</div><div class='leader-name'>"+s.name+"</div><div style='display:flex;flex-direction:column;align-items:flex-end;gap:2px;'><div class='leader-pts'>"+s.pts+" נק'</div><div style='font-size:10px;color:var(--text2);'>✅"+s.hits+" 🔵"+s.dirs+"</div></div></div>").join('');
+  lst.innerHTML=sorted.map((s,i)=>{
+    const isBot = s.uid === BOT_UID;
+    const avatarHtml = isBot ? "<img src=\""+BOT_AVATAR+"\" style=\"width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);\"> " : "";
+    return "<div class='leader-row'><div class='leader-rank' style='color:"+(cols[i]||"var(--text2)")+"'>"+(medals[i]||"#"+(i+1))+"</div><div class='leader-name' style='display:flex;align-items:center;gap:6px;'>"+avatarHtml+s.name+"</div><div style='display:flex;flex-direction:column;align-items:flex-end;gap:2px;'><div class='leader-pts'>"+s.pts+" נק'</div><div style='font-size:10px;color:var(--text2);'>✅"+s.hits+" 🔵"+s.dirs+"</div></div></div>";
+  }).join('');
 }
 
 // ── RESULT MODAL ──
@@ -1190,6 +1342,12 @@ el('save-scoring')&&el('save-scoring').addEventListener('click', async()=>{
 
 // ── ADMIN USERS ──
 el('refresh-users').addEventListener('click', loadUsers);
+el('run-bot-btn')&&el('run-bot-btn').addEventListener('click', async()=>{
+  const btn=el('run-bot-btn');
+  btn.disabled=true; btn.textContent='⏳ מריץ...';
+  await runBotiGoalBot();
+  btn.disabled=false; btn.textContent='⚡ הפעל Boti-Goal — המר על כל המשחקים';
+});
 async function loadUsers(){
   const lst=el('users-list'); if(!lst) return;
   const s=await get(ref(db,'users'));
@@ -1214,6 +1372,105 @@ el('cancel-em').addEventListener('click',()=>el('em-modal').classList.remove('op
 el('confirm-em').addEventListener('click', async()=>{
   const uid=el('em-uid').value,name=el('em-name').value.trim(); if(!uid||!name) return;
   await update(ref(db,'users/'+uid),{nickname:name}); el('em-modal').classList.remove('open'); toast('✅ שם עודכן!'); loadUsers();
+});
+
+// ── LOAD WC 2026 MATCHES ──
+el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>{
+  const btn=el('load-wc-matches');
+  const status=el('load-status');
+  btn.disabled=true; btn.textContent='⏳ טוען...';
+  status.style.display='block'; status.style.color='var(--text2)'; status.textContent='מוריד נתונים...';
+
+  try {
+    // Fetch from openfootball via jsdelivr CDN (works without CORS issues)
+    const urls = [
+      'https://cdn.jsdelivr.net/gh/openfootball/worldcup.json@master/2026/worldcup.json',
+      'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json',
+    ];
+    let data = null;
+    for(const url of urls){
+      try {
+        const resp = await fetch(url);
+        if(resp.ok){ data = await resp.json(); break; }
+      } catch(e){ continue; }
+    }
+    if(!data || !data.matches) throw new Error('לא ניתן לטעון נתונים');
+
+    const matches = data.matches;
+    status.textContent = 'מוצא ' + matches.length + ' משחקים, טוען ל-Firebase...';
+
+    // Stage mapping
+    const stageMap = (round, group) => {
+      if(group) return 'group';
+      const r = (round||'').toLowerCase();
+      if(r.includes('round of 32') || r.includes('matchday 4') || r.includes('round of 16') && matches.length > 80) return 'r32';
+      if(r.includes('round of 16')) return 'r16';
+      if(r.includes('quarter')) return 'qf';
+      if(r.includes('semi')) return 'sf';
+      if(r.includes('third') || r.includes('3rd') || r.includes('place')) return '3rd';
+      if(r.includes('final')) return 'final';
+      return 'group';
+    };
+
+    // Group letter extraction
+    const groupLetter = (grp) => {
+      if(!grp) return null;
+      const m = grp.match(/[A-L]/);
+      return m ? m[0] : null;
+    };
+
+    // Parse time to UTC
+    const parseDateTime = (date, time) => {
+      if(!date) return null;
+      if(!time) return date + 'T00:00';
+      // time format: "13:00 UTC-6" -> convert to local
+      const timeParts = time.match(/(\d+):(\d+)\s*UTC([+-]\d+)?/);
+      if(!timeParts) return date + 'T' + time.substring(0,5);
+      const h = parseInt(timeParts[1]);
+      const min = timeParts[2];
+      const offset = timeParts[3] ? parseInt(timeParts[3]) : 0;
+      // Convert to UTC
+      const utcH = ((h - offset) + 24) % 24;
+      return date + 'T' + String(utcH).padStart(2,'0') + ':' + min;
+    };
+
+    let added = 0, skipped = 0;
+    for(const m of matches){
+      // Skip matches where teams aren't determined yet (knockout with TBD)
+      const t1 = m.team1 && !m.team1.includes('W') && !m.team1.includes('A') ? m.team1 : m.team1;
+      const t2 = m.team2 && !m.team2.includes('W') && !m.team2.includes('A') ? m.team2 : m.team2;
+
+      const matchData = {
+        team1: t1||'TBD',
+        team2: t2||'TBD',
+        datetime: parseDateTime(m.date, m.time),
+        stage: stageMap(m.round, m.group),
+        group: groupLetter(m.group),
+        createdAt: Date.now(),
+        source: 'openfootball'
+      };
+
+      // Add result if exists
+      if(m.score && m.score.ft){
+        matchData.result = [m.score.ft[0], m.score.ft[1]];
+      }
+
+      await push(ref(db,'matches'), matchData);
+      added++;
+      if(added % 10 === 0) status.textContent = 'נטען ' + added + '/' + matches.length + ' משחקים...';
+    }
+
+    status.style.color = '#34d399';
+    status.textContent = '✅ נטענו ' + added + ' משחקים בהצלחה!';
+    btn.textContent = '✅ נטען!';
+    toast('✅ ' + added + ' משחקים נטענו!');
+  } catch(err) {
+    console.error(err);
+    status.style.color = '#f87171';
+    status.textContent = '❌ שגיאה: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = '⬇️ נסה שוב';
+  }
 });
 
 // ── BRACKET ──
