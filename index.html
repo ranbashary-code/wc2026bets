@@ -42,7 +42,7 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 
 /* ── APP ── */
 #app{display:none;min-height:100vh;}
-.side-bg{position:fixed;top:54px;bottom:0;width:calc((100vw - 860px)/2);background-size:cover;background-position:center;opacity:0.13;pointer-events:none;z-index:0;}
+.side-bg{position:fixed;top:54px;bottom:0;width:calc((100vw - 860px)/2);background-size:cover;background-position:center;opacity:0.22;pointer-events:none;z-index:0;}
 .side-bg-left{left:0;background-position:right center;}
 .side-bg-right{right:0;background-position:left center;}
 .topbar{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;background:rgba(9,17,31,0.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
@@ -815,31 +815,84 @@ async function loadSpecialBets() {
 function renderMyBetsSpecial(data, lk) {
   const sec = el('mybets-special'); if(!sec) return;
   const code = data.champion ? getCountryCode(data.champion) : null;
-  const flag = code ? '<span class="fi fi-'+code+'" style="width:20px;height:20px;border-radius:50%;display:inline-block;background-size:cover;"></span>' : '';
-  const editBtn = !lk ? '<button class="btn btn-ghost btn-xs" style="margin-top:8px;width:100%;" data-goto="main">✏️ ערוך</button>' : '<div style="font-size:11px;color:var(--text2);margin-top:6px;">🔒 נעול</div>';
+  const flag = code ? '<span class="fi fi-'+code+'" style="width:22px;height:22px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;"></span>' : '';
+
   sec.innerHTML =
+    // Champion card
     "<div class='card' style='padding:14px;'>" +
-      "<div style='font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;'>🥇 נבחרת מנצחת</div>" +
-      (data.champion ? "<div style='display:flex;align-items:center;gap:8px;font-weight:700;'>"+flag+"<span>"+data.champion+"</span></div>" : "<div style='font-size:12px;color:var(--text2);'>לא הימרת עדיין</div>") +
-      editBtn +
+      "<div style='font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;'>🥇 נבחרת מנצחת</div>" +
+      (data.champion
+        ? "<div style='display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:10px;'>"+flag+"<span>"+data.champion+"</span></div>"
+        : "<div style='font-size:12px;color:var(--text2);margin-bottom:10px;'>לא הימרת עדיין</div>") +
+      (!lk
+        ? "<select id='mybets-champion-sel' class='inp' style='margin-bottom:8px;font-size:13px;'><option value=''>בחר נבחרת...</option></select>" +
+          "<button id='mybets-champion-save' class='btn btn-grad' style='width:100%;font-size:12px;padding:8px;'>💾 שמור</button>"
+        : "<div style='font-size:11px;color:var(--text2);'>🔒 נעול</div>") +
     "</div>" +
+    // Scorer card
     "<div class='card' style='padding:14px;'>" +
-      "<div style='font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;'>👟 מלך שערים</div>" +
-      (data.scorer ? "<div style='font-weight:700;font-size:13px;'>⚽ "+data.scorer+"</div>" : "<div style='font-size:12px;color:var(--text2);'>לא הימרת עדיין</div>") +
-      editBtn +
+      "<div style='font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;'>👟 מלך שערים</div>" +
+      (data.scorer
+        ? "<div style='font-weight:700;font-size:13px;margin-bottom:10px;'>⚽ "+data.scorer+"</div>"
+        : "<div style='font-size:12px;color:var(--text2);margin-bottom:10px;'>לא הימרת עדיין</div>") +
+      (!lk
+        ? "<input type='text' id='mybets-scorer-inp' class='inp' placeholder='שם השחקן' value='"+(data.scorer||'')+"' style='margin-bottom:8px;font-size:13px;'>" +
+          "<button id='mybets-scorer-save' class='btn btn-grad' style='width:100%;font-size:12px;padding:8px;'>💾 שמור</button>"
+        : "<div style='font-size:11px;color:var(--text2);'>🔒 נעול</div>") +
     "</div>";
-  sec.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>{
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    el('page-main').classList.add('active');
-    el('tab-main').classList.add('active');
-  }));
+
+  // Populate champion select
+  const sel = sec.querySelector('#mybets-champion-sel');
+  if(sel) {
+    WC_TEAMS_CLEAN.forEach(team => {
+      const opt = document.createElement('option');
+      opt.value = team; opt.textContent = team;
+      if(team === data.champion) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    if(data.champion) sel.value = data.champion;
+  }
+
+  // Champion save
+  const champSaveBtn = sec.querySelector('#mybets-champion-save');
+  if(champSaveBtn) champSaveBtn.addEventListener('click', async()=>{
+    if(!ME||specialLocked()){ toast('🔒 נעול'); return; }
+    const val = sel ? sel.value : '';
+    if(!val){
+      await update(ref(db,'specialBets/'+ME.uid),{champion:null});
+      toast('🗑 הימור נבחרת מנצחת אופס!');
+    } else {
+      await update(ref(db,'specialBets/'+ME.uid),{champion:val});
+      toast('✅ נבחרת מנצחת נשמרה!');
+    }
+    loadSpecialBets();
+  });
+
+  // Scorer save
+  const scorerSaveBtn = sec.querySelector('#mybets-scorer-save');
+  const scorerInpEl = sec.querySelector('#mybets-scorer-inp');
+  if(scorerSaveBtn) scorerSaveBtn.addEventListener('click', async()=>{
+    if(!ME||specialLocked()){ toast('🔒 נעול'); return; }
+    const val = scorerInpEl ? scorerInpEl.value.trim() : '';
+    if(!val){
+      await update(ref(db,'specialBets/'+ME.uid),{scorer:null});
+      toast('🗑 הימור מלך שערים אופס!');
+    } else {
+      await update(ref(db,'specialBets/'+ME.uid),{scorer:val});
+      toast('✅ מלך שערים נשמר!');
+    }
+    loadSpecialBets();
+  });
 }
 
 el('save-champion-btn')&&el('save-champion-btn').addEventListener('click', async()=>{
   if(!ME||specialLocked()){ toast('🔒 נעול — המונדיאל התחיל'); return; }
   const val = el('champion-select').value;
-  if(!val){ toast('❌ בחר נבחרת'); return; }
+  if(!val){
+    // Reset - remove champion bet
+    await update(ref(db,'specialBets/'+ME.uid),{champion:null});
+    toast('🗑 הימור נבחרת מנצחת אופס!'); loadSpecialBets(); return;
+  }
   await update(ref(db,'specialBets/'+ME.uid),{champion:val});
   toast('✅ נבחרת מנצחת נשמרה!'); loadSpecialBets();
 });
@@ -847,7 +900,11 @@ el('save-champion-btn')&&el('save-champion-btn').addEventListener('click', async
 el('save-scorer-btn')&&el('save-scorer-btn').addEventListener('click', async()=>{
   if(!ME||specialLocked()){ toast('🔒 נעול — המונדיאל התחיל'); return; }
   const val = el('scorer-input') ? el('scorer-input').value.trim() : '';
-  if(!val){ toast('❌ הכנס שם שחקן'); return; }
+  if(!val){
+    // Reset - remove scorer bet
+    await update(ref(db,'specialBets/'+ME.uid),{scorer:null});
+    toast('🗑 הימור מלך שערים אופס!'); loadSpecialBets(); return;
+  }
   await update(ref(db,'specialBets/'+ME.uid),{scorer:val});
   toast('✅ מלך שערים נשמר!'); loadSpecialBets();
 });
