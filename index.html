@@ -1242,7 +1242,7 @@ function renderAllBets(){
   done.forEach(([id,m])=>{
     const bets=Object.entries(BETS).map(([uid,ub])=>{ const bet=ub&&ub[id]; if(bet===undefined) return null; const u=USERS[uid]||{}; return {name:u.nickname||u.name||uid,bet,pts:calcPts(m,bet)}; }).filter(Boolean);
     if(!bets.length) return;
-    html+="<div class='card' style='padding:13px;margin-bottom:10px;'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;'><span style='display:flex;align-items:center;gap:5px;font-weight:700;font-size:13px;'>"+flagCircle(m.team1,16)+"<span>"+m.team1+" vs "+m.team2+"</span>"+flagCircle(m.team2,16)<span style='font-size:18px;color:var(--gold);font-weight:900;'>"+m.result[0]+" : "+m.result[1]+"</span></div>";
+    html+="<div class='card' style='padding:13px;margin-bottom:10px;'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;'><div style='display:flex;align-items:center;gap:5px;font-weight:700;font-size:13px;'>"+flagCircle(m.team1,16)+"<span>"+m.team1+" vs "+m.team2+"</span>"+flagCircle(m.team2,16)+"</div><span style='font-size:18px;color:var(--gold);font-weight:900;'>"+m.result[0]+" : "+m.result[1]+"</span></div>";
     bets.forEach(b=>{ const cls=b.pts.hit?'badge-hit':b.pts.dir?'badge-dir':'badge-miss'; html+="<div style='display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,0.03);border-radius:7px;margin-bottom:4px;font-size:13px;'><span>"+b.name+"</span><div style='display:flex;align-items:center;gap:8px;'><span style='font-weight:700;'>"+b.bet[0]+" : "+b.bet[1]+"</span><span class='"+cls+"'>"+(b.pts.total>0?'+':'')+b.pts.total+" נק'</span></div></div>"; });
     html+="</div>";
   });
