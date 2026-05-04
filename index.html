@@ -2285,29 +2285,45 @@ function renderBracket(){
 
     let html='<div class="ko-bracket-scroll"><div class="ko-wrap">';
     
-    // LEFT: R32 → R16 → QF → SF
+    // Build columns dynamically based on available stages
+    // Only include stages that have matches
+    const leftCols = [], rightCols = [];
+    
+    // Stages from outside-in on left, inside-out on right
+    const stageOrder = [
+      {stage:'r32', label:'שמינית גמר', matches:r32},
+      {stage:'r16', label:'שמינית פינאל', matches:r16},
+      {stage:'qf',  label:'רבע גמר', matches:qf},
+      {stage:'sf',  label:'חצי גמר', matches:sf},
+    ];
+    
+    // Only add stages that exist
+    const activeStages = stageOrder.filter(s=>s.matches.length>0 || s.stage==='sf');
+    
+    // Split each stage's matches into left/right
+    activeStages.forEach(s=>{
+      const h = Math.ceil(s.matches.length/2);
+      leftCols.push({label:s.label, matches:s.matches.slice(0,h)});
+      rightCols.push({label:s.label, matches:s.matches.slice(h)});
+    });
+    
+    // LEFT side (outside → center)
     html+='<div class="ko-side">';
-    html+=koCol('שמינית גמר',r32L,false);
-    html+=koCol('שמינית פינאל',r16L,false);
-    html+=koCol('רבע גמר',qfL,false);
-    html+=koCol('חצי גמר',sfL,false);
+    leftCols.forEach(c=>{ html+=koCol(c.label, c.matches, false); });
     html+='</div>';
     
-    // CENTER: Final + Logo + 3rd place
+    // CENTER
     html+='<div class="ko-center">';
-    html+='<div class="ko-round-label" style="color:var(--gold);font-size:12px;letter-spacing:2px;">🏆 גמר</div>';
+    html+='<div class="ko-round-label" style="color:var(--gold);font-size:9px;letter-spacing:2px;">🏆 גמר</div>';
     html+=koCard(finM?finM[1]:null);
     html+='<div class="ko-logo-wrap"><img src="'+WC_LOGO+'" alt="WC2026" class="ko-logo"></div>';
-    html+='<div class="ko-round-label" style="font-size:10px;margin-top:2px;">מקום שלישי</div>';
+    html+='<div class="ko-round-label" style="font-size:8px;margin-top:2px;">מקום שלישי</div>';
     html+=koCard(t3M?t3M[1]:null);
     html+='</div>';
     
-    // RIGHT: SF → QF → R16 → R32 (mirrored)
+    // RIGHT side (center → outside, mirrored)
     html+='<div class="ko-side ko-side-right">';
-    html+=koCol('חצי גמר',sfR,false);
-    html+=koCol('רבע גמר',qfR,false);
-    html+=koCol('שמינית פינאל',r16R,false);
-    html+=koCol('שמינית גמר',r32R,false);
+    rightCols.slice().reverse().forEach(c=>{ html+=koCol(c.label, c.matches, false); });
     html+='</div>';
     
     html+='</div></div>';
