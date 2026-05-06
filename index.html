@@ -287,6 +287,23 @@ select.inp option{background:var(--card2);}
 </div>
 
 <!-- MODALS -->
+<!-- PUSH NOTIFICATION MODAL -->
+<div class="modal" id="push-modal" style="z-index:400;">
+  <div class="modal-box" style="max-width:360px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">🔔</div>
+    <div class="modal-title" style="text-align:center;">התרעות על משחקים</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">קבל התרעת מייל שעה לפני המשחק הראשון של כל יום — כדי שלא תשכח לשים הימור!</p>
+    <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:12px;margin-bottom:18px;">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">המייל שלך:</div>
+      <div id="push-user-email" style="font-weight:700;font-size:14px;color:var(--gold);"></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" id="push-decline" style="flex:1;">לא תודה</button>
+      <button class="btn btn-grad" id="push-accept" style="flex:1;">✅ כן, שלח לי!</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="pending-modal">
   <div class="modal-box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -599,6 +616,15 @@ select.inp option{background:var(--card2);}
         <div id="bot-run-status" style="font-size:12px;text-align:center;color:var(--text2);min-height:16px;"></div>
       </div>
       <!-- Members -->
+      <!-- Activity History -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <p style="font-size:15px;font-weight:700;color:var(--gold);">📈 היסטוריית פעילות</p>
+          <button class="btn btn-ghost btn-xs" id="refresh-activity">🔄 רענן</button>
+        </div>
+        <div id="activity-list"></div>
+      </div>
+
       <div class="card" style="padding:18px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <p style="font-size:15px;font-weight:700;color:var(--gold);">👥 ניהול חברים</p>
@@ -1245,6 +1271,154 @@ async function loadAnalytics() {
 }
 
 
+
+// ── NOTIFICATIONS & ACTIVITY TRACKING ──
+
+// Log user activity to Firebase
+async function logActivity(action, data) {
+  if(!ME || ME.uid === BOT_UID) return;
+  const entry = {
+    uid: ME.uid,
+    name: MEDATA.nickname || MEDATA.name,
+    action,
+    timestamp: Date.now(),
+    ...data
+  };
+  await push(ref(db, 'activity/' + ME.uid), entry);
+}
+
+// Track tab views
+function trackTab(tabName) {
+  logActivity('tab_view', {tab: tabName});
+}
+
+// Check if first login and show notification prompt
+async function checkNotificationPrompt() {
+  if(!ME || !MEDATA) return;
+  // Check if already decided
+  const snap = await get(ref(db, 'notifications/' + ME.uid));
+  if(snap.exists()) return; // Already made a decision
+  
+  // First time - show prompt
+  el('push-user-email').textContent = ME.email;
+  el('push-modal').classList.add('open');
+}
+
+el('push-accept')&&el('push-accept').addEventListener('click', async()=>{
+  await set(ref(db,'notifications/'+ME.uid), {
+    email: ME.email,
+    name: MEDATA.nickname||MEDATA.name,
+    enabled: true,
+    subscribedAt: Date.now()
+  });
+  el('push-modal').classList.remove('open');
+  toast('✅ תקבל התרעות לפני משחקים!');
+  logActivity('notification_subscribe', {email: ME.email});
+});
+
+el('push-decline')&&el('push-decline').addEventListener('click', async()=>{
+  await set(ref(db,'notifications/'+ME.uid), {
+    email: ME.email,
+    enabled: false,
+    decidedAt: Date.now()
+  });
+  el('push-modal').classList.remove('open');
+});
+
+// Load activity history for admin
+async function loadActivity() {
+  const lst = el('activity-list'); if(!lst) return;
+  lst.innerHTML = '<div style="color:var(--text2);font-size:12px;text-align:center;padding:10px;">טוען...</div>';
+
+  const actSnap = await get(ref(db,'activity'));
+  const usersSnap = await get(ref(db,'users'));
+  const notiSnap = await get(ref(db,'notifications'));
+
+  const users = usersSnap.exists() ? usersSnap.val() : {};
+  const notifications = notiSnap.exists() ? notiSnap.val() : {};
+
+  if(!actSnap.exists()) {
+    lst.innerHTML = '<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px;">אין נתוני פעילות עדיין</div>';
+    return;
+  }
+
+  const allActivity = actSnap.val();
+  
+  // Build per-user stats
+  const userStats = {};
+  Object.entries(allActivity).forEach(([uid, entries])=>{
+    if(uid === BOT_UID) return;
+    const u = users[uid] || {};
+    const acts = Object.values(entries);
+    
+    // Count logins, tabs, last seen
+    const logins = acts.filter(a=>a.action==='login');
+    const tabCounts = {};
+    acts.filter(a=>a.action==='tab_view').forEach(a=>{ tabCounts[a.tab]=(tabCounts[a.tab]||0)+1; });
+    const lastSeen = Math.max(...acts.map(a=>a.timestamp||0));
+    const firstSeen = Math.min(...acts.map(a=>a.timestamp||Infinity));
+    
+    userStats[uid] = {
+      name: u.nickname||u.name||'?',
+      email: u.email||'',
+      loginCount: logins.length,
+      totalActions: acts.length,
+      lastSeen,
+      firstSeen,
+      tabCounts,
+      notificationsEnabled: notifications[uid]?.enabled,
+      notificationsDecided: !!notifications[uid],
+    };
+  });
+
+  const sorted = Object.values(userStats).sort((a,b)=>b.lastSeen-a.lastSeen);
+  
+  if(!sorted.length) {
+    lst.innerHTML = '<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px;">אין נתוני פעילות עדיין</div>';
+    return;
+  }
+
+  const tabLabels = {'main':'ראשי','mybets':'הימורים שלי','bracket':'בראקט','scoring':'ניקוד','admin':'אדמין'};
+  const now = Date.now();
+  
+  let html = '';
+  sorted.forEach(u=>{
+    const lastSeenStr = u.lastSeen ? formatTimeAgo(u.lastSeen) : '—';
+    const firstSeenStr = u.firstSeen && u.firstSeen < Infinity ? new Date(u.firstSeen).toLocaleDateString('he-IL') : '—';
+    const topTab = Object.entries(u.tabCounts).sort(([,a],[,b])=>b-a)[0];
+    const topTabStr = topTab ? (tabLabels[topTab[0]]||topTab[0])+' ('+topTab[1]+')' : '—';
+    const notiStr = !u.notificationsDecided ? '⏳ לא החליט' : u.notificationsEnabled ? '✅ פעיל' : '❌ כיבה';
+    
+    html += '<div style="padding:12px 0;border-bottom:1px solid var(--border);">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+    html += '<span style="font-weight:700;font-size:14px;">'+u.name+'</span>';
+    html += '<span style="font-size:11px;color:var(--text2);">'+u.email+'</span>';
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:12px;">';
+    html += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:7px 10px;"><span style="color:var(--text2);">כניסות:</span> <strong>'+u.loginCount+'</strong></div>';
+    html += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:7px 10px;"><span style="color:var(--text2);">פעולות:</span> <strong>'+u.totalActions+'</strong></div>';
+    html += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:7px 10px;"><span style="color:var(--text2);">נראה לאחרונה:</span> <strong>'+lastSeenStr+'</strong></div>';
+    html += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:7px 10px;"><span style="color:var(--text2);">מסך מועדף:</span> <strong>'+topTabStr+'</strong></div>';
+    html += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:7px 10px;"><span style="color:var(--text2);">הצטרף:</span> <strong>'+firstSeenStr+'</strong></div>';
+    html += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:7px 10px;"><span style="color:var(--text2);">התרעות:</span> <strong>'+notiStr+'</strong></div>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  lst.innerHTML = html;
+}
+
+function formatTimeAgo(ts) {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff/60000);
+  if(mins < 1) return 'עכשיו';
+  if(mins < 60) return 'לפני '+mins+' דקות';
+  const hrs = Math.floor(mins/60);
+  if(hrs < 24) return 'לפני '+hrs+' שעות';
+  const days = Math.floor(hrs/24);
+  return 'לפני '+days+' ימים';
+}
+
 // ── FLAG SYSTEM ──
 
 // ── TROPHY SVG for unknown flags ──
@@ -1598,6 +1772,8 @@ onAuthStateChanged(auth, async user=>{
   startClock();
   initSpecialBets();
   initPresence();
+  logActivity('login', {page: 'home'});
+  checkNotificationPrompt();
 });
 
 // ── PENDING ──
@@ -1651,7 +1827,8 @@ document.querySelectorAll('.tab[data-page]').forEach(tab=>{
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     el('page-'+tab.dataset.page).classList.add('active');
     tab.classList.add('active');
-    if(tab.dataset.page==='admin'){ loadUsers(); loadAnalytics(); }
+    if(tab.dataset.page==='admin'){ loadUsers(); loadAnalytics(); loadActivity(); }
+    trackTab(tab.dataset.page);
   });
 });
 el('topbar-logo').addEventListener('click',()=>{
@@ -2024,6 +2201,7 @@ el('save-scoring')&&el('save-scoring').addEventListener('click', async()=>{
 
 // ── ADMIN USERS ──
 el('refresh-users').addEventListener('click', loadUsers);
+el('refresh-activity')&&el('refresh-activity').addEventListener('click', loadActivity);
 el('refresh-analytics')&&el('refresh-analytics').addEventListener('click', loadAnalytics);
 el('run-bot-btn')&&el('run-bot-btn').addEventListener('click', async()=>{
   const btn=el('run-bot-btn');
