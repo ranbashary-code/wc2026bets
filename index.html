@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>WC 2026 Bets</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 <style>
 :root{
@@ -588,7 +589,10 @@ select.inp option{background:var(--card2);}
       <div class="card" style="padding:18px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <p style="font-size:15px;font-weight:700;color:var(--gold);">📊 אנליטיקס</p>
-          <button class="btn btn-ghost btn-xs" id="refresh-analytics">🔄 רענן</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-green btn-xs" id="send-reminders-btn" onclick="sendManualReminders()">📧 שלח תזכורות עכשיו</button>
+            <button class="btn btn-ghost btn-xs" id="refresh-analytics">🔄 רענן</button>
+          </div>
         </div>
         <div id="analytics-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;"></div>
         <div id="analytics-activity" style="margin-top:4px;"></div>
@@ -1419,6 +1423,139 @@ function formatTimeAgo(ts) {
   return 'לפני '+days+' ימים';
 }
 
+
+// ── EMAIL NOTIFICATIONS ──
+const EMAILJS_SERVICE  = 'service_05sarz6';
+const EMAILJS_TEMPLATE = 'template_40kn8sa';
+const EMAILJS_KEY      = 'smg7O8slOyKa2nxWP';
+
+// Initialize EmailJS
+if(typeof emailjs !== 'undefined') {
+  emailjs.init(EMAILJS_KEY);
+}
+
+// Send reminder email to a single user
+async function sendReminderEmail(userEmail, userName, daySummary) {
+  try {
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+      to_email: userEmail,
+      to_name: userName,
+      day_summary: daySummary,
+    });
+    console.log('Email sent to', userEmail);
+    return true;
+  } catch(err) {
+    console.error('Email error:', err);
+    return false;
+  }
+}
+
+// Build day summary text for today's matches
+function buildDaySummary(todayMatches) {
+  if(!todayMatches.length) return '';
+  return todayMatches
+    .map(([,m]) => {
+      const dt = new Date(m.datetime);
+      const timeStr = dt.toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
+      const t1 = displayName(m.team1) || m.team1;
+      const t2 = displayName(m.team2) || m.team2;
+      return '⚽ ' + t1 + ' נגד ' + t2 + ' | ' + timeStr;
+    })
+    .join('\n');
+}
+
+// Check if we should send reminders today
+// Runs once per session - sends if first match today is ~1hr away and not sent yet
+async function checkAndSendReminders() {
+  if(!ME) return;
+
+  const now = new Date();
+  const todayStr = now.toDateString();
+
+  // Get today's matches sorted by time
+  const todayMatches = Object.entries(MATCHES)
+    .filter(([,m]) => m.datetime && new Date(m.datetime).toDateString() === todayStr)
+    .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
+
+  if(!todayMatches.length) return;
+
+  // Check if first match starts in 45-75 minutes from now
+  const firstMatchTime = new Date(todayMatches[0][1].datetime).getTime();
+  const minsUntil = (firstMatchTime - now.getTime()) / 60000;
+
+  if(minsUntil < 45 || minsUntil > 75) return;
+
+  // Check if already sent today (stored in Firebase)
+  const sentSnap = await get(ref(db, 'emailSent/' + todayStr.replace(/ /g,'_')));
+  if(sentSnap.exists()) return; // Already sent today
+
+  // Only admin triggers the send (to avoid multiple sends)
+  if(!MEDATA || !MEDATA.isAdmin) return;
+
+  // Mark as sent first (prevent duplicates)
+  await set(ref(db, 'emailSent/' + todayStr.replace(/ /g,'_')), {
+    sentAt: Date.now(),
+    sentBy: ME.uid
+  });
+
+  // Get all users who opted in for notifications
+  const notiSnap = await get(ref(db, 'notifications'));
+  if(!notiSnap.exists()) return;
+
+  const subscribers = Object.values(notiSnap.val()).filter(n => n.enabled && n.email);
+  if(!subscribers.length) return;
+
+  const daySummary = buildDaySummary(todayMatches);
+  if(!daySummary) return;
+
+  // Send to all subscribers
+  let sent = 0;
+  for(const sub of subscribers) {
+    const ok = await sendReminderEmail(sub.email, sub.name || 'שחקן', daySummary);
+    if(ok) sent++;
+    // Small delay between sends
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  if(sent > 0) toast('📧 נשלחו ' + sent + ' תזכורות מייל!');
+  console.log('Reminders sent:', sent, '/', subscribers.length);
+}
+
+// Admin can also manually trigger reminders
+async function sendManualReminders() {
+  const btn = el('send-reminders-btn');
+  if(btn) { btn.disabled = true; btn.textContent = '⏳ שולח...'; }
+
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const todayMatches = Object.entries(MATCHES)
+    .filter(([,m]) => m.datetime && new Date(m.datetime).toDateString() === todayStr)
+    .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
+
+  if(!todayMatches.length) {
+    toast('אין משחקים היום');
+    if(btn) { btn.disabled = false; btn.textContent = '📧 שלח תזכורות עכשיו'; }
+    return;
+  }
+
+  const notiSnap = await get(ref(db,'notifications'));
+  if(!notiSnap.exists()) { toast('אין מנויים'); if(btn){btn.disabled=false;btn.textContent='📧 שלח תזכורות עכשיו';} return; }
+
+  const subscribers = Object.values(notiSnap.val()).filter(n=>n.enabled&&n.email);
+  if(!subscribers.length) { toast('אין מנויים'); if(btn){btn.disabled=false;btn.textContent='📧 שלח תזכורות עכשיו';} return; }
+
+  const daySummary = buildDaySummary(todayMatches);
+  let sent = 0;
+  for(const sub of subscribers) {
+    const ok = await sendReminderEmail(sub.email, sub.name||'שחקן', daySummary);
+    if(ok) sent++;
+    await new Promise(r=>setTimeout(r,300));
+  }
+
+  toast('📧 נשלחו ' + sent + '/' + subscribers.length + ' תזכורות!');
+  if(btn) { btn.disabled=false; btn.textContent='📧 שלח תזכורות עכשיו'; }
+}
+
 // ── FLAG SYSTEM ──
 
 // ── TROPHY SVG for unknown flags ──
@@ -1774,6 +1911,9 @@ onAuthStateChanged(auth, async user=>{
   initPresence();
   logActivity('login', {page: 'home'});
   checkNotificationPrompt();
+  // Check reminders every 5 minutes
+  setTimeout(checkAndSendReminders, 5000);
+  setInterval(checkAndSendReminders, 300000);
 });
 
 // ── PENDING ──
