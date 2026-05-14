@@ -170,6 +170,10 @@ select.inp option{background:var(--card2);}
 .pend-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;}
 
 /* Toast & Confetti */
+.color-opt.selected{border-color:#fff!important;}
+.group-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;}
+.group-leaderboard{margin-bottom:20px;}
+.group-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;margin-bottom:10px;}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card2);color:var(--text);padding:11px 22px;border-radius:12px;font-weight:700;font-size:13px;border:1px solid var(--border);z-index:999;animation:toastIn 0.3s ease;}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -411,6 +415,51 @@ select.inp option{background:var(--card2);}
   </div>
 </div>
 
+<!-- GROUP MANAGEMENT MODAL -->
+<div class="modal" id="groups-modal">
+  <div class="modal-box" style="max-width:500px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title">⚙️ ניהול קבוצות</div>
+      <button class="modal-close" id="close-groups-modal">×</button>
+    </div>
+    <!-- Create new group -->
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;">➕ צור קבוצה חדשה</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" id="new-group-icon" class="inp" placeholder="🏆" style="width:60px;text-align:center;font-size:20px;">
+        <input type="text" id="new-group-name" class="inp" placeholder="שם הקבוצה">
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;" id="group-color-picker">
+        <div class="color-opt" data-color="#7c3aed" style="width:28px;height:28px;border-radius:50%;background:#7c3aed;cursor:pointer;border:2px solid transparent;"></div>
+        <div class="color-opt" data-color="#be123c" style="width:28px;height:28px;border-radius:50%;background:#be123c;cursor:pointer;border:2px solid transparent;"></div>
+        <div class="color-opt" data-color="#065f46" style="width:28px;height:28px;border-radius:50%;background:#065f46;cursor:pointer;border:2px solid transparent;"></div>
+        <div class="color-opt" data-color="#1d4ed8" style="width:28px;height:28px;border-radius:50%;background:#1d4ed8;cursor:pointer;border:2px solid transparent;"></div>
+        <div class="color-opt" data-color="#b45309" style="width:28px;height:28px;border-radius:50%;background:#b45309;cursor:pointer;border:2px solid transparent;"></div>
+        <div class="color-opt" data-color="#0e7490" style="width:28px;height:28px;border-radius:50%;background:#0e7490;cursor:pointer;border:2px solid transparent;"></div>
+      </div>
+      <button class="btn btn-grad" id="create-group-btn" style="width:100%;padding:9px;">צור קבוצה</button>
+    </div>
+    <!-- Existing groups -->
+    <div id="groups-list-admin"></div>
+  </div>
+</div>
+
+<!-- ASSIGN USER TO GROUP MODAL -->
+<div class="modal" id="assign-group-modal">
+  <div class="modal-box" style="max-width:380px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title">שיוך לקבוצות</div>
+      <button class="modal-close" id="close-assign-modal">×</button>
+    </div>
+    <div id="assign-user-name" style="font-weight:700;font-size:15px;margin-bottom:14px;color:var(--gold);"></div>
+    <div id="assign-groups-checkboxes" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" id="cancel-assign" style="flex:1;">ביטול</button>
+      <button class="btn btn-grad" id="confirm-assign" style="flex:1;">שמור</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="em-modal">
   <div class="modal-box" style="max-width:340px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -627,6 +676,15 @@ select.inp option{background:var(--card2);}
           <button class="btn btn-ghost btn-xs" id="refresh-activity">🔄 רענן</button>
         </div>
         <div id="activity-list"></div>
+      </div>
+
+            <!-- Groups Management -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <p style="font-size:15px;font-weight:700;color:var(--gold);">🏆 ניהול קבוצות</p>
+          <button class="btn btn-grad btn-xs" id="open-groups-modal-btn">⚙️ נהל קבוצות</button>
+        </div>
+        <div id="groups-summary"></div>
       </div>
 
       <div class="card" style="padding:18px;">
@@ -950,11 +1008,19 @@ async function renderSpecialBetsReveal(lk) {
   const allSpecial = Object.entries(snap.val());
   if(!allSpecial.length) { revealDiv.style.display='none'; return; }
 
-  // Build champion bets list
+  // Get current user's groups for filtering
+  const myGrps = (ME && USERS[ME.uid] && USERS[ME.uid].groups) || [];
+  const isAdm = MEDATA && MEDATA.isAdmin;
+
+  // Build champion bets list (filtered by group)
   const champBets = [], scorerBets = [];
   allSpecial.forEach(([uid, d])=>{
-    if(uid === BOT_UID) return;
     const u = USERS[uid] || {};
+    const uGrps = u.groups||[];
+    const sameGrp = u.isBot || u.isAdmin || isAdm ||
+      myGrps.length===0 || uGrps.length===0 ||
+      myGrps.some(g=>uGrps.includes(g));
+    if(!sameGrp) return;
     const name = u.nickname || u.name || '?';
     const isBot = u.isBot;
     if(d.champion) champBets.push({name, val:d.champion, isBot});
@@ -1556,6 +1622,290 @@ async function sendManualReminders() {
   if(btn) { btn.disabled=false; btn.textContent='📧 שלח תזכורות עכשיו'; }
 }
 
+
+// ── GROUPS SYSTEM ──
+let ALL_GROUPS = {}; // {groupId: {name, icon, color}}
+let selectedGroupColor = '#7c3aed';
+let assignUserId = null, assignUserName = null;
+
+// Load groups from Firebase
+function initGroups() {
+  onValue(ref(db,'groups'), snap=>{
+    ALL_GROUPS = snap.exists() ? snap.val() : {};
+    renderGroupsSummary();
+    renderLeader(); // re-render leaderboard with groups
+  });
+}
+
+// Render groups summary in admin
+function renderGroupsSummary() {
+  const el2 = el('groups-summary'); if(!el2) return;
+  const gkeys = Object.keys(ALL_GROUPS);
+  if(!gkeys.length) {
+    el2.innerHTML = '<div style="font-size:12px;color:var(--text2);">אין קבוצות עדיין — צור קבוצה חדשה</div>';
+    return;
+  }
+  el2.innerHTML = gkeys.map(gid=>{
+    const g = ALL_GROUPS[gid];
+    const members = Object.values(USERS).filter(u=> u.approved && !u.isBot && (u.groups||[]).includes(gid));
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span style="width:28px;height:28px;border-radius:50%;background:'+(g.color||'#7c3aed')+';display:flex;align-items:center;justify-content:center;font-size:14px;">'+(g.icon||'🏆')+'</span>' +
+        '<span style="font-weight:700;font-size:13px;">'+g.name+'</span>' +
+        '<span style="font-size:11px;color:var(--text2);">'+members.length+' חברים</span>' +
+      '</div>' +
+      '<button class="btn btn-ghost btn-xs" data-edit-group="'+gid+'">✏️</button>' +
+    '</div>';
+  }).join('');
+  el2.querySelectorAll('[data-edit-group]').forEach(b=>{
+    b.addEventListener('click',()=>openGroupsModal(b.dataset.editGroup));
+  });
+}
+
+// Open groups modal
+function openGroupsModal(editGroupId) {
+  el('groups-modal').classList.add('open');
+  renderGroupsListAdmin();
+}
+el('open-groups-modal-btn')&&el('open-groups-modal-btn').addEventListener('click',()=>openGroupsModal());
+el('close-groups-modal')&&el('close-groups-modal').addEventListener('click',()=>el('groups-modal').classList.remove('open'));
+
+// Color picker
+document.querySelectorAll('.color-opt').forEach(opt=>{
+  opt.addEventListener('click',()=>{
+    document.querySelectorAll('.color-opt').forEach(o=>o.style.borderColor='transparent');
+    opt.style.borderColor='#fff';
+    selectedGroupColor = opt.dataset.color;
+  });
+});
+
+// Create new group
+el('create-group-btn')&&el('create-group-btn').addEventListener('click', async()=>{
+  const name = el('new-group-name').value.trim();
+  const icon = el('new-group-icon').value.trim() || '🏆';
+  if(!name){ toast('❌ חסר שם קבוצה'); return; }
+  const newGroup = { name, icon, color: selectedGroupColor, createdAt: Date.now() };
+  await push(ref(db,'groups'), newGroup);
+  el('new-group-name').value=''; el('new-group-icon').value='';
+  toast('✅ קבוצה נוצרה!');
+  renderGroupsListAdmin();
+});
+
+// Render groups list in modal (with edit/delete + user assignment)
+async function renderGroupsListAdmin() {
+  const lst = el('groups-list-admin'); if(!lst) return;
+  const gkeys = Object.keys(ALL_GROUPS);
+  if(!gkeys.length){ lst.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:10px;">אין קבוצות עדיין</div>'; return; }
+
+  const usersSnap = await get(ref(db,'users'));
+  const users = usersSnap.exists() ? Object.entries(usersSnap.val()).filter(([uid,u])=>u.approved&&!u.isBot) : [];
+
+  let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+  gkeys.forEach(gid=>{
+    const g = ALL_GROUPS[gid];
+    const members = users.filter(([uid,u])=>(u.groups||[]).includes(gid));
+    html += '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;">';
+    html += '<div style="width:32px;height:32px;border-radius:50%;background:'+(g.color||'#7c3aed')+';display:flex;align-items:center;justify-content:center;font-size:16px;">'+(g.icon||'🏆')+'</div>';
+    html += '<div><div style="font-weight:700;font-size:14px;">'+g.name+'</div><div style="font-size:11px;color:var(--text2);">'+members.length+' חברים</div></div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:4px;">';
+    html += '<button class="btn btn-ghost btn-xs" data-rename-group="'+gid+'" data-gname="'+encodeURIComponent(g.name)+'" data-gicon="'+encodeURIComponent(g.icon||'')+'">✏️ ערוך</button>';
+    html += '<button class="btn btn-red btn-xs" data-delete-group="'+gid+'">🗑</button>';
+    html += '</div></div>';
+    // Members tags
+    if(members.length) {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">';
+      members.forEach(([uid,u])=>{
+        html += '<span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:2px 8px;font-size:11px;display:flex;align-items:center;gap:4px;">';
+        html += (u.nickname||u.name);
+        html += '<button style="background:none;border:none;color:#f87171;cursor:pointer;font-size:12px;line-height:1;" data-remove-from="'+gid+'" data-remove-uid="'+uid+'">×</button>';
+        html += '</span>';
+      });
+      html += '</div>';
+    }
+    // Add member button
+    html += '<button class="btn btn-ghost btn-xs" style="width:100%;" data-add-to-group="'+gid+'">+ הוסף חבר לקבוצה</button>';
+    html += '</div>';
+  });
+  html += '</div>';
+  lst.innerHTML = html;
+
+  // Event listeners
+  lst.querySelectorAll('[data-delete-group]').forEach(b=>b.addEventListener('click', async()=>{
+    if(!confirm('למחוק קבוצה?')) return;
+    await remove(ref(db,'groups/'+b.dataset.deleteGroup));
+    toast('🗑 קבוצה נמחקה'); renderGroupsListAdmin();
+  }));
+
+  lst.querySelectorAll('[data-rename-group]').forEach(b=>b.addEventListener('click',()=>{
+    openEditGroupModal(b.dataset.renameGroup, decodeURIComponent(b.dataset.gname), decodeURIComponent(b.dataset.gicon));
+  }));
+
+  lst.querySelectorAll('[data-remove-from]').forEach(b=>b.addEventListener('click', async()=>{
+    const uid=b.dataset.removeUid, gid=b.dataset.removeFrom;
+    const snap = await get(ref(db,'users/'+uid+'/groups'));
+    const grps = snap.exists() ? snap.val() : [];
+    await set(ref(db,'users/'+uid+'/groups'), grps.filter(g=>g!==gid));
+    toast('✅ הוסר מהקבוצה'); renderGroupsListAdmin(); renderGroupsSummary();
+  }));
+
+  lst.querySelectorAll('[data-add-to-group]').forEach(b=>b.addEventListener('click',()=>{
+    openAssignModal(b.dataset.addToGroup);
+  }));
+}
+
+// Edit group modal (inline in groups modal)
+function openEditGroupModal(gid, currentName, currentIcon) {
+  const newName = prompt('שם חדש לקבוצה:', currentName);
+  if(!newName) return;
+  const newIcon = prompt('אייקון (אמוג'י):', currentIcon);
+  update(ref(db,'groups/'+gid), {name:newName, icon:newIcon||currentIcon});
+  toast('✅ קבוצה עודכנה!');
+}
+
+// Assign user to group modal
+function openAssignModal(preselectedGroupId) {
+  el('assign-group-modal').classList.add('open');
+  const checkboxes = el('assign-groups-checkboxes');
+  const nameEl = el('assign-user-name');
+
+  // Show all approved non-bot users
+  const users = Object.entries(USERS).filter(([uid,u])=>u.approved&&!u.isBot&&uid!==BOT_UID);
+  checkboxes.innerHTML = '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;">בחר משתמש:</div>' +
+    '<select id="assign-user-select" class="inp" style="margin-bottom:12px;"><option value="">בחר...</option>' +
+    users.map(([uid,u])=>'<option value="'+uid+'">'+( u.nickname||u.name)+'</option>').join('') +
+    '</select>' +
+    '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;">שייך לקבוצות:</div>' +
+    Object.entries(ALL_GROUPS).map(([gid,g])=>
+      '<label style="display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;">' +
+        '<input type="checkbox" id="assign-chk-'+gid+'" value="'+gid+'"'+(gid===preselectedGroupId?' checked':'')+' style="width:16px;height:16px;">' +
+        '<span style="font-size:16px;">'+(g.icon||'🏆')+'</span>' +
+        '<span style="font-weight:700;">'+g.name+'</span>' +
+      '</label>'
+    ).join('');
+
+  assignUserId = null; assignUserName = null;
+}
+
+el('close-assign-modal')&&el('close-assign-modal').addEventListener('click',()=>el('assign-group-modal').classList.remove('open'));
+el('cancel-assign')&&el('cancel-assign').addEventListener('click',()=>el('assign-group-modal').classList.remove('open'));
+
+el('confirm-assign')&&el('confirm-assign').addEventListener('click', async()=>{
+  const sel = el('assign-user-select');
+  if(!sel||!sel.value){ toast('❌ בחר משתמש'); return; }
+  const uid = sel.value;
+  const checked = Array.from(document.querySelectorAll('[id^="assign-chk-"]:checked')).map(c=>c.value);
+  await set(ref(db,'users/'+uid+'/groups'), checked);
+  el('assign-group-modal').classList.remove('open');
+  toast('✅ שיוך עודכן!');
+  renderGroupsListAdmin(); renderGroupsSummary();
+});
+
+// Assign group button in users list
+function openUserGroupAssign(uid, name) {
+  el('assign-group-modal').classList.add('open');
+  const sel = el('assign-user-select');
+  const checkboxes = el('assign-groups-checkboxes');
+  const userGroups = (USERS[uid]&&USERS[uid].groups)||[];
+
+  checkboxes.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;">'+name+'</div>' +
+    '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;">שייך לקבוצות:</div>' +
+    Object.entries(ALL_GROUPS).map(([gid,g])=>
+      '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;margin-bottom:4px;">' +
+        '<input type="checkbox" id="assign-chk-'+gid+'" value="'+gid+'"'+(userGroups.includes(gid)?' checked':'')+' style="width:16px;height:16px;">' +
+        '<span style="font-size:18px;">'+(g.icon||'🏆')+'</span>' +
+        '<span style="font-weight:700;font-size:13px;">'+g.name+'</span>' +
+      '</label>'
+    ).join('');
+  assignUserId = uid;
+
+  // Override confirm button
+  const btn = el('confirm-assign');
+  btn.onclick = async()=>{
+    const checked = Array.from(document.querySelectorAll('[id^="assign-chk-"]:checked')).map(c=>c.value);
+    await set(ref(db,'users/'+uid+'/groups'), checked);
+    el('assign-group-modal').classList.remove('open');
+    toast('✅ שיוך עודכן!');
+    renderGroupsSummary(); loadUsers();
+  };
+}
+
+// ── MODIFIED LEADERBOARD — grouped ──
+function renderLeader() {
+  const lst = el('leader-list'); if(!lst) return;
+
+  // Build base scores
+  const sc = {};
+  Object.entries(USERS).filter(([,u])=>u.approved).forEach(([uid,u])=>{
+    sc[uid] = {uid, name:u.nickname||u.name, pts:0, hits:0, dirs:0, groups:u.groups||[], isBot:u.isBot||false};
+  });
+  Object.entries(BETS).forEach(([uid,ub])=>{
+    if(!sc[uid]) return;
+    Object.entries(ub).forEach(([mid,bet])=>{
+      const m=MATCHES[mid]; if(!m||m.result===undefined) return;
+      const p=calcPts(m,bet); sc[uid].pts+=p.total;
+      if(p.hit)sc[uid].hits++; else if(p.dir)sc[uid].dirs++;
+    });
+  });
+
+  const gkeys = Object.keys(ALL_GROUPS);
+
+  // If no groups defined yet - show simple leaderboard
+  if(!gkeys.length) {
+    const sorted = Object.values(sc).sort((a,b)=>b.pts-a.pts);
+    if(!sorted.length){ lst.innerHTML="<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>הטבלה תתעדכן לאחר המשחקים הראשונים</div>"; return; }
+    const medals=['🥇','🥈','🥉']; const cols=['var(--gold)','#c0c0c0','#cd7f32'];
+    lst.innerHTML = sorted.map((s,i)=>
+      "<div class='leader-row'><div class='leader-rank' style='color:"+(cols[i]||'var(--text2)')+"'>"+(medals[i]||'#'+(i+1))+"</div>" +
+      "<div class='leader-name' style='display:flex;align-items:center;gap:6px;'>" +
+        (s.isBot?'<img src="'+BOT_AVATAR+'" style="width:24px;height:24px;border-radius:50%;">':'') +
+        s.name+"</div>" +
+      "<div style='display:flex;flex-direction:column;align-items:flex-end;gap:2px;'><div class='leader-pts'>"+s.pts+" נק'</div>" +
+      "<div style='font-size:10px;color:var(--text2);'>✅"+s.hits+" 🔵"+s.dirs+"</div></div></div>"
+    ).join('');
+    return;
+  }
+
+  // Render separate leaderboard per group
+  let html = '';
+  gkeys.forEach(gid=>{
+    const g = ALL_GROUPS[gid];
+    // Include: users in this group + admin + bot
+    const groupScores = Object.values(sc).filter(s=>
+      s.isBot || (USERS[s.uid]&&USERS[s.uid].isAdmin) || (s.groups||[]).includes(gid)
+    ).sort((a,b)=>b.pts-a.pts);
+
+    if(!groupScores.length) return;
+
+    const medals=['🥇','🥈','🥉']; const cols=['var(--gold)','#c0c0c0','#cd7f32'];
+    const groupColor = g.color||'#7c3aed';
+
+    html += '<div class="group-leaderboard">';
+    html += '<div class="group-header" style="background:'+groupColor+'22;border:1px solid '+groupColor+'44;">';
+    html += '<span style="font-size:24px;">'+(g.icon||'🏆')+'</span>';
+    html += '<span style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:'+groupColor+';">'+g.name+'</span>';
+    html += '</div>';
+
+    html += groupScores.map((s,i)=>
+      "<div class='leader-row' style='border-right:3px solid "+groupColor+";'>" +
+      "<div class='leader-rank' style='color:"+(cols[i]||'var(--text2)')+"'>"+(medals[i]||'#'+(i+1))+"</div>" +
+      "<div class='leader-name' style='display:flex;align-items:center;gap:6px;'>" +
+        (s.isBot?'<img src="'+BOT_AVATAR+'" style="width:22px;height:22px;border-radius:50%;">':'') +
+        s.name+"</div>" +
+      "<div style='display:flex;flex-direction:column;align-items:flex-end;gap:2px;'>" +
+        "<div class='leader-pts'>"+s.pts+" נק'</div>" +
+        "<div style='font-size:10px;color:var(--text2);'>✅"+s.hits+" 🔵"+s.dirs+"</div>" +
+      "</div></div>"
+    ).join('');
+
+    html += '</div>';
+  });
+
+  lst.innerHTML = html || "<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>הטבלה תתעדכן לאחר המשחקים הראשונים</div>";
+}
+
 // ── FLAG SYSTEM ──
 
 // ── TROPHY SVG for unknown flags ──
@@ -1911,6 +2261,7 @@ onAuthStateChanged(auth, async user=>{
   initPresence();
   logActivity('login', {page: 'home'});
   checkNotificationPrompt();
+  initGroups();
   // Check reminders every 5 minutes
   setTimeout(checkAndSendReminders, 5000);
   setInterval(checkAndSendReminders, 300000);
@@ -2122,8 +2473,21 @@ function renderMatches(){
 
     // Show everyone's bets once match is locked
     if(lk) {
+      // Get current user's groups for filtering
+      const myGroups = (ME && USERS[ME.uid] && USERS[ME.uid].groups) || [];
+      const isAdminUser = MEDATA && MEDATA.isAdmin;
       const allBetsForMatch = Object.entries(BETS)
-        .map(([uid,ub])=>{ const bet=ub&&ub[id]; if(bet===undefined) return null; const u=USERS[uid]||{}; return {name:u.nickname||u.name||'?', bet, pts:hasRes?calcPts(m,bet):null, isBot:u.isBot}; })
+        .map(([uid,ub])=>{
+          const bet=ub&&ub[id]; if(bet===undefined) return null;
+          const u=USERS[uid]||{};
+          // Show: bot, admin, and users in same group as current user
+          const uGroups = u.groups||[];
+          const sameGroup = u.isBot || u.isAdmin || isAdminUser ||
+            myGroups.length===0 || uGroups.length===0 ||
+            myGroups.some(g=>uGroups.includes(g));
+          if(!sameGroup) return null;
+          return {name:u.nickname||u.name||'?', bet, pts:hasRes?calcPts(m,bet):null, isBot:u.isBot};
+        })
         .filter(Boolean)
         .sort((a,b)=>{ if(a.isBot && !b.isBot) return 1; if(!a.isBot && b.isBot) return -1; return 0; });
       if(allBetsForMatch.length) {
@@ -2236,23 +2600,6 @@ function renderMyBets(){
   }));
 }
 
-// ── LEADERBOARD ──
-function renderLeader(){
-  const sc={};
-  Object.entries(USERS).filter(([,u])=>u.approved).forEach(([uid,u])=>{ sc[uid]={uid,name:u.nickname||u.name,pts:0,hits:0,dirs:0}; });
-  Object.entries(BETS).forEach(([uid,ub])=>{ if(!sc[uid]) return; Object.entries(ub).forEach(([mid,bet])=>{ const m=MATCHES[mid]; if(!m||m.result===undefined) return; const p=calcPts(m,bet); sc[uid].pts+=p.total; if(p.hit)sc[uid].hits++; else if(p.dir)sc[uid].dirs++; }); });
-  // Special bet points will be added by admin manually via scoring system
-  // (champion and scorer results are announced at tournament end)
-  const sorted=Object.values(sc).sort((a,b)=>b.pts-a.pts);
-  const lst=el('leader-list'); if(!lst) return;
-  if(!sorted.length){ lst.innerHTML="<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>הטבלה תתעדכן לאחר המשחקים הראשונים</div>"; return; }
-  const medals=['🥇','🥈','🥉']; const cols=['var(--gold)','#c0c0c0','#cd7f32'];
-  lst.innerHTML=sorted.map((s,i)=>{
-    const isBot = s.uid === BOT_UID;
-    const avatarHtml = isBot ? "<img src=\""+BOT_AVATAR+"\" style=\"width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);\"> " : "";
-    return "<div class='leader-row'><div class='leader-rank' style='color:"+(cols[i]||"var(--text2)")+"'>"+(medals[i]||"#"+(i+1))+"</div><div class='leader-name' style='display:flex;align-items:center;gap:6px;'>"+avatarHtml+s.name+"</div><div style='display:flex;flex-direction:column;align-items:flex-end;gap:2px;'><div class='leader-pts'>"+s.pts+" נק'</div><div style='font-size:10px;color:var(--text2);'>✅"+s.hits+" 🔵"+s.dirs+"</div></div></div>";
-  }).join('');
-}
 
 // ── RESULT MODAL ──
 function openResModal(id){
@@ -2358,11 +2705,13 @@ async function loadUsers(){
     const status=u.approved?"<span style='color:#34d399;font-weight:700;'>✅ מאושר</span>":"<span style='color:#fbbf24;font-weight:700;'>⏳ ממתין</span>";
     const ap=!u.approved?"<button class='btn btn-green btn-xs' data-ap='"+uid+"'>✅</button>":"";
     const ed=!u.isAdmin?"<button class='btn btn-ghost btn-xs' data-ed='"+uid+"' data-dn='"+encodeURIComponent(u.nickname||u.name)+"'>✏️</button>":"";
+    const ga="<button class='btn btn-grad btn-xs' data-ga='"+uid+"' data-gn='"+encodeURIComponent(u.nickname||u.name)+"'>🏆 קבוצה</button>";
     const rm=!u.isAdmin?"<button class='btn btn-red btn-xs' data-rm='"+uid+"'>🗑</button>":"";
-    html+="<tr><td style='font-weight:700;'>"+(u.nickname||u.name)+(u.isAdmin?" 👑":"")+"</td><td style='font-size:11px;color:var(--text2);'>"+u.email+"</td><td>"+status+"</td><td><div style='display:flex;gap:4px;'>"+ap+ed+rm+"</div></td></tr>";
+    html+="<tr><td style='font-weight:700;'>"+(u.nickname||u.name)+(u.isAdmin?" 👑":"")+"</td><td style='font-size:11px;color:var(--text2);'>"+u.email+"</td><td>"+status+"</td><td><div style='display:flex;gap:4px;flex-wrap:wrap;'>"+ap+ga+ed+rm+"</div></td></tr>";
   });
   html+="</tbody></table>";
   lst.innerHTML=html;
+  lst.querySelectorAll('[data-ga]').forEach(b=>b.addEventListener('click',()=>openUserGroupAssign(b.dataset.ga, decodeURIComponent(b.dataset.gn))));
   lst.querySelectorAll('[data-ap]').forEach(b=>b.addEventListener('click',async()=>{ await update(ref(db,'users/'+b.dataset.ap),{approved:true}); toast('✅ אושר!'); loadUsers(); checkPending(); }));
   lst.querySelectorAll('[data-ed]').forEach(b=>b.addEventListener('click',()=>openUEditModal(b.dataset.ed,decodeURIComponent(b.dataset.dn))));
   lst.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',async()=>{ if(!confirm('להסיר?')) return; await remove(ref(db,'users/'+b.dataset.rm)); toast('🗑 הוסר'); loadUsers(); }));
