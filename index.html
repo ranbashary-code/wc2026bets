@@ -1708,7 +1708,26 @@ el('create-group-btn')&&el('create-group-btn').addEventListener('click', async()
   if(!name){ toast('❌ חסר שם קבוצה'); return; }
   const logo = el('new-group-logo') ? el('new-group-logo').value.trim() : '';
   const newGroup = { name, icon, color: selectedGroupColor, createdAt: Date.now(), ...(logo && {logo}) };
-  await push(ref(db,'groups'), newGroup);
+  const newRef = await push(ref(db,'groups'), newGroup);
+  const newGid = newRef.key;
+  // Auto-add admin and bot to every new group
+  const usersSnap = await get(ref(db,'users'));
+  if(usersSnap.exists()) {
+    const updates = {};
+    Object.entries(usersSnap.val()).forEach(([uid, u]) => {
+      if(u.isAdmin || uid === BOT_UID) {
+        const existing = u.groups || [];
+        if(!existing.includes(newGid)) {
+          updates['users/'+uid+'/groups'] = [...existing, newGid];
+        }
+      }
+    });
+    // Also add bot directly
+    const botSnap = await get(ref(db,'users/'+BOT_UID+'/groups'));
+    const botGroups = botSnap.exists() ? botSnap.val() : [];
+    if(!botGroups.includes(newGid)) updates['users/'+BOT_UID+'/groups'] = [...botGroups, newGid];
+    if(Object.keys(updates).length) await update(ref(db), updates);
+  }
   el('new-group-name').value=''; el('new-group-icon').value='⚽';
   if(el('new-group-logo')) el('new-group-logo').value='';
   // Reset icon picker selection
@@ -1801,6 +1820,15 @@ function openAssignModal(preselectedGroupId) {
 
   // Show all approved non-bot users
   const users = Object.entries(USERS).filter(([uid,u])=>u.approved&&!u.isBot&&uid!==BOT_UID);
+  const onUserChange = async (uid) => {
+    if(!uid) return;
+    const snap = await get(ref(db,'users/'+uid+'/groups'));
+    const userGroups = snap.exists() ? (snap.val()||[]) : [];
+    document.querySelectorAll('[id^="assign-chk-"]').forEach(chk => {
+      chk.checked = userGroups.includes(chk.value);
+    });
+  };
+
   checkboxes.innerHTML = '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;">בחר משתמש:</div>' +
     '<select id="assign-user-select" class="inp" style="margin-bottom:12px;"><option value="">בחר...</option>' +
     users.map(([uid,u])=>'<option value="'+uid+'">'+( u.nickname||u.name)+'</option>').join('') +
@@ -1813,6 +1841,10 @@ function openAssignModal(preselectedGroupId) {
         '<span style="font-weight:700;">'+g.name+'</span>' +
       '</label>'
     ).join('');
+
+  // When user is selected, load their current groups and check the right boxes
+  const selEl = el('assign-user-select');
+  if(selEl) selEl.addEventListener('change', ()=>onUserChange(selEl.value));
 
   assignUserId = null; assignUserName = null;
 }
