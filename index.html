@@ -1760,7 +1760,7 @@ async function renderGroupsListAdmin() {
 function openEditGroupModal(gid, currentName, currentIcon) {
   const newName = prompt('שם חדש לקבוצה:', currentName);
   if(!newName) return;
-  const newIcon = prompt('אייקון (אמוג׳י):', currentIcon);
+  const newIcon = prompt('אייקון (אמוג\u05f3י):', currentIcon);
   update(ref(db,'groups/'+gid), {name:newName, icon:newIcon||currentIcon});
   toast('✅ קבוצה עודכנה!');
 }
@@ -1885,7 +1885,7 @@ function renderLeader() {
     html += '<div class="group-leaderboard">';
     html += '<div class="group-header" style="background:'+groupColor+'22;border:1px solid '+groupColor+'44;">';
     html += '<span style="font-size:24px;">'+(g.icon||'🏆')+'</span>';
-    html += "<span style=\"font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:"+groupColor+"\">"+g.name+"</span>";
+    html += '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:2px;color:'+groupColor+';">'+g.name+'</span>';
     html += '</div>';
 
     html += groupScores.map((s,i)=>
