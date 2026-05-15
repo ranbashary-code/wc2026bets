@@ -2373,7 +2373,7 @@ async function rejectU(uid){ await remove(ref(db,'users/'+uid)); toast('🗑 נ�
 function initData(){
   onValue(ref(db,'matches'),s=>{ MATCHES=s.exists()?s.val():{};  refreshAll(); });
   onValue(ref(db,'bets'),   s=>{ BETS=s.exists()?s.val():{};     refreshAll(); });
-  onValue(ref(db,'users'),  s=>{ if(s.exists()) USERS=s.val();   renderLeader(); });
+  onValue(ref(db,'users'),  s=>{ if(s.exists()) USERS=s.val();   renderLeader(); renderGroupsSummary(); loadUsers(); });
   onValue(ref(db,'scoring'),s=>{ if(s.exists()){ SCORING=s.val(); renderScoringTable(); if(MEDATA&&MEDATA.isAdmin) renderScoringEdit(); } });
 }
 function refreshAll(){
