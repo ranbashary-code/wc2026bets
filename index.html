@@ -1816,51 +1816,60 @@ function openEditGroupModal(gid, currentName, currentIcon) {
 function openAssignModal(preselectedGroupId) {
   el('assign-group-modal').classList.add('open');
   const checkboxes = el('assign-groups-checkboxes');
-  const nameEl = el('assign-user-name');
 
-  // Show all approved non-bot users
+  // Show all approved non-bot users as checkboxes (multi-select)
   const users = Object.entries(USERS).filter(([uid,u])=>u.approved&&!u.isBot&&uid!==BOT_UID);
-  const onUserChange = async (uid) => {
-    if(!uid) return;
-    const snap = await get(ref(db,'users/'+uid+'/groups'));
-    const userGroups = snap.exists() ? (snap.val()||[]) : [];
-    document.querySelectorAll('[id^="assign-chk-"]').forEach(chk => {
-      chk.checked = userGroups.includes(chk.value);
-    });
-  };
 
-  checkboxes.innerHTML = '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;">בחר משתמש:</div>' +
-    '<select id="assign-user-select" class="inp" style="margin-bottom:12px;"><option value="">בחר...</option>' +
-    users.map(([uid,u])=>'<option value="'+uid+'">'+( u.nickname||u.name)+'</option>').join('') +
-    '</select>' +
-    '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;">שייך לקבוצות:</div>' +
+  // Build: users as checkboxes on top, then group checkboxes
+  checkboxes.innerHTML =
+    '<div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px;">בחר חברים:</div>' +
+    '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:14px;max-height:160px;overflow-y:auto;">' +
+    users.map(([uid,u])=>
+      '<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;">' +
+        '<input type="checkbox" class="user-chk" value="'+uid+'" style="width:16px;height:16px;">' +
+        '<span style="font-weight:700;font-size:13px;">'+(u.nickname||u.name)+'</span>' +
+      '</label>'
+    ).join('') +
+    '</div>' +
+    '<div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px;">שייך לקבוצות:</div>' +
+    '<div style="display:flex;flex-direction:column;gap:4px;">' +
     Object.entries(ALL_GROUPS).map(([gid,g])=>
-      '<label style="display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;">' +
+      '<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;">' +
         '<input type="checkbox" id="assign-chk-'+gid+'" value="'+gid+'"'+(gid===preselectedGroupId?' checked':'')+' style="width:16px;height:16px;">' +
         '<span style="font-size:16px;">'+(g.icon||'🏆')+'</span>' +
         '<span style="font-weight:700;">'+g.name+'</span>' +
       '</label>'
-    ).join('');
-
-  // When user is selected, load their current groups and check the right boxes
-  const selEl = el('assign-user-select');
-  if(selEl) selEl.addEventListener('change', ()=>onUserChange(selEl.value));
+    ).join('') +
+    '</div>';
 
   assignUserId = null; assignUserName = null;
 }
 
 el('close-assign-modal')&&el('close-assign-modal').addEventListener('click',()=>el('assign-group-modal').classList.remove('open'));
+
+// Click outside modal to close
+document.querySelectorAll('.modal').forEach(modal=>{
+  modal.addEventListener('click', e=>{
+    if(e.target === modal) modal.classList.remove('open');
+  });
+});
 el('cancel-assign')&&el('cancel-assign').addEventListener('click',()=>el('assign-group-modal').classList.remove('open'));
 
 el('confirm-assign')&&el('confirm-assign').addEventListener('click', async()=>{
-  const sel = el('assign-user-select');
-  if(!sel||!sel.value){ toast('❌ בחר משתמש'); return; }
-  const uid = sel.value;
-  const checked = Array.from(document.querySelectorAll('[id^="assign-chk-"]:checked')).map(c=>c.value);
-  await set(ref(db,'users/'+uid+'/groups'), checked);
+  const selectedUsers = Array.from(document.querySelectorAll('.user-chk:checked')).map(c=>c.value);
+  if(!selectedUsers.length){ toast('❌ בחר לפחות חבר אחד'); return; }
+  const selectedGroups = Array.from(document.querySelectorAll('[id^="assign-chk-"]:checked')).map(c=>c.value);
+  if(!selectedGroups.length){ toast('❌ בחר לפחות קבוצה אחת'); return; }
+  // For each selected user, MERGE their existing groups with new selection
+  for(const uid of selectedUsers) {
+    const snap = await get(ref(db,'users/'+uid+'/groups'));
+    const existing = snap.exists() ? (snap.val()||[]) : [];
+    const merged = [...new Set([...existing, ...selectedGroups])];
+    await set(ref(db,'users/'+uid+'/groups'), merged);
+  }
   el('assign-group-modal').classList.remove('open');
-  toast('✅ שיוך עודכן!');
-  renderGroupsListAdmin(); renderGroupsSummary();
+  toast('✅ שיוך עודכן ל-'+selectedUsers.length+' חברים!');
+  renderGroupsListAdmin(); renderGroupsSummary(); loadUsers();
 });
 
 // Assign group button in users list
@@ -2767,7 +2776,7 @@ async function loadUsers(){
     const ed=!u.isAdmin?"<button class='btn btn-ghost btn-xs' data-ed='"+uid+"' data-dn='"+encodeURIComponent(u.nickname||u.name)+"'>✏️</button>":"";
     const ga="<button class='btn btn-grad btn-xs' data-ga='"+uid+"' data-gn='"+encodeURIComponent(u.nickname||u.name)+"'>🏆</button>";
     const rm=!u.isAdmin?"<button class='btn btn-red btn-xs' data-rm='"+uid+"'>🗑</button>":"";
-    const userGroups=(u.groups||[]).map(gid=>ALL_GROUPS[gid]?("<span style='display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,0.06);border-radius:6px;padding:2px 6px;font-size:11px;margin:1px;'>"+renderIcon(ALL_GROUPS[gid].icon||"🏆","14px")+" "+ALL_GROUPS[gid].name+"</span>"):"").join("");
+    const userGroups=(u.groups||[]).filter(gid=>ALL_GROUPS[gid]).map(gid=>"<span style='display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,0.06);border-radius:6px;padding:2px 6px;font-size:11px;margin:1px;'>"+renderIcon(ALL_GROUPS[gid].icon||"🏆","14px")+" "+ALL_GROUPS[gid].name+"</span>").join("");
     const groupCell = userGroups || "<span style='color:var(--text2);font-size:11px;'>—</span>";
     html+="<tr><td style='font-weight:700;'>"+(u.nickname||u.name)+(u.isAdmin?" 👑":"")+"</td><td style='font-size:11px;color:var(--text2);'>"+u.email+"</td><td>"+status+"</td><td>"+groupCell+"</td><td><div style='display:flex;gap:4px;flex-wrap:wrap;'>"+ap+ga+ed+rm+"</div></td></tr>";
   });
