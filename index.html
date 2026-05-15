@@ -1760,7 +1760,7 @@ async function renderGroupsListAdmin() {
 function openEditGroupModal(gid, currentName, currentIcon) {
   const newName = prompt('שם חדש לקבוצה:', currentName);
   if(!newName) return;
-  const newIcon = prompt('אייקון (אמוג'י):', currentIcon);
+  const newIcon = prompt('אייקון (אמוג׳י):', currentIcon);
   update(ref(db,'groups/'+gid), {name:newName, icon:newIcon||currentIcon});
   toast('✅ קבוצה עודכנה!');
 }
