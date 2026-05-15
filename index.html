@@ -1938,8 +1938,19 @@ function renderLeader() {
   }
 
   // Render separate leaderboard per group
+  // Filter groups: admin sees all, user sees only their groups
+  const myUid = ME ? ME.uid : null;
+  const myGroups = myUid && USERS[myUid] ? (USERS[myUid].groups||[]) : [];
+  const isAdm = MEDATA && MEDATA.isAdmin;
+  const visibleGroups = isAdm ? gkeys : gkeys.filter(gid => myGroups.includes(gid));
+
+  if(!isAdm && !visibleGroups.length) {
+    lst.innerHTML = "<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>אתה לא משויך לאף קבוצה עדיין</div>";
+    return;
+  }
+
   let html = '';
-  gkeys.forEach(gid=>{
+  visibleGroups.forEach(gid=>{
     const g = ALL_GROUPS[gid];
     // Include: users in this group + admin + bot
     const groupScores = Object.values(sc).filter(s=>
