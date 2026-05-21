@@ -1552,11 +1552,24 @@ async function checkAndSendReminders() {
 
   if(!todayMatches.length) return;
 
-  // Check if first match starts in 45-75 minutes from now
-  const firstMatchTime = new Date(todayMatches[0][1].datetime).getTime();
-  const minsUntil = (firstMatchTime - now.getTime()) / 60000;
+  // Determine send time:
+  // Default: 17:00 local time today
+  // Exception: if earliest match starts before 17:00, send 1 hour before it
+  const sendAt17 = new Date(now);
+  sendAt17.setHours(17, 0, 0, 0);
 
-  if(minsUntil < 45 || minsUntil > 75) return;
+  const firstMatchTime = new Date(todayMatches[0][1].datetime);
+  let scheduledSendTime;
+  if(firstMatchTime < sendAt17) {
+    // Match before 17:00 — send 1 hour before first match
+    scheduledSendTime = new Date(firstMatchTime.getTime() - 60 * 60 * 1000);
+  } else {
+    scheduledSendTime = sendAt17;
+  }
+
+  // Only send if we're within a 5-minute window of the scheduled time
+  const diffMins = (now.getTime() - scheduledSendTime.getTime()) / 60000;
+  if(diffMins < 0 || diffMins > 5) return;
 
   // Check if already sent today (stored in Firebase)
   const sentSnap = await get(ref(db, 'emailSent/' + todayStr.replace(/ /g,'_')));
