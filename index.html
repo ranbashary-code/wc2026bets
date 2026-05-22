@@ -1498,8 +1498,9 @@ function formatTimeAgo(ts) {
 
 
 // ── EMAIL NOTIFICATIONS ──
-const EMAILJS_SERVICE  = 'service_05sarz6';
-const EMAILJS_TEMPLATE = 'template_40kn8sa';
+const EMAILJS_SERVICE        = 'service_05sarz6';
+const EMAILJS_TEMPLATE       = 'template_40kn8sa';
+const EMAILJS_TEMPLATE_ADMIN = 'template_9pnyno9';
 const EMAILJS_KEY      = 'smg7O8slOyKa2nxWP';
 
 // Initialize EmailJS
@@ -1520,6 +1521,20 @@ async function sendReminderEmail(userEmail, userName, daySummary) {
   } catch(err) {
     console.error('Email error:', err);
     return false;
+  }
+}
+
+// Notify admin when a new user registers and awaits approval
+async function sendNewUserNotification(newUserName, newUserEmail) {
+  try {
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_ADMIN, {
+      to_email: ADMIN,
+      to_name: newUserName || newUserEmail,
+      day_summary: newUserEmail,
+    });
+    console.log('New user notification sent to admin');
+  } catch(err) {
+    console.error('Admin notification error:', err);
   }
 }
 
@@ -2335,6 +2350,7 @@ onAuthStateChanged(auth, async user=>{
       uid:user.uid,email:user.email,name:user.displayName,
       nickname:user.displayName,approved:isAdmin,isAdmin,createdAt:Date.now()
     });
+    if(!isAdmin) sendNewUserNotification(user.displayName||user.email, user.email);
   }
   const s2=await get(ref(db,'users/'+user.uid));
   MEDATA=s2.val(); ME=user;
