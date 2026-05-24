@@ -1528,7 +1528,6 @@ async function sendReminderEmail(userEmail, userName, daySummary) {
 async function sendNewUserNotification(newUserName, newUserEmail) {
   try {
     await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_ADMIN, {
-      to_email: ADMIN,
       to_name: newUserName || newUserEmail,
       day_summary: newUserEmail,
     });
