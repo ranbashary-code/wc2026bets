@@ -767,13 +767,13 @@ select.inp option{background:var(--card2);}
       <!-- Boti-Goal Bot -->
       <div class="card" style="padding:18px;margin-bottom:14px;background:linear-gradient(135deg,rgba(26,58,107,0.4),rgba(116,185,224,0.1));border-color:rgba(116,185,224,0.3);">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <img src="''' + "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%231a3a6b'%2F%3E%3CclipPath id='bc'%3E%3Ccircle cx='20' cy='20' r='20'%2F%3E%3C%2FclipPath%3E%3Crect x='0' y='0' width='40' height='40' fill='%2374b9e0' clip-path='url(%23bc)'%2F%3E%3Crect x='13' y='0' width='7' height='40' fill='%23fff' clip-path='url(%23bc)'%2F%3E%3Ccircle cx='20' cy='13' r='5' fill='%23f5c5a3'%2F%3E%3Cellipse cx='20' cy='10' rx='5.5' ry='4' fill='%238B4513'%2F%3E%3Crect x='14.5' y='10' width='2' height='7' rx='1' fill='%238B4513'%2F%3E%3Crect x='23' y='10' width='2' height='7' rx='1' fill='%238B4513'%2F%3E%3Cpath d='M13 22 Q20 19 27 22 L28 34 H12 Z' fill='%23fff'%2F%3E%3Ctext x='20' y='30' text-anchor='middle' font-size='7' font-weight='900' fill='%231a3a6b' font-family='Arial'%3E9%3C%2Ftext%3E%3C%2Fsvg%3E" + '''" style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(116,185,224,0.5);">
+          <div style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(116,185,224,0.5);background:linear-gradient(135deg,#1a3a6b,#74b9e0);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🤖</div>
           <div>
             <p style="font-size:15px;font-weight:900;color:#74b9e0;">🤖 Boti-Goal</p>
-            <p style="font-size:11px;color:var(--text2);">שחקן בוט מבוסס AI — מנתח ומהמר אוטומטית</p>
+            <p style="font-size:11px;color:var(--text2);">שחקן בוט מבוסס AI — מנתח ומהמר סיבוב אחד בכל פעם</p>
           </div>
         </div>
-        <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על כל המשחקים</button>
+        <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על הסיבוב הקרוב</button>
         <div id="bot-run-status" style="font-size:12px;text-align:center;color:var(--text2);min-height:16px;"></div>
       </div>
       <!-- Members -->
@@ -822,33 +822,59 @@ const BOT_UID = "boti-goal-bot";
 const BOT_NAME = "Boti-Goal 🤖";
 
 // ── BOTI-GOAL AI BOT ──
+
 // ── BOT ROUND DETECTION ──
-// Groups group-stage matches into rounds by date (day clusters)
-function getGroupRounds(allMatches) {
+// Returns all rounds across all stages in chronological order
+function getAllBotRounds(allMatches) {
+  const rounds = [];
+
+  // GROUP STAGE: cluster by date (3.5-day windows = one round)
   const groupMs = Object.entries(allMatches)
     .filter(([,m]) => m.stage === 'group' && m.datetime && m.team1 && m.team2 && m.team1 !== 'TBD' && m.team2 !== 'TBD')
     .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
 
-  if(!groupMs.length) return [];
-
-  // Cluster by date (matches within 3 days of each other = same round)
-  const rounds = [];
-  let currentRound = [groupMs[0]];
-  let currentDate = new Date(groupMs[0][1].datetime);
-
-  for(let i = 1; i < groupMs.length; i++){
-    const mDate = new Date(groupMs[i][1].datetime);
-    const daysDiff = (mDate - currentDate) / (1000 * 60 * 60 * 24);
-    if(daysDiff <= 3.5){
-      currentRound.push(groupMs[i]);
-    } else {
-      rounds.push(currentRound);
-      currentRound = [groupMs[i]];
-      currentDate = mDate;
+  if(groupMs.length) {
+    let currentMatches = [groupMs[0]];
+    let currentDate = new Date(groupMs[0][1].datetime);
+    let roundNum = 1;
+    for(let i = 1; i < groupMs.length; i++){
+      const mDate = new Date(groupMs[i][1].datetime);
+      const daysDiff = (mDate - currentDate) / (1000 * 60 * 60 * 24);
+      if(daysDiff <= 3.5){ currentMatches.push(groupMs[i]); }
+      else {
+        rounds.push({ label: `סיבוב ${roundNum} — שלב הבתים`, matches: currentMatches, stage: 'group' });
+        currentMatches = [groupMs[i]]; currentDate = mDate; roundNum++;
+      }
     }
+    rounds.push({ label: `סיבוב ${roundNum} — שלב הבתים`, matches: currentMatches, stage: 'group' });
   }
-  rounds.push(currentRound);
+
+  // KNOCKOUT STAGES: each stage = one round
+  const koStages = [
+    { key: 'r32',   label: 'שמינית גמר' },
+    { key: 'r16',   label: 'שמינית פינאל' },
+    { key: 'qf',    label: 'רבע גמר' },
+    { key: 'sf',    label: 'חצי גמר' },
+    { key: '3rd',   label: 'מקום שלישי' },
+    { key: 'final', label: 'גמר 🏆' },
+  ];
+  koStages.forEach(({ key, label }) => {
+    const stageMs = Object.entries(allMatches)
+      .filter(([,m]) => m.stage === key && m.datetime && m.team1 && m.team2 && m.team1 !== 'TBD' && m.team2 !== 'TBD')
+      .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
+    if(stageMs.length) rounds.push({ label, matches: stageMs, stage: key });
+  });
+
   return rounds;
+}
+
+// Find the next round the bot should bet on (first with unbetted + unlocked matches)
+function getNextBotRound(allRounds, botBets) {
+  for(const round of allRounds) {
+    const missing = round.matches.filter(([id, m]) => !botBets[id] && !locked(m));
+    if(missing.length > 0) return { round, missing };
+  }
+  return null;
 }
 
 async function checkBotRoundAlert() {
@@ -856,49 +882,40 @@ async function checkBotRoundAlert() {
   const banner = el('bot-round-banner');
   if(!banner) return;
 
-  const allMatches = MATCHES;
-  const rounds = getGroupRounds(allMatches);
-  if(!rounds.length) return;
+  const allRounds = getAllBotRounds(MATCHES);
+  if(!allRounds.length) { banner.style.display='none'; return; }
 
-  const now = Date.now();
   const botBetSnap = await get(ref(db, 'bets/' + BOT_UID));
   const botBets = botBetSnap.exists() ? botBetSnap.val() : {};
 
-  // Check if pending-banner is visible to stack below it
+  const next = getNextBotRound(allRounds, botBets);
+
+  // Stack below pending-banner if visible
   const pendingBanner = el('pending-banner');
   const pendingVisible = pendingBanner && pendingBanner.style.display === 'flex';
   banner.style.top = pendingVisible ? '94px' : '54px';
 
-  for(let i = 0; i < rounds.length - 1; i++){
-    const round = rounds[i];
-    const nextRound = rounds[i + 1];
+  if(!next) { banner.style.display='none'; return; }
 
-    const roundDone = round.every(([id, m]) => m.result !== undefined);
-    if(!roundDone) break;
+  const { round, missing } = next;
+  const firstMatchMs = Math.min(...missing.map(([,m]) => new Date(m.datetime).getTime()));
+  const now = Date.now();
 
-    const nextRoundFirstMs = new Date(nextRound[0][1].datetime).getTime();
-    if(now >= nextRoundFirstMs) continue;
+  if(now >= firstMatchMs) { banner.style.display='none'; return; }
 
-    const botMissingBets = nextRound.filter(([id]) => !botBets[id]);
-    if(!botMissingBets.length) continue;
+  const hoursLeft = Math.round((firstMatchMs - now) / 3600000);
 
-    const hoursLeft = Math.round((nextRoundFirstMs - now) / 3600000);
-
-    banner.style.display = 'flex';
-    banner.innerHTML = `
-      <span style="font-size:13px;font-weight:700;color:#fff;">
-        🤖 סיבוב ${i+1} הסתיים! ${botMissingBets.length} משחקים בסיבוב ${i+2} ממתינים להימורי Boti-Goal
-        <span style="opacity:0.75;font-size:11px;"> · בעוד ~${hoursLeft} שעות מתחיל המשחק הראשון</span>
-      </span>
-      <button onclick="window.runBotiGoalBot()" style="background:#fff;color:#6d28d9;border:none;border-radius:8px;padding:5px 14px;font-weight:900;font-size:12px;cursor:pointer;flex-shrink:0;">⚡ הפעל עכשיו</button>
-    `;
-    return;
-  }
-
-  banner.style.display = 'none';
+  banner.style.display = 'flex';
+  banner.innerHTML = `
+    <span style="font-size:13px;font-weight:700;color:#fff;">
+      🤖 Boti-Goal לא המר עדיין על <strong>${round.label}</strong> — ${missing.length} משחקים ממתינים
+      <span style="opacity:0.75;font-size:11px;"> · המשחק הראשון בעוד ~${hoursLeft} שעות</span>
+    </span>
+    <button onclick="window.runBotiGoalBot()" style="background:#fff;color:#6d28d9;border:none;border-radius:8px;padding:5px 14px;font-weight:900;font-size:12px;cursor:pointer;flex-shrink:0;">⚡ המר עכשיו</button>
+  `;
 }
 
-async function runBotiGoalBot() {
+
   const statusEl = el('bot-run-status');
   if(statusEl){ statusEl.textContent = '🤖 Boti-Goal מתחבר...'; statusEl.style.color='var(--text2)'; }
 
@@ -921,19 +938,25 @@ async function runBotiGoalBot() {
   const allMatches = matchSnap.val();
   const botBets    = betSnap.exists() ? betSnap.val() : {};
 
-  // Only bet on unlocked matches without existing bet
-  const pending = Object.entries(allMatches).filter(([id,m])=>{
-    return !botBets[id] && m.team1 && m.team2 &&
-           m.team1 !== 'TBD' && m.team2 !== 'TBD' && !locked(m);
-  });
+  // ── Limit to NEXT ROUND ONLY ──
+  const allRounds = getAllBotRounds(allMatches);
+  const nextRoundData = getNextBotRound(allRounds, botBets);
 
-  if(!pending.length){
-    toast('🤖 Boti-Goal כבר המר על כל המשחקים!');
+  if(!nextRoundData){
+    toast('🤖 Boti-Goal כבר המר על כל הסיבובים!');
     if(statusEl){ statusEl.textContent='✅ כבר המר על הכל!'; statusEl.style.color='#34d399'; }
     return;
   }
 
-  if(statusEl){ statusEl.textContent='🧠 מנתח ' + pending.length + ' משחקים עם AI...'; }
+  const { round: currentRound, missing: pending } = nextRoundData;
+
+  if(!pending.length){
+    toast('🤖 Boti-Goal כבר המר על הסיבוב הקרוב!');
+    if(statusEl){ statusEl.textContent='✅ כבר המר על הסיבוב!'; statusEl.style.color='#34d399'; }
+    return;
+  }
+
+  if(statusEl){ statusEl.textContent=`🧠 מנתח ${pending.length} משחקים — ${currentRound.label}...`; }
 
   // ── Build context: completed matches with results ──
   const completedMatches = Object.entries(allMatches)
@@ -1028,8 +1051,8 @@ Rules:
       }
     }
 
-    toast('🤖 Boti-Goal המר על ' + saved + ' משחקים!');
-    if(statusEl){ statusEl.textContent='✅ המר על ' + saved + ' משחקים!'; statusEl.style.color='#34d399'; }
+    toast(`🤖 Boti-Goal המר על ${saved} משחקים — ${currentRound.label}!`);
+    if(statusEl){ statusEl.textContent=`✅ המר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
     // Hide round alert banner if it was shown
     const bb = el('bot-round-banner'); if(bb) bb.style.display='none';
 
@@ -1045,8 +1068,8 @@ Rules:
       await set(ref(db, 'bets/'+BOT_UID+'/'+id), [s1, s2]);
       saved++;
     }
-    toast('🤖 Boti-Goal המר על ' + saved + ' משחקים (מצב גיבוי)');
-    if(statusEl){ statusEl.textContent='✅ המר על '+saved+' משחקים (גיבוי)'; statusEl.style.color='#fbbf24'; }
+    toast(`🤖 Boti-Goal המר על ${saved} משחקים — ${currentRound.label} (גיבוי)`);
+    if(statusEl){ statusEl.textContent=`✅ המר על ${saved} משחקים (גיבוי)`; statusEl.style.color='#fbbf24'; }
   }
 }
 
