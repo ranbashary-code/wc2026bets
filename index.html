@@ -1095,34 +1095,41 @@ window.runBotiGoalBot = async function runBotiGoalBot() {
     else{add(m.team1,r1,r2,1);add(m.team2,r2,r1,1);}
   });
 
-  // ── Save predictions in parallel ──
+  // ── Save predictions one by one with clear error reporting ──
   if(statusEl){ statusEl.textContent=`💾 שומר ${pending.length} הימורים...`; }
 
-  const savePromises = [];
-  const predictions = [];
+  let saved = 0;
+  let failed = 0;
   for(const [id, m] of pending){
     if(locked(m)) continue;
     const [s1, s2] = predictScore(m.team1, m.team2, m.stage||'group', completedCtx);
-    predictions.push({id, s1, s2});
-    savePromises.push(
-      set(ref(db, 'bets/' + BOT_UID + '/' + id), [s1, s2])
-        .catch(e => console.error('שגיאה בשמירת הימור', id, e))
-    );
+    try {
+      await set(ref(db, 'bets/' + BOT_UID + '/' + id), [s1, s2]);
+      saved++;
+      console.log(`✅ saved bet ${saved}: ${m.team1} ${s1}-${s2} ${m.team2}`);
+    } catch(e) {
+      failed++;
+      console.error(`❌ failed to save bet for ${id}:`, e.code, e.message);
+      if(failed === 1) {
+        // Show first error to admin
+        if(statusEl){ statusEl.textContent=`❌ שגיאת Firebase: ${e.code||e.message}`; statusEl.style.color='#f87171'; }
+        toast(`❌ שגיאת Firebase: ${e.code||e.message} — בדוק הרשאות`);
+        return;
+      }
+    }
+    if(statusEl && saved > 0){ statusEl.textContent=`💾 שומר ${saved}/${pending.length}...`; }
   }
 
-  try {
-    await Promise.all(savePromises);
-  } catch(e) {
-    console.error('שגיאה כללית בשמירה:', e);
+  console.log(`✅ Boti-Goal: ${saved} saved, ${failed} failed`);
+  if(saved > 0){
+    toast(`🤖 Boti-Goal הימר על ${saved} משחקים — ${currentRound.label}!`);
+    if(statusEl){ statusEl.textContent=`✅ הימר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
+    const bb = el('bot-round-banner'); if(bb) bb.style.display='none';
+    checkBotRoundAlert();
+  } else {
+    toast('❌ לא נשמר אף הימור — בדוק הרשאות Firebase');
+    if(statusEl){ statusEl.textContent='❌ כישלון בשמירה — בדוק הרשאות'; statusEl.style.color='#f87171'; }
   }
-
-  const saved = predictions.length;
-  console.log(`✅ Boti-Goal saved ${saved} bets for ${currentRound.label}`);
-  toast(`🤖 Boti-Goal הימר על ${saved} משחקים — ${currentRound.label}!`);
-  if(statusEl){ statusEl.textContent=`✅ הימר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
-  const bb = el('bot-round-banner'); if(bb) bb.style.display='none';
-  checkBotRoundAlert();
-}
 
 // ── TEAM NAME DISPLAY ──
 // Maps English names to Hebrew for display (works regardless of how stored in Firebase)
@@ -2506,6 +2513,8 @@ const _knownCodes = {
 // Resolve flag code: check static map first, then fetch from API
 async function resolveFlag(name) {
   if(!name) return null;
+  // Don't try to resolve TBD or knockout placeholders
+  if(/^(TBD|tbd|W\d+|L\d+|\d[A-L]|winner|loser)/i.test(name.trim())) return null;
   const key = name.toLowerCase().trim();
   // Check cache
   if(_flagCache[key] !== undefined) return _flagCache[key];
