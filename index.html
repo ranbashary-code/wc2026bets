@@ -903,7 +903,7 @@ async function checkBotRoundAlert() {
   banner.style.display = 'flex';
   banner.innerHTML = `
     <span style="font-size:13px;font-weight:700;color:#fff;">
-      🤖 Boti-Goal לא המר עדיין על <strong>${round.label}</strong> — ${missing.length} משחקים ממתינים
+      🤖 Boti-Goal לא הימר עדיין על <strong>${round.label}</strong> — ${missing.length} משחקים ממתינים
       <span style="opacity:0.75;font-size:11px;"> · המשחק הראשון בעוד ~${hoursLeft} שעות</span>
     </span>
     <button onclick="window.runBotiGoalBot()" style="background:#fff;color:#6d28d9;border:none;border-radius:8px;padding:5px 14px;font-weight:900;font-size:12px;cursor:pointer;flex-shrink:0;">⚡ המר עכשיו</button>
@@ -954,120 +954,140 @@ async function runBotiGoalBot() {
 
   if(statusEl){ statusEl.textContent=`🧠 מנתח ${pending.length} משחקים — ${currentRound.label}...`; }
 
-  // ── Build context: completed matches with results ──
-  const completedMatches = Object.entries(allMatches)
-    .filter(([,m]) => m.result !== undefined && m.team1 && m.team2)
-    .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
+  // ── SMART PREDICTION ENGINE (no external API needed) ──
+  // FIFA ranking tiers — higher = stronger team
+  const TEAM_TIER = {
+    // Tier 1 — elite
+    'ארגנטינה':10,'צרפת':10,'ספרד':9,'אנגליה':9,'ברזיל':9,'פורטוגל':9,
+    'גרמניה':8,'הולנד':8,'בלגיה':8,'אורוגוואי':8,'קולומביה':8,
+    // Tier 2 — strong
+    'מרוקו':7,'יפן':7,'ארהב':7,'ארה"ב':7,'מקסיקו':7,'קנדה':7,
+    'דנמרק':7,'שוויץ':7,'קרואטיה':7,'סנגל':7,'אוסטרליה':7,'קוריאה הדרומית':7,
+    'נורווגיה':7,'אוקראינה':6,'פולין':6,'טורקיה':6,'אוסטריה':6,'סרביה':6,
+    // Tier 3 — mid
+    'מצרים':6,'ניגריה':6,'חוף השנהב':6,'גאנה':6,'קמרון':6,
+    'אקוודור':5,'פרו':5,'צ׳ילה':5,'ונצואלה':5,'בוליביה':5,'פרגוואי':5,
+    'ערב הסעודית':5,'איראן':5,'עיראק':5,'קטר':5,'אוזבקיסטן':5,
+    'סלובקיה':5,'צכיה':5,'רומניה':5,'הונגריה':5,'סקוטלנד':5,'וולס':5,
+    // Tier 4 — lower
+    'דרום אפריקה':4,'קניה':4,'תוניסיה':4,'אלגריה':4,
+    'ניו זילנד':4,'פנמה':4,'הונדורס':4,'גואטמלה':4,'קוסטה ריקה':4,
+    'ירדן':4,'כף ורדה':4,'האיטי':4,'קוראסאו':4,
+  };
 
-  // Build group standings from completed matches
+  function getTier(name) {
+    if(!name) return 5;
+    // try exact, then partial match
+    if(TEAM_TIER[name] !== undefined) return TEAM_TIER[name];
+    for(const [k,v] of Object.entries(TEAM_TIER)){
+      if(name.includes(k) || k.includes(name)) return v;
+    }
+    return 5; // default mid-tier
+  }
+
+  // Check if team has home advantage
+  function isHome(name) {
+    const n = (name||'').toLowerCase();
+    return n.includes('usa') || n.includes('ארה') || n.includes('אמריק') ||
+           n.includes('קנדה') || n.includes('canada') ||
+           n.includes('מקסיקו') || n.includes('mexico');
+  }
+
+  // Generate a realistic score based on tier difference + results context
+  function predictScore(team1, team2, stage, completedCtx) {
+    let t1 = getTier(team1) + (isHome(team1) ? 1 : 0);
+    let t2 = getTier(team2) + (isHome(team2) ? 1 : 0);
+
+    // Adjust tiers based on completed matches in this tournament
+    completedCtx.forEach(([,m]) => {
+      if(!m.result) return;
+      const [r1, r2] = m.result;
+      if(m.team1 === team1) t1 += (r1 - r2) * 0.15;
+      if(m.team2 === team1) t1 += (r2 - r1) * 0.15;
+      if(m.team1 === team2) t2 += (r1 - r2) * 0.15;
+      if(m.team2 === team2) t2 += (r2 - r1) * 0.15;
+    });
+
+    const diff = t1 - t2; // positive = team1 stronger
+    const isKnockout = ['r32','r16','qf','sf','3rd','final'].includes(stage);
+    const isGroup = stage === 'group';
+
+    // Base goals scored (avg per team per match)
+    const baseGoals = isKnockout ? 1.3 : 1.1;
+
+    // Randomness seed (deterministic per match pair)
+    const seed = (team1.charCodeAt(0) + team2.charCodeAt(1||0) + (team1.length * team2.length)) % 100;
+    const rng = (offset=0) => ((seed + offset * 37) % 10) / 10; // 0.0–0.9
+
+    let s1, s2;
+
+    if(Math.abs(diff) <= 1) {
+      // Even match — draw likely in group, less in KO
+      const drawChance = isGroup ? 0.35 : 0.15;
+      if(rng(1) < drawChance) {
+        const g = Math.round(baseGoals * (0.8 + rng(2) * 0.6));
+        s1 = g; s2 = g;
+      } else {
+        s1 = Math.round(baseGoals * (0.8 + rng(3) * 0.8));
+        s2 = Math.max(0, s1 - 1 + Math.round(rng(4) * 2 - 0.5));
+        if(rng(5) > 0.5) [s1, s2] = [s2, s1]; // randomly swap winner
+      }
+    } else {
+      // Clear favourite
+      const fav = diff > 0 ? 1 : 2;
+      const gap = Math.min(Math.abs(diff), 4);
+      const favGoals = Math.round(baseGoals + gap * 0.35 + rng(6) * 0.8);
+      const undGoals = Math.max(0, Math.round(baseGoals - gap * 0.2 + rng(7) * 0.6));
+      s1 = fav === 1 ? favGoals : undGoals;
+      s2 = fav === 2 ? favGoals : undGoals;
+      // Occasional upset
+      if(rng(8) < 0.1) [s1, s2] = [s2, s1];
+    }
+
+    // KO can't end in draw after 90 (we predict 90min score, ties are valid for group)
+    if(isKnockout && s1 === s2) {
+      if(rng(9) > 0.5) s1++; else s2++;
+    }
+
+    return [Math.max(0, s1), Math.max(0, s2)];
+  }
+
+  // ── Build completed context for tier adjustment ──
+  const completedCtx = Object.entries(allMatches)
+    .filter(([,m]) => m.result !== undefined && m.team1 && m.team2);
+
+  // Build group standings for status display
   const groupStandings = {};
-  completedMatches.forEach(([,m]) => {
+  completedCtx.forEach(([,m]) => {
     if(m.stage !== 'group') return;
     const g = m.group || 'A';
     if(!groupStandings[g]) groupStandings[g] = {};
-    const addTeam = (t, gf, ga, w, d, l) => {
-      if(!groupStandings[g][t]) groupStandings[g][t] = {p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};
-      const s = groupStandings[g][t];
-      s.p++; s.gf+=gf; s.ga+=ga; s.w+=w; s.d+=d; s.l+=l;
-      s.pts += w*3 + d;
+    const add = (t, gf, ga, pts) => {
+      if(!groupStandings[g][t]) groupStandings[g][t] = {gf:0,ga:0,pts:0};
+      groupStandings[g][t].gf+=gf; groupStandings[g][t].ga+=ga; groupStandings[g][t].pts+=pts;
     };
-    const [r1, r2] = m.result;
-    if(r1 > r2){ addTeam(m.team1,r1,r2,1,0,0); addTeam(m.team2,r2,r1,0,0,1); }
-    else if(r1 < r2){ addTeam(m.team1,r1,r2,0,0,1); addTeam(m.team2,r2,r1,1,0,0); }
-    else { addTeam(m.team1,r1,r2,0,1,0); addTeam(m.team2,r2,r1,0,1,0); }
+    const [r1,r2]=m.result;
+    if(r1>r2){add(m.team1,r1,r2,3);add(m.team2,r2,r1,0);}
+    else if(r2>r1){add(m.team2,r2,r1,3);add(m.team1,r1,r2,0);}
+    else{add(m.team1,r1,r2,1);add(m.team2,r2,r1,1);}
   });
 
-  const completedContext = completedMatches.length > 0
-    ? '\n\nCOMPLETED MATCHES IN THIS TOURNAMENT (use this for current form):\n' +
-      completedMatches.map(([,m]) =>
-        `${m.team1} ${m.result[0]}-${m.result[1]} ${m.team2} (${m.stage}${m.group ? ' Group '+m.group : ''})`
-      ).join('\n')
-    : '\n\nNo matches completed yet in this tournament.';
-
-  const standingsContext = Object.keys(groupStandings).length > 0
-    ? '\n\nCURRENT GROUP STANDINGS:\n' +
-      Object.entries(groupStandings).map(([g, teams]) => {
-        const sorted = Object.entries(teams).sort(([,a],[,b]) => b.pts - a.pts || (b.gf-b.ga) - (a.gf-a.ga));
-        return `Group ${g}: ` + sorted.map(([t,s]) => `${t}(${s.pts}pts ${s.gf}:${s.ga})`).join(', ');
-      }).join('\n')
-    : '';
-
-  // Build list for Claude
-  const matchList = pending.map(([id,m])=>
-    id + '|' + m.team1 + ' vs ' + m.team2 + '|' + (m.stage||'group') + (m.group ? '|Group '+m.group : '')
-  ).join('\n');
-
-  const prompt = `You are a world-class football analyst predicting the 2026 FIFA World Cup.
-${completedContext}
-${standingsContext}
-
-Use the above tournament results to inform your predictions — teams in good form should be favored, struggling teams should be rated lower.
-
-MATCHES TO PREDICT (format: ID|Team1 vs Team2|stage|group):
-${matchList}
-
-Respond with ONLY a JSON array, no other text:
-[{"id":"MATCH_ID","s1":NUMBER,"s2":NUMBER},...]
-
-Rules:
-- s1 = goals for Team1, s2 = goals for Team2
-- Scores must be realistic (0-6 range)
-- Weight current tournament form heavily
-- Group stage: draws possible; favor teams needing points based on standings
-- Knockout: decisive scores more likely
-- Consider home advantage (USA/Canada/Mexico)`;
-
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if(!resp.ok) throw new Error('API error: ' + resp.status);
-    const data = await resp.json();
-    const text = data.content && data.content[0] ? data.content[0].text : '';
-
-    const jsonMatch = text.match(/\[.*\]/s);
-    if(!jsonMatch) throw new Error('לא ניתן לפרש תשובת AI');
-    const predictions = JSON.parse(jsonMatch[0]);
-
-    let saved = 0;
-    for(const pred of predictions){
-      if(pred.id && typeof pred.s1 === 'number' && typeof pred.s2 === 'number'){
-        const m = allMatches[pred.id];
-        if(m && !locked(m)){
-          await set(ref(db, 'bets/' + BOT_UID + '/' + pred.id), [pred.s1, pred.s2]);
-          saved++;
-        }
-      }
-    }
-
-    toast(`🤖 Boti-Goal המר על ${saved} משחקים — ${currentRound.label}!`);
-    if(statusEl){ statusEl.textContent=`✅ המר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
-    // Hide round alert banner if it was shown
-    const bb = el('bot-round-banner'); if(bb) bb.style.display='none';
-
-  } catch(err) {
-    console.error('Bot error:', err);
-    if(statusEl){ statusEl.textContent='⚠️ AI לא זמין, מהמר חכם...'; statusEl.style.color='#fbbf24'; }
-    let saved = 0;
-    for(const [id,m] of pending){
-      if(locked(m)) continue;
-      const maxGoals = m.stage==='group'?4:5;
-      const s1 = Math.floor(Math.random()*maxGoals);
-      const s2 = Math.floor(Math.random()*maxGoals);
-      await set(ref(db, 'bets/'+BOT_UID+'/'+id), [s1, s2]);
-      saved++;
-    }
-    toast(`🤖 Boti-Goal המר על ${saved} משחקים — ${currentRound.label} (גיבוי)`);
-    if(statusEl){ statusEl.textContent=`✅ המר על ${saved} משחקים (גיבוי)`; statusEl.style.color='#fbbf24'; }
+  // ── Save predictions ──
+  let saved = 0;
+  if(statusEl){ statusEl.textContent=`💾 שומר הימורים...`; }
+  for(const [id, m] of pending){
+    if(locked(m)) continue;
+    const [s1, s2] = predictScore(m.team1, m.team2, m.stage||'group', completedCtx);
+    await set(ref(db, 'bets/' + BOT_UID + '/' + id), [s1, s2]);
+    saved++;
+    if(statusEl){ statusEl.textContent=`💾 שומר ${saved}/${pending.length}...`; }
   }
-}
+
+  toast(`🤖 Boti-Goal המר על ${saved} משחקים — ${currentRound.label}!`);
+  if(statusEl){ statusEl.textContent=`✅ המר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
+  const bb = el('bot-round-banner'); if(bb) bb.style.display='none';
+  checkBotRoundAlert();
+
 
 
 // ── TEAM NAME DISPLAY ──
