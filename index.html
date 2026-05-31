@@ -828,25 +828,20 @@ const BOT_NAME = "Boti-Goal 🤖";
 function getAllBotRounds(allMatches) {
   const rounds = [];
 
-  // GROUP STAGE: cluster by date (3.5-day windows = one round)
+  // GROUP STAGE: split into 3 rounds of 24 matches each (sorted by date)
+  // Each round = all teams in all groups play one match
   const groupMs = Object.entries(allMatches)
     .filter(([,m]) => m.stage === 'group' && m.datetime && m.team1 && m.team2 && m.team1 !== 'TBD' && m.team2 !== 'TBD')
     .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
 
   if(groupMs.length) {
-    let currentMatches = [groupMs[0]];
-    let currentDate = new Date(groupMs[0][1].datetime);
-    let roundNum = 1;
-    for(let i = 1; i < groupMs.length; i++){
-      const mDate = new Date(groupMs[i][1].datetime);
-      const daysDiff = (mDate - currentDate) / (1000 * 60 * 60 * 24);
-      if(daysDiff <= 3.5){ currentMatches.push(groupMs[i]); }
-      else {
-        rounds.push({ label: `סיבוב ${roundNum} — שלב הבתים`, matches: currentMatches, stage: 'group' });
-        currentMatches = [groupMs[i]]; currentDate = mDate; roundNum++;
-      }
+    // 12 groups × 2 matches per group per round = 24 matches per round
+    const ROUND_SIZE = 24;
+    const numRounds = Math.ceil(groupMs.length / ROUND_SIZE);
+    for(let r = 0; r < numRounds; r++){
+      const slice = groupMs.slice(r * ROUND_SIZE, (r + 1) * ROUND_SIZE);
+      rounds.push({ label: `סיבוב ${r + 1} — שלב הבתים`, matches: slice, stage: 'group' });
     }
-    rounds.push({ label: `סיבוב ${roundNum} — שלב הבתים`, matches: currentMatches, stage: 'group' });
   }
 
   // KNOCKOUT STAGES: each stage = one round
