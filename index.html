@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>WC 2026 Bets</title>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;600;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 <style>
@@ -13,8 +13,36 @@
   --gold:#FFD700;--red:#B22234;--blue:#3C3B6E;--green:#006847;
   --text:#f0f4ff;--text2:#7a8fa8;--border:rgba(255,255,255,0.07);
 }
+body.light-mode{
+  --navy:#f0f4f8;--card:#ffffff;--card2:#e8edf2;
+  --text:#1a2540;--text2:#5a6e88;--border:rgba(0,0,0,0.1);
+}
+body.light-mode .topbar{background:rgba(240,244,248,0.97);}
+body.light-mode .tabs{background:var(--card);}
+body.light-mode .hero{background:linear-gradient(135deg,#e8edf5,#dce4f0,#edf5e8);}
+body.light-mode .hero::before{background:radial-gradient(ellipse at 50% 0%,rgba(255,215,0,0.08),transparent 70%);}
+body.light-mode .ko-match{background:var(--card2);}
+body.light-mode .today-match{background:rgba(0,0,0,0.02);}
+body.light-mode .login-inner{background:rgba(240,244,248,0.97);border-color:rgba(0,0,0,0.1);}
+body.light-mode .login-body{background:#f0f4f8;}
+body.light-mode .login-sub{color:rgba(0,0,0,0.5);}
+body.light-mode #login-screen{background:#f0f4f8;}
+body.light-mode .inp{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.12);color:var(--text);}
+body.light-mode .flip-card{background:linear-gradient(180deg,#e0e8f0,#cdd8e8);}
+body.light-mode ::-webkit-scrollbar-thumb{background:var(--gold);}
+body.light-mode .badge-hit{background:rgba(16,185,129,0.12);color:#059669;}
+body.light-mode .badge-dir{background:rgba(59,130,246,0.12);color:#2563eb;}
+body.light-mode .badge-miss{background:rgba(239,68,68,0.08);color:#dc2626;}
+body.light-mode .badge-wait{background:rgba(100,116,139,0.1);color:#64748b;}
+body.light-mode .modal-box{background:var(--card2);}
+body.light-mode #pending-screen{background:#f0f4f8;}
+body.light-mode .pending-box{background:var(--card2);}
+/* Theme toggle button */
+.theme-toggle{background:none;border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);transition:border-color 0.2s,color 0.2s;}
+.theme-toggle:hover{border-color:var(--gold);color:var(--gold);}
+body.light-mode .theme-toggle{border-color:rgba(0,0,0,0.15);}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);direction:rtl;min-height:100vh;overflow-x:hidden;}
+body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color:var(--text);direction:rtl;min-height:100vh;overflow-x:hidden;}
 ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:var(--gold);}
 
 /* ── LOGIN — UNTOUCHED ── */
@@ -23,10 +51,10 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 .login-box{width:100%;max-width:500px;padding:16px 20px 32px;}
 .login-inner{border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.12);background:rgba(20,30,50,0.97);}
 .login-header{padding:14px 24px;background:linear-gradient(135deg,var(--blue),var(--red));text-align:center;}
-.login-header h2{font-family:'Heebo',sans-serif;font-weight:900;font-size:1.15rem;color:#fff;}
+.login-header h2{font-family:'Rubik',sans-serif;font-weight:900;font-size:1.15rem;color:#fff;}
 .login-body{padding:18px 20px;}
 .login-sub{font-size:13px;text-align:center;color:rgba(255,255,255,0.5);margin-bottom:14px;}
-.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1e2d40;border:2px solid rgba(255,255,255,0.15);color:#fff;border-radius:12px;padding:14px 20px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;transition:background 0.2s;}
+.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1e2d40;border:2px solid rgba(255,255,255,0.15);color:#fff;border-radius:12px;padding:14px 20px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;transition:background 0.2s;}
 .google-btn:hover{background:#26394f;}
 #login-error{display:none;color:#f87171;font-size:13px;text-align:center;margin-top:10px;font-weight:700;}
 
@@ -49,7 +77,7 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 .topbar{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;background:rgba(9,17,31,0.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
 .topbar-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;background:linear-gradient(90deg,#fff,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer;}
 .topbar-user{font-size:12px;font-weight:700;color:var(--text2);}
-.btn-sm-logout{background:none;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:5px 10px;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;}
+.btn-sm-logout{background:none;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:5px 10px;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;}
 .btn-sm-logout:hover{border-color:#DC2626;color:#DC2626;}
 .pending-banner{display:none;position:fixed;top:54px;left:0;right:0;z-index:80;background:linear-gradient(135deg,#f97316,#ea580c);padding:10px 16px;flex-direction:row;align-items:center;justify-content:space-between;}
 
@@ -81,12 +109,12 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 .tm-countdown{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--gold);letter-spacing:2px;text-align:center;min-width:80px;}
 .tm-bet-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);}
 .tm-bet-label{font-size:11px;font-weight:700;color:var(--text2);}
-.stn-btn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Heebo',sans-serif;transition:background 0.15s;}
+.stn-btn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Rubik',sans-serif;transition:background 0.15s;}
 .stn-btn:hover{background:var(--gold);color:#000;}
 .stn-val{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;min-width:32px;text-align:center;}
 .stn-sep{font-size:1.1rem;color:var(--text2);font-weight:700;padding:0 2px;}
 .tm-locked-badge{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:#f87171;text-align:center;width:100%;}
-.btn-place-bet{background:linear-gradient(135deg,#7c3aed,#be123c);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:900;font-size:13px;cursor:pointer;font-family:'Heebo',sans-serif;white-space:nowrap;transition:opacity 0.2s;}
+.btn-place-bet{background:linear-gradient(135deg,#7c3aed,#be123c);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:900;font-size:13px;cursor:pointer;font-family:'Rubik',sans-serif;white-space:nowrap;transition:opacity 0.2s;}
 .btn-place-bet:hover{opacity:0.88;}
 .hero-empty{text-align:center;padding:20px;color:var(--text2);font-size:13px;font-weight:700;}
 
@@ -129,11 +157,11 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 .leader-pts{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);}
 
 /* Inputs & Buttons */
-.inp{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'Heebo',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;direction:rtl;}
+.inp{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'Rubik',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;direction:rtl;}
 .inp:focus{border-color:var(--gold);}
 .inp::placeholder{color:var(--text2);}
 select.inp option{background:var(--card2);}
-.btn{border:none;border-radius:11px;padding:11px 20px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Heebo',sans-serif;}
+.btn{border:none;border-radius:11px;padding:11px 20px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Rubik',sans-serif;}
 .btn-grad{background:linear-gradient(135deg,#7c3aed,#be123c);color:#fff;}
 .btn-green{background:linear-gradient(135deg,#065f46,#047857);color:#fff;}
 .btn-red{background:linear-gradient(135deg,#DC2626,#b91c1c);color:#fff;}
@@ -417,6 +445,33 @@ select.inp option{background:var(--card2);}
   </div>
 </div>
 
+<!-- PLAYER STATS MODAL -->
+<div class="modal" id="player-stats-modal">
+  <div class="modal-box" style="max-width:360px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="ps-name">סטטיסטיקות שחקן</div>
+      <button class="modal-close" id="close-player-stats">×</button>
+    </div>
+    <div class="stats-grid" style="grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;">
+      <div class="stat-box"><div class="stat-val" id="ps-total">0</div><div class="stat-lbl">הימורים</div></div>
+      <div class="stat-box"><div class="stat-val" id="ps-pct" style="font-size:1.2rem;">0%</div><div class="stat-lbl">אחוז דיוק</div></div>
+      <div class="stat-box"><div class="stat-val" id="ps-hits" style="color:#34d399;">0</div><div class="stat-lbl">בולים 🎯</div></div>
+      <div class="stat-box"><div class="stat-val" id="ps-dirs" style="color:#60a5fa;">0</div><div class="stat-lbl">כיוונים ✅</div></div>
+    </div>
+    <div class="stat-box" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;">
+      <div style="text-align:center;flex:1;">
+        <div class="stat-val" id="ps-miss" style="color:#f87171;">0</div>
+        <div class="stat-lbl">פספוסים ❌</div>
+      </div>
+      <div style="width:1px;height:40px;background:var(--border);"></div>
+      <div style="text-align:center;flex:1;">
+        <div class="stat-val" id="ps-pts">0</div>
+        <div class="stat-lbl">נקודות כולל</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- GROUP MANAGEMENT MODAL -->
 <div class="modal" id="groups-modal">
   <div class="modal-box" style="max-width:500px;">
@@ -493,6 +548,7 @@ select.inp option{background:var(--card2);}
         <span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;animation:pulse 2s infinite;"></span>
         <span id="online-num">1</span>
       </span>
+      <button class="theme-toggle" id="theme-toggle-btn" title="החלפת מצב תצוגה">🌙</button>
       <button class="btn-sm-logout" id="logout-btn">יציאה</button>
     </div>
   </div>
@@ -1954,7 +2010,7 @@ function renderLeader() {
     if(!sorted.length){ lst.innerHTML="<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>הטבלה תתעדכן לאחר המשחקים הראשונים</div>"; return; }
     const medals=['🥇','🥈','🥉']; const cols=['var(--gold)','#c0c0c0','#cd7f32'];
     lst.innerHTML = sorted.map((s,i)=>
-      "<div class='leader-row'><div class='leader-rank' style='color:"+(cols[i]||'var(--text2)')+"'>"+(medals[i]||'#'+(i+1))+"</div>" +
+      "<div class='leader-row' style='cursor:pointer;' onclick='openPlayerStats(\""+s.uid+"\")'><div class='leader-rank' style='color:"+(cols[i]||'var(--text2)')+"'>"+(medals[i]||'#'+(i+1))+"</div>" +
       "<div class='leader-name' style='display:flex;align-items:center;gap:6px;'>" +
         (s.isBot?'<img src="'+BOT_AVATAR+'" style="width:24px;height:24px;border-radius:50%;">':'') +
         s.name+"</div>" +
@@ -1996,7 +2052,7 @@ function renderLeader() {
     html += '</div>';
 
     html += groupScores.map((s,i)=>
-      "<div class='leader-row' style='border-right:3px solid "+groupColor+";'>" +
+      "<div class='leader-row' style='border-right:3px solid "+groupColor+";cursor:pointer;' onclick='openPlayerStats(\""+s.uid+"\")'>" +
       "<div class='leader-rank' style='color:"+(cols[i]||'var(--text2)')+"'>"+(medals[i]||'#'+(i+1))+"</div>" +
       "<div class='leader-name' style='display:flex;align-items:center;gap:6px;'>" +
         (s.isBot?'<img src="'+BOT_AVATAR+'" style="width:22px;height:22px;border-radius:50%;">':'') +
@@ -3189,7 +3245,52 @@ function renderBracket(){
 
 
 
-// ── CONFETTI ──
+// ── THEME TOGGLE ──
+(function(){
+  const btn = document.getElementById('theme-toggle-btn');
+  const savedTheme = localStorage.getItem('wc2026-theme') || 'dark';
+  function applyTheme(t){
+    if(t==='light'){ document.body.classList.add('light-mode'); btn.textContent='☀️'; }
+    else { document.body.classList.remove('light-mode'); btn.textContent='🌙'; }
+    localStorage.setItem('wc2026-theme', t);
+  }
+  applyTheme(savedTheme);
+  btn.addEventListener('click',()=>{
+    const isLight = document.body.classList.contains('light-mode');
+    applyTheme(isLight?'dark':'light');
+  });
+})();
+
+// ── PLAYER STATS MODAL ──
+document.getElementById('close-player-stats').addEventListener('click',()=>document.getElementById('player-stats-modal').classList.remove('open'));
+document.getElementById('player-stats-modal').addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
+
+function openPlayerStats(uid){
+  const u = USERS[uid]; if(!u) return;
+  const name = u.nickname||u.name||'שחקן';
+  const userBets = BETS[uid]||{};
+  let total=0, hits=0, dirs=0, miss=0, pts=0;
+  Object.entries(userBets).forEach(([mid,bet])=>{
+    const m=MATCHES[mid]; if(!m||m.result===undefined) return;
+    total++;
+    const p=calcPts(m,bet); pts+=p.total;
+    if(p.hit){ hits++; }
+    else if(p.dir){ dirs++; }
+    else { miss++; }
+  });
+  const resolved = hits+dirs+miss;
+  const pct = resolved>0 ? Math.round((hits/resolved)*100) : 0;
+  document.getElementById('ps-name').textContent = name;
+  document.getElementById('ps-total').textContent = total;
+  document.getElementById('ps-pct').textContent = pct+'%';
+  document.getElementById('ps-hits').textContent = hits;
+  document.getElementById('ps-dirs').textContent = dirs;
+  document.getElementById('ps-miss').textContent = miss;
+  document.getElementById('ps-pts').textContent = pts+" נק'";
+  document.getElementById('player-stats-modal').classList.add('open');
+}
+
+
 function confetti(){
   const c=el('confetti'); c.style.display='block';
   const ctx=c.getContext('2d'); c.width=innerWidth; c.height=innerHeight;
