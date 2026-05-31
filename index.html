@@ -914,22 +914,43 @@ async function checkBotRoundAlert() {
 async function runBotiGoalBot() {
   const statusEl = el('bot-run-status');
   if(statusEl){ statusEl.textContent = '🤖 Boti-Goal מתחבר...'; statusEl.style.color='var(--text2)'; }
+  console.log('🤖 runBotiGoalBot started');
 
   // Ensure bot user exists in Firebase
-  const botSnap = await get(ref(db, 'users/' + BOT_UID));
-  if(!botSnap.exists()){
-    await set(ref(db, 'users/' + BOT_UID), {
-      uid: BOT_UID, email: 'boti-goal@ai.bot',
-      name: BOT_NAME, nickname: BOT_NAME,
-      approved: true, isAdmin: false, isBot: true,
-      createdAt: Date.now()
-    });
+  try {
+    const botSnap = await get(ref(db, 'users/' + BOT_UID));
+    if(!botSnap.exists()){
+      await set(ref(db, 'users/' + BOT_UID), {
+        uid: BOT_UID, email: 'boti-goal@ai.bot',
+        name: BOT_NAME, nickname: BOT_NAME,
+        approved: true, isAdmin: false, isBot: true,
+        createdAt: Date.now()
+      });
+      console.log('🤖 Bot user created');
+    }
+  } catch(e) {
+    console.error('🤖 Failed to create bot user:', e);
+    if(statusEl){ statusEl.textContent='❌ שגיאת הרשאות Firebase'; statusEl.style.color='#f87171'; }
+    toast('❌ שגיאת Firebase — בדוק console');
+    return;
   }
 
   // Get all matches + existing bot bets
-  const matchSnap = await get(ref(db, 'matches'));
-  const betSnap   = await get(ref(db, 'bets/' + BOT_UID));
-  if(!matchSnap.exists()){ toast('אין משחקים לנתח'); return; }
+  console.log('🤖 Fetching matches...');
+  if(statusEl){ statusEl.textContent='📡 טוען משחקים...'; }
+  let matchSnap, betSnap;
+  try {
+    [matchSnap, betSnap] = await Promise.all([
+      get(ref(db, 'matches')),
+      get(ref(db, 'bets/' + BOT_UID))
+    ]);
+  } catch(e) {
+    console.error('🤖 Failed to fetch data:', e);
+    if(statusEl){ statusEl.textContent='❌ שגיאה בטעינת נתונים'; statusEl.style.color='#f87171'; }
+    toast('❌ שגיאה בטעינת נתונים'); return;
+  }
+  if(!matchSnap || !matchSnap.exists()){ toast('אין משחקים לנתח'); return; }
+  console.log('🤖 Matches loaded OK');
 
   const allMatches = matchSnap.val();
   const botBets    = betSnap.exists() ? betSnap.val() : {};
@@ -937,6 +958,8 @@ async function runBotiGoalBot() {
   // ── Limit to NEXT ROUND ONLY ──
   const allRounds = getAllBotRounds(allMatches);
   const nextRoundData = getNextBotRound(allRounds, botBets);
+  console.log('🤖 Rounds detected:', allRounds.map(r=>r.label+' ('+r.matches.length+')'));
+  console.log('🤖 Next round:', nextRoundData ? nextRoundData.round.label + ' — ' + nextRoundData.missing.length + ' missing' : 'none');
 
   if(!nextRoundData){
     toast('🤖 Boti-Goal כבר המר על כל הסיבובים!');
@@ -1072,19 +1095,31 @@ async function runBotiGoalBot() {
     else{add(m.team1,r1,r2,1);add(m.team2,r2,r1,1);}
   });
 
-  // ── Save predictions ──
-  let saved = 0;
-  if(statusEl){ statusEl.textContent=`💾 שומר הימורים...`; }
+  // ── Save predictions in parallel ──
+  if(statusEl){ statusEl.textContent=`💾 שומר ${pending.length} הימורים...`; }
+
+  const savePromises = [];
+  const predictions = [];
   for(const [id, m] of pending){
     if(locked(m)) continue;
     const [s1, s2] = predictScore(m.team1, m.team2, m.stage||'group', completedCtx);
-    await set(ref(db, 'bets/' + BOT_UID + '/' + id), [s1, s2]);
-    saved++;
-    if(statusEl){ statusEl.textContent=`💾 שומר ${saved}/${pending.length}...`; }
+    predictions.push({id, s1, s2});
+    savePromises.push(
+      set(ref(db, 'bets/' + BOT_UID + '/' + id), [s1, s2])
+        .catch(e => console.error('שגיאה בשמירת הימור', id, e))
+    );
   }
 
-  toast(`🤖 Boti-Goal המר על ${saved} משחקים — ${currentRound.label}!`);
-  if(statusEl){ statusEl.textContent=`✅ המר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
+  try {
+    await Promise.all(savePromises);
+  } catch(e) {
+    console.error('שגיאה כללית בשמירה:', e);
+  }
+
+  const saved = predictions.length;
+  console.log(`✅ Boti-Goal saved ${saved} bets for ${currentRound.label}`);
+  toast(`🤖 Boti-Goal הימר על ${saved} משחקים — ${currentRound.label}!`);
+  if(statusEl){ statusEl.textContent=`✅ הימר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
   const bb = el('bot-round-banner'); if(bb) bb.style.display='none';
   checkBotRoundAlert();
 }
