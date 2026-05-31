@@ -14,29 +14,73 @@
   --text:#f0f4ff;--text2:#7a8fa8;--border:rgba(255,255,255,0.07);
 }
 body.light-mode{
-  --navy:#f0f4f8;--card:#ffffff;--card2:#e8edf2;
-  --text:#1a2540;--text2:#5a6e88;--border:rgba(0,0,0,0.1);
+  --navy:#f2f5f9;--card:#ffffff;--card2:#e9eef5;
+  --text:#0f1e35;--text2:#4a6080;--border:rgba(0,0,0,0.1);
+  --gold:#c8960a;
 }
-body.light-mode .topbar{background:rgba(240,244,248,0.97);}
-body.light-mode .tabs{background:var(--card);}
-body.light-mode .hero{background:linear-gradient(135deg,#e8edf5,#dce4f0,#edf5e8);}
-body.light-mode .hero::before{background:radial-gradient(ellipse at 50% 0%,rgba(255,215,0,0.08),transparent 70%);}
-body.light-mode .ko-match{background:var(--card2);}
-body.light-mode .today-match{background:rgba(0,0,0,0.02);}
-body.light-mode .login-inner{background:rgba(240,244,248,0.97);border-color:rgba(0,0,0,0.1);}
-body.light-mode .login-body{background:#f0f4f8;}
+body.light-mode .topbar{background:rgba(242,245,249,0.98);border-bottom:1px solid rgba(0,0,0,0.1);}
+body.light-mode .tabs{background:#fff;border-bottom:1px solid rgba(0,0,0,0.1);}
+body.light-mode .tab{color:#4a6080;}
+body.light-mode .tab.active{color:#0f1e35;}
+body.light-mode .hero{background:linear-gradient(135deg,#dce6f5,#cfd9ee,#d8e8dc);border-bottom:1px solid rgba(0,0,0,0.08);}
+body.light-mode .hero::before{background:none;}
+body.light-mode .hero-day-label{background:linear-gradient(90deg,#c8960a,#0f1e35,#c8960a);-webkit-background-clip:text;background-clip:text;}
+body.light-mode .ko-match{background:var(--card2);border-color:rgba(0,0,0,0.1);}
+body.light-mode .today-match{background:rgba(255,255,255,0.8);border-color:rgba(200,150,10,0.2);}
+body.light-mode .login-inner{background:rgba(242,245,249,0.97);border-color:rgba(0,0,0,0.1);}
+body.light-mode .login-body{background:#f2f5f9;}
 body.light-mode .login-sub{color:rgba(0,0,0,0.5);}
-body.light-mode #login-screen{background:#f0f4f8;}
+body.light-mode #login-screen{background:#f2f5f9;}
 body.light-mode .inp{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.12);color:var(--text);}
-body.light-mode .flip-card{background:linear-gradient(180deg,#e0e8f0,#cdd8e8);}
-body.light-mode ::-webkit-scrollbar-thumb{background:var(--gold);}
-body.light-mode .badge-hit{background:rgba(16,185,129,0.12);color:#059669;}
-body.light-mode .badge-dir{background:rgba(59,130,246,0.12);color:#2563eb;}
-body.light-mode .badge-miss{background:rgba(239,68,68,0.08);color:#dc2626;}
-body.light-mode .badge-wait{background:rgba(100,116,139,0.1);color:#64748b;}
-body.light-mode .modal-box{background:var(--card2);}
-body.light-mode #pending-screen{background:#f0f4f8;}
-body.light-mode .pending-box{background:var(--card2);}
+body.light-mode .inp::placeholder{color:#7a9ab8;}
+body.light-mode .flip-card{background:linear-gradient(180deg,#d8e4f0,#c8d8ea);color:#c8960a;}
+body.light-mode .flip-lbl{color:#4a6080;}
+body.light-mode .flip-sep{color:#c8960a;}
+body.light-mode ::-webkit-scrollbar-thumb{background:#c8960a;}
+body.light-mode .badge-hit{background:rgba(16,185,129,0.15);color:#047857;}
+body.light-mode .badge-dir{background:rgba(59,130,246,0.15);color:#1d4ed8;}
+body.light-mode .badge-miss{background:rgba(239,68,68,0.1);color:#b91c1c;}
+body.light-mode .badge-wait{background:rgba(100,116,139,0.12);color:#475569;}
+body.light-mode .modal-box{background:#fff;border-color:rgba(0,0,0,0.12);}
+body.light-mode #pending-screen{background:#f2f5f9;}
+body.light-mode .pending-box{background:#fff;}
+body.light-mode .card{background:#fff;border-color:rgba(0,0,0,0.08);}
+body.light-mode .match-card{background:#fff;border-color:rgba(0,0,0,0.08);}
+body.light-mode .match-card:hover{border-color:rgba(200,150,10,0.3);}
+body.light-mode .leader-row{background:#fff;border-color:rgba(0,0,0,0.08);}
+body.light-mode .leader-name{color:#0f1e35;}
+body.light-mode .leader-pts{color:#c8960a;}
+body.light-mode .leader-rank{color:#0f1e35;}
+body.light-mode .sec-title{color:#c8960a;}
+body.light-mode .stat-box{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.08);}
+body.light-mode .stat-val{color:#c8960a;}
+body.light-mode .stat-lbl{color:#4a6080;}
+body.light-mode .topbar-logo{background:linear-gradient(90deg,#0f1e35,#c8960a);-webkit-background-clip:text;background-clip:text;}
+body.light-mode .topbar-user{color:#4a6080;}
+body.light-mode .btn-ghost{color:#4a6080;border-color:rgba(0,0,0,0.15);}
+body.light-mode .btn-ghost:hover{border-color:#c8960a;color:#c8960a;}
+body.light-mode .btn-sm-logout{color:#4a6080;border-color:rgba(0,0,0,0.15);}
+body.light-mode .btn-sm-logout:hover{border-color:#dc2626;color:#dc2626;}
+body.light-mode .score-tbl th{background:rgba(200,150,10,0.1);color:#c8960a;}
+body.light-mode .score-tbl td{border-bottom-color:rgba(0,0,0,0.05);}
+body.light-mode .side-bg{opacity:0.08;}
+body.light-mode .sec-divider{background:rgba(0,0,0,0.08);}
+body.light-mode .group-header{filter:brightness(1.3);}
+body.light-mode .ko-team{border-bottom-color:rgba(0,0,0,0.06);}
+body.light-mode .ko-team.loser{color:#7a9ab8;}
+body.light-mode .tm-vs{color:rgba(0,0,0,0.2);}
+body.light-mode .tm-bet-label{color:#4a6080;}
+body.light-mode .tm-team-name{color:#0f1e35;}
+body.light-mode .pill-group{background:rgba(59,130,246,0.1);color:#1d4ed8;}
+body.light-mode .pill-r32{background:rgba(139,92,246,0.1);color:#6d28d9;}
+body.light-mode .pill-r16{background:rgba(236,72,153,0.1);color:#be185d;}
+body.light-mode .pill-qf{background:rgba(245,158,11,0.12);color:#b45309;}
+body.light-mode .pill-sf{background:rgba(239,68,68,0.1);color:#b91c1c;}
+body.light-mode .pill-final{background:rgba(200,150,10,0.12);color:#c8960a;}
+body.light-mode .modal-title{color:#c8960a;}
+body.light-mode .modal-close{color:#4a6080;}
+body.light-mode .adm-tbl th{background:rgba(200,150,10,0.08);color:#c8960a;}
+body.light-mode .adm-tbl td{border-bottom-color:rgba(0,0,0,0.05);}
 /* Theme toggle button */
 .theme-toggle{background:none;border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);transition:border-color 0.2s,color 0.2s;}
 .theme-toggle:hover{border-color:var(--gold);color:var(--gold);}
@@ -3289,6 +3333,7 @@ function openPlayerStats(uid){
   document.getElementById('ps-pts').textContent = pts+" נק'";
   document.getElementById('player-stats-modal').classList.add('open');
 }
+window.openPlayerStats = openPlayerStats;
 
 
 function confetti(){
