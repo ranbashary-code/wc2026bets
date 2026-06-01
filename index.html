@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>WC 2026 Bets</title>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;600;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 <style>
@@ -13,8 +13,81 @@
   --gold:#FFD700;--red:#B22234;--blue:#3C3B6E;--green:#006847;
   --text:#f0f4ff;--text2:#7a8fa8;--border:rgba(255,255,255,0.07);
 }
+body.light-mode{
+  --navy:#f2f5f9;--card:#ffffff;--card2:#e9eef5;
+  --text:#0f1e35;--text2:#4a6080;--border:rgba(0,0,0,0.1);
+  --gold:#c8960a;
+}
+body.light-mode .topbar{background:rgba(242,245,249,0.98);border-bottom:1px solid rgba(0,0,0,0.1);}
+body.light-mode .tabs{background:#fff;border-bottom:1px solid rgba(0,0,0,0.1);}
+body.light-mode .tab{color:#4a6080;}
+body.light-mode .tab.active{color:#0f1e35;}
+body.light-mode .hero{background:linear-gradient(135deg,#dce6f5,#cfd9ee,#d8e8dc);border-bottom:1px solid rgba(0,0,0,0.08);}
+body.light-mode .hero::before{background:none;}
+body.light-mode .hero-day-label{background:linear-gradient(90deg,#c8960a,#0f1e35,#c8960a);-webkit-background-clip:text;background-clip:text;}
+body.light-mode .ko-match{background:var(--card2);border-color:rgba(0,0,0,0.1);}
+body.light-mode .today-match{background:rgba(255,255,255,0.8);border-color:rgba(200,150,10,0.2);}
+body.light-mode .login-inner{background:rgba(242,245,249,0.97);border-color:rgba(0,0,0,0.1);}
+body.light-mode .login-body{background:#f2f5f9;}
+body.light-mode .login-sub{color:rgba(0,0,0,0.5);}
+body.light-mode #login-screen{background:#f2f5f9;}
+body.light-mode .inp{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.12);color:var(--text);}
+body.light-mode .inp::placeholder{color:#7a9ab8;}
+body.light-mode .flip-card{background:linear-gradient(180deg,#d8e4f0,#c8d8ea);color:#c8960a;}
+body.light-mode .flip-lbl{color:#4a6080;}
+body.light-mode .flip-sep{color:#c8960a;}
+body.light-mode ::-webkit-scrollbar-thumb{background:#c8960a;}
+body.light-mode .badge-hit{background:rgba(16,185,129,0.15);color:#047857;}
+body.light-mode .badge-dir{background:rgba(59,130,246,0.15);color:#1d4ed8;}
+body.light-mode .badge-miss{background:rgba(239,68,68,0.1);color:#b91c1c;}
+body.light-mode .badge-wait{background:rgba(100,116,139,0.12);color:#475569;}
+body.light-mode .modal-box{background:#fff;border-color:rgba(0,0,0,0.12);}
+body.light-mode #pending-screen{background:#f2f5f9;}
+body.light-mode .pending-box{background:#fff;}
+body.light-mode .card{background:#fff;border-color:rgba(0,0,0,0.08);}
+body.light-mode .match-card{background:#fff;border-color:rgba(0,0,0,0.08);}
+body.light-mode .match-card:hover{border-color:rgba(200,150,10,0.3);}
+body.light-mode .leader-row{background:#fff;border-color:rgba(0,0,0,0.08);}
+body.light-mode .leader-name{color:#0f1e35;}
+body.light-mode .leader-pts{color:#c8960a;}
+body.light-mode .leader-rank{color:#0f1e35;}
+body.light-mode .sec-title{color:#c8960a;}
+body.light-mode .stat-box{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.08);}
+body.light-mode .stat-val{color:#c8960a;}
+body.light-mode .stat-lbl{color:#4a6080;}
+body.light-mode .topbar-logo{background:linear-gradient(90deg,#0f1e35,#c8960a);-webkit-background-clip:text;background-clip:text;}
+body.light-mode .topbar-user{color:#4a6080;}
+body.light-mode .btn-ghost{color:#4a6080;border-color:rgba(0,0,0,0.15);}
+body.light-mode .btn-ghost:hover{border-color:#c8960a;color:#c8960a;}
+body.light-mode .btn-sm-logout{color:#4a6080;border-color:rgba(0,0,0,0.15);}
+body.light-mode .btn-sm-logout:hover{border-color:#dc2626;color:#dc2626;}
+body.light-mode .score-tbl th{background:rgba(200,150,10,0.1);color:#c8960a;}
+body.light-mode .score-tbl td{border-bottom-color:rgba(0,0,0,0.05);}
+body.light-mode .side-bg{opacity:0.08;}
+body.light-mode .sec-divider{background:rgba(0,0,0,0.08);}
+body.light-mode .group-header{filter:brightness(1.3);}
+body.light-mode .ko-team{border-bottom-color:rgba(0,0,0,0.06);}
+body.light-mode .ko-team.loser{color:#7a9ab8;}
+body.light-mode .tm-vs{color:rgba(0,0,0,0.2);}
+body.light-mode .tm-bet-label{color:#4a6080;}
+body.light-mode .tm-team-name{color:#0f1e35;}
+body.light-mode .pill-group{background:rgba(59,130,246,0.1);color:#1d4ed8;}
+body.light-mode .pill-r32{background:rgba(139,92,246,0.1);color:#6d28d9;}
+body.light-mode .pill-r16{background:rgba(236,72,153,0.1);color:#be185d;}
+body.light-mode .pill-qf{background:rgba(245,158,11,0.12);color:#b45309;}
+body.light-mode .pill-sf{background:rgba(239,68,68,0.1);color:#b91c1c;}
+body.light-mode .pill-final{background:rgba(200,150,10,0.12);color:#c8960a;}
+body.light-mode .modal-title{color:#c8960a;}
+body.light-mode .modal-close{color:#4a6080;}
+body.light-mode .adm-tbl th{background:rgba(200,150,10,0.08);color:#c8960a;}
+body.light-mode .adm-tbl td{border-bottom-color:rgba(0,0,0,0.05);}
+.active-filter{border-color:var(--gold)!important;color:var(--gold)!important;}
+/* Theme toggle button */
+.theme-toggle{background:none;border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);transition:border-color 0.2s,color 0.2s;}
+.theme-toggle:hover{border-color:var(--gold);color:var(--gold);}
+body.light-mode .theme-toggle{border-color:rgba(0,0,0,0.15);}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);direction:rtl;min-height:100vh;overflow-x:hidden;}
+body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color:var(--text);direction:rtl;min-height:100vh;overflow-x:hidden;}
 ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:var(--gold);}
 
 /* ── LOGIN — UNTOUCHED ── */
@@ -23,10 +96,10 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 .login-box{width:100%;max-width:500px;padding:16px 20px 32px;}
 .login-inner{border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.12);background:rgba(20,30,50,0.97);}
 .login-header{padding:14px 24px;background:linear-gradient(135deg,var(--blue),var(--red));text-align:center;}
-.login-header h2{font-family:'Heebo',sans-serif;font-weight:900;font-size:1.15rem;color:#fff;}
+.login-header h2{font-family:'Rubik',sans-serif;font-weight:900;font-size:1.15rem;color:#fff;}
 .login-body{padding:18px 20px;}
 .login-sub{font-size:13px;text-align:center;color:rgba(255,255,255,0.5);margin-bottom:14px;}
-.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1e2d40;border:2px solid rgba(255,255,255,0.15);color:#fff;border-radius:12px;padding:14px 20px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;transition:background 0.2s;}
+.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#1e2d40;border:2px solid rgba(255,255,255,0.15);color:#fff;border-radius:12px;padding:14px 20px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;transition:background 0.2s;}
 .google-btn:hover{background:#26394f;}
 #login-error{display:none;color:#f87171;font-size:13px;text-align:center;margin-top:10px;font-weight:700;}
 
@@ -49,7 +122,7 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 .topbar{position:fixed;top:0;left:0;right:0;z-index:100;height:54px;background:rgba(9,17,31,0.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
 .topbar-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;background:linear-gradient(90deg,#fff,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer;}
 .topbar-user{font-size:12px;font-weight:700;color:var(--text2);}
-.btn-sm-logout{background:none;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:5px 10px;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;}
+.btn-sm-logout{background:none;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:5px 10px;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;}
 .btn-sm-logout:hover{border-color:#DC2626;color:#DC2626;}
 .pending-banner{display:none;position:fixed;top:54px;left:0;right:0;z-index:80;background:linear-gradient(135deg,#f97316,#ea580c);padding:10px 16px;flex-direction:row;align-items:center;justify-content:space-between;}
 
@@ -81,12 +154,12 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 .tm-countdown{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--gold);letter-spacing:2px;text-align:center;min-width:80px;}
 .tm-bet-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);}
 .tm-bet-label{font-size:11px;font-weight:700;color:var(--text2);}
-.stn-btn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Heebo',sans-serif;transition:background 0.15s;}
+.stn-btn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Rubik',sans-serif;transition:background 0.15s;}
 .stn-btn:hover{background:var(--gold);color:#000;}
 .stn-val{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;min-width:32px;text-align:center;}
 .stn-sep{font-size:1.1rem;color:var(--text2);font-weight:700;padding:0 2px;}
 .tm-locked-badge{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:#f87171;text-align:center;width:100%;}
-.btn-place-bet{background:linear-gradient(135deg,#7c3aed,#be123c);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:900;font-size:13px;cursor:pointer;font-family:'Heebo',sans-serif;white-space:nowrap;transition:opacity 0.2s;}
+.btn-place-bet{background:linear-gradient(135deg,#7c3aed,#be123c);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:900;font-size:13px;cursor:pointer;font-family:'Rubik',sans-serif;white-space:nowrap;transition:opacity 0.2s;}
 .btn-place-bet:hover{opacity:0.88;}
 .hero-empty{text-align:center;padding:20px;color:var(--text2);font-size:13px;font-weight:700;}
 
@@ -129,11 +202,11 @@ body{font-family:'Heebo',sans-serif;background:var(--navy);color:var(--text);dir
 .leader-pts{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);}
 
 /* Inputs & Buttons */
-.inp{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'Heebo',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;direction:rtl;}
+.inp{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'Rubik',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;direction:rtl;}
 .inp:focus{border-color:var(--gold);}
 .inp::placeholder{color:var(--text2);}
 select.inp option{background:var(--card2);}
-.btn{border:none;border-radius:11px;padding:11px 20px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Heebo',sans-serif;}
+.btn{border:none;border-radius:11px;padding:11px 20px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Rubik',sans-serif;}
 .btn-grad{background:linear-gradient(135deg,#7c3aed,#be123c);color:#fff;}
 .btn-green{background:linear-gradient(135deg,#065f46,#047857);color:#fff;}
 .btn-red{background:linear-gradient(135deg,#DC2626,#b91c1c);color:#fff;}
@@ -185,7 +258,7 @@ select.inp option{background:var(--card2);}
 .ko-wrap{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:2px;padding:8px 0 12px;width:100%;overflow:hidden;direction:ltr;}
 .ko-side{display:flex;flex-direction:row;gap:2px;align-items:center;flex:1;min-width:0;direction:ltr;}
 .ko-side-right{}
-.ko-col{display:flex;flex-direction:column;gap:4px;flex:1;justify-content:center;min-width:0;}
+.ko-col{display:flex;flex-direction:column;gap:4px;flex:1;justify-content:center;min-width:90px;}
 .ko-center{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;width:90px;}
 .ko-logo-wrap{width:95px;height:95px;border-radius:50%;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,215,0,0.35);box-shadow:0 0 16px rgba(255,215,0,0.25);flex-shrink:0;margin:4px 0;}
 .ko-logo{width:100%;height:100%;object-fit:cover;object-position:center;}
@@ -218,14 +291,15 @@ select.inp option{background:var(--card2);}
 .ko-match:hover{border-color:rgba(255,215,0,0.3);}
 .ko-team{
   display:flex;align-items:center;justify-content:space-between;
-  padding:3px 5px;font-size:10px;font-weight:700;
+  padding:4px 5px;font-size:10px;font-weight:700;
   border-bottom:1px solid rgba(255,255,255,0.05);
+  min-height:22px;
 }
 .ko-team:last-child{border-bottom:none;}
 .ko-team.winner{color:var(--gold);}
 .ko-team.loser{color:var(--text2);}
-.ko-team-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;min-width:0;font-size:9px;}
-.ko-score{font-family:'Bebas Neue',sans-serif;font-size:12px;min-width:12px;text-align:center;}
+.ko-team-name{flex:1;white-space:normal;word-break:break-word;max-width:100%;min-width:0;font-size:8.5px;line-height:1.3;}
+.ko-score{font-family:'Bebas Neue',sans-serif;font-size:12px;min-width:12px;text-align:center;flex-shrink:0;}
 .ko-team-flag{width:14px;height:14px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:4px;}
 .ko-round-label{font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:var(--text2);text-align:center;margin-bottom:3px;}
 .ko-trophy{
@@ -417,11 +491,38 @@ select.inp option{background:var(--card2);}
   </div>
 </div>
 
+<!-- PLAYER STATS MODAL -->
+<div class="modal" id="player-stats-modal">
+  <div class="modal-box" style="max-width:360px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" id="ps-name">סטטיסטיקות שחקן</div>
+      <button class="modal-close" id="close-player-stats">×</button>
+    </div>
+    <div class="stats-grid" style="grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;">
+      <div class="stat-box"><div class="stat-val" id="ps-total">0</div><div class="stat-lbl">הימורים</div></div>
+      <div class="stat-box"><div class="stat-val" id="ps-pct" style="font-size:1.2rem;">0%</div><div class="stat-lbl">אחוז דיוק</div></div>
+      <div class="stat-box"><div class="stat-val" id="ps-hits" style="color:#34d399;">0</div><div class="stat-lbl">בולים 🎯</div></div>
+      <div class="stat-box"><div class="stat-val" id="ps-dirs" style="color:#60a5fa;">0</div><div class="stat-lbl">כיוונים ✅</div></div>
+    </div>
+    <div class="stat-box" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;">
+      <div style="text-align:center;flex:1;">
+        <div class="stat-val" id="ps-miss" style="color:#f87171;">0</div>
+        <div class="stat-lbl">פספוסים ❌</div>
+      </div>
+      <div style="width:1px;height:40px;background:var(--border);"></div>
+      <div style="text-align:center;flex:1;">
+        <div class="stat-val" id="ps-pts">0</div>
+        <div class="stat-lbl">נקודות כולל</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- GROUP MANAGEMENT MODAL -->
 <div class="modal" id="groups-modal">
   <div class="modal-box" style="max-width:500px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="modal-title"⚙️ ניהול קבוצות</div>
+      <div class="modal-title">⚙️ ניהול קבוצות</div>
       <button class="modal-close" id="close-groups-modal">×</button>
     </div>
     <!-- Create new group -->
@@ -493,6 +594,7 @@ select.inp option{background:var(--card2);}
         <span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;animation:pulse 2s infinite;"></span>
         <span id="online-num">1</span>
       </span>
+      <button class="theme-toggle" id="theme-toggle-btn" title="החלפת מצב תצוגה">🌙</button>
       <button class="btn-sm-logout" id="logout-btn">יציאה</button>
     </div>
   </div>
@@ -500,6 +602,7 @@ select.inp option{background:var(--card2);}
     <span id="pending-cnt" style="font-size:13px;font-weight:700;color:#fff;"></span>
     <button id="open-pending-btn" style="background:#fff;color:#ea580c;border:none;border-radius:8px;padding:5px 12px;font-weight:900;font-size:12px;cursor:pointer;">נהל</button>
   </div>
+  <div id="bot-round-banner" style="display:none;position:fixed;top:54px;left:0;right:0;z-index:79;background:linear-gradient(135deg,#4c1d95,#6d28d9);padding:10px 16px;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;"></div>
 
   <div class="hero">
     <div class="hero-inner">
@@ -641,6 +744,7 @@ select.inp option{background:var(--card2);}
 
     <div class="page" id="page-admin">
       <div class="sec-head"><span style="font-size:22px;">⚙️</span><div class="sec-title">פאנל אדמין</div></div>
+
       <!-- Analytics -->
       <div class="card" style="padding:18px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -653,29 +757,22 @@ select.inp option{background:var(--card2);}
         <div id="analytics-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;"></div>
         <div id="analytics-activity" style="margin-top:4px;"></div>
       </div>
-      <!-- Load WC 2026 Matches -->
-      <div class="card" style="padding:18px;margin-bottom:14px;">
-        <p style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px;">🌍 טעינת לוח משחקי מונדיאל 2026</p>
-        <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">טוען את כל 104 המשחקים הרשמיים מ-openfootball ישירות ל-Firebase</p>
-        <div style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#f87171;">
-          ⚠️ שים לב: פעולה זו תוסיף את המשחקים. משחקים קיימים לא יימחקו.
-        </div>
-        <button class="btn btn-green" id="load-wc-matches" style="width:100%;">⬇️ טען 104 משחקי מונדיאל 2026</button>
-        <div id="load-status" style="margin-top:10px;font-size:12px;text-align:center;display:none;"></div>
-      </div>
+
       <!-- Boti-Goal Bot -->
       <div class="card" style="padding:18px;margin-bottom:14px;background:linear-gradient(135deg,rgba(26,58,107,0.4),rgba(116,185,224,0.1));border-color:rgba(116,185,224,0.3);">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <img src="''' + "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%231a3a6b'%2F%3E%3CclipPath id='bc'%3E%3Ccircle cx='20' cy='20' r='20'%2F%3E%3C%2FclipPath%3E%3Crect x='0' y='0' width='40' height='40' fill='%2374b9e0' clip-path='url(%23bc)'%2F%3E%3Crect x='13' y='0' width='7' height='40' fill='%23fff' clip-path='url(%23bc)'%2F%3E%3Ccircle cx='20' cy='13' r='5' fill='%23f5c5a3'%2F%3E%3Cellipse cx='20' cy='10' rx='5.5' ry='4' fill='%238B4513'%2F%3E%3Crect x='14.5' y='10' width='2' height='7' rx='1' fill='%238B4513'%2F%3E%3Crect x='23' y='10' width='2' height='7' rx='1' fill='%238B4513'%2F%3E%3Cpath d='M13 22 Q20 19 27 22 L28 34 H12 Z' fill='%23fff'%2F%3E%3Ctext x='20' y='30' text-anchor='middle' font-size='7' font-weight='900' fill='%231a3a6b' font-family='Arial'%3E9%3C%2Ftext%3E%3C%2Fsvg%3E" + '''" style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(116,185,224,0.5);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(116,185,224,0.5);background:linear-gradient(135deg,#1a3a6b,#74b9e0);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🤖</div>
           <div>
             <p style="font-size:15px;font-weight:900;color:#74b9e0;">🤖 Boti-Goal</p>
-            <p style="font-size:11px;color:var(--text2);">שחקן בוט מבוסס AI — מנתח ומהמר אוטומטית</p>
+            <p style="font-size:11px;color:var(--text2);">שחקן בוט מבוסס AI — מנתח ומהמר סיבוב אחד בכל פעם</p>
           </div>
         </div>
-        <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על כל המשחקים</button>
+        <!-- Bot rounds status -->
+        <div id="bot-rounds-status" style="margin-bottom:12px;display:flex;flex-direction:column;gap:4px;"></div>
+        <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על הסיבוב הקרוב</button>
         <div id="bot-run-status" style="font-size:12px;text-align:center;color:var(--text2);min-height:16px;"></div>
       </div>
-      <!-- Members -->
+
       <!-- Groups Management -->
       <div class="card" style="padding:18px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -685,6 +782,7 @@ select.inp option{background:var(--card2);}
         <div id="groups-summary"></div>
       </div>
 
+      <!-- Members -->
       <div class="card" style="padding:18px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <p style="font-size:15px;font-weight:700;color:var(--gold);">👥 ניהול חברים</p>
@@ -700,6 +798,35 @@ select.inp option{background:var(--card2);}
           <button class="btn btn-ghost btn-xs" id="refresh-activity">🔄 רענן</button>
         </div>
         <div id="activity-list"></div>
+      </div>
+
+      <!-- Load WC 2026 Matches (disabled - already loaded) -->
+      <div class="card" style="padding:18px;margin-bottom:14px;opacity:0.6;">
+        <p style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px;">🌍 טעינת לוח משחקי מונדיאל 2026</p>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">טוען את כל 104 המשחקים הרשמיים מ-openfootball ישירות ל-Firebase</p>
+        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#34d399;">
+          ✅ המשחקים כבר נטענו. שימוש בכפתור זה יוסיף משחקים כפולים.
+        </div>
+        <button class="btn btn-ghost" id="load-wc-matches" style="width:100%;opacity:0.5;cursor:not-allowed;" disabled>⬇️ טען 104 משחקי מונדיאל 2026</button>
+        <div id="load-status" style="margin-top:10px;font-size:12px;text-align:center;display:none;"></div>
+      </div>
+
+      <!-- Knockout Match Editor -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <p style="font-size:15px;font-weight:700;color:var(--gold);">🏆 עריכת משחקי נוקאאוט</p>
+          <button class="btn btn-ghost btn-xs" id="ko-refresh-btn">🔄 רענן</button>
+        </div>
+        <p style="font-size:11px;color:var(--text2);margin-bottom:14px;">עדכן נבחרות, תאריך ואצטדיון לכל משחק נוקאאוט. לחץ שמור אחרי כל שורה.</p>
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="ko-stage-filter btn btn-ghost btn-xs active-filter" data-stage="r32">R32</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="r16">R16</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="qf">רבע גמר</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="sf">חצי גמר</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="3rd">מקום 3</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="final">גמר</button>
+        </div>
+        <div id="ko-matches-list" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
     </div>
 
@@ -721,125 +848,493 @@ const BOT_UID = "boti-goal-bot";
 const BOT_NAME = "Boti-Goal 🤖";
 
 // ── BOTI-GOAL AI BOT ──
-async function runBotiGoalBot() {
+
+// ── BOT ROUND DETECTION ──
+// Returns all rounds across all stages in chronological order
+function getAllBotRounds(allMatches) {
+  const rounds = [];
+
+  // GROUP STAGE: split into 3 rounds of 24 matches each (sorted by date)
+  // Each round = all teams in all groups play one match
+  const groupMs = Object.entries(allMatches)
+    .filter(([,m]) => m.stage === 'group' && m.datetime && m.team1 && m.team2 && m.team1 !== 'TBD' && m.team2 !== 'TBD')
+    .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
+
+  if(groupMs.length) {
+    // 12 groups × 2 matches per group per round = 24 matches per round
+    const ROUND_SIZE = 24;
+    const numRounds = Math.ceil(groupMs.length / ROUND_SIZE);
+    for(let r = 0; r < numRounds; r++){
+      const slice = groupMs.slice(r * ROUND_SIZE, (r + 1) * ROUND_SIZE);
+      rounds.push({ label: `סיבוב ${r + 1} — שלב הבתים`, matches: slice, stage: 'group' });
+    }
+  }
+
+  // KNOCKOUT STAGES: each stage = one round
+  const koStages = [
+    { key: 'r32',   label: 'שמינית גמר' },
+    { key: 'r16',   label: 'שמינית פינאל' },
+    { key: 'qf',    label: 'רבע גמר' },
+    { key: 'sf',    label: 'חצי גמר' },
+    { key: '3rd',   label: 'מקום שלישי' },
+    { key: 'final', label: 'גמר 🏆' },
+  ];
+  koStages.forEach(({ key, label }) => {
+    const stageMs = Object.entries(allMatches)
+      .filter(([,m]) => m.stage === key && m.datetime && m.team1 && m.team2 && m.team1 !== 'TBD' && m.team2 !== 'TBD')
+      .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
+    if(stageMs.length) rounds.push({ label, matches: stageMs, stage: key });
+  });
+
+  return rounds;
+}
+
+// Find the next round the bot should bet on (first with unbetted + unlocked matches)
+function getNextBotRound(allRounds, botBets) {
+  for(const round of allRounds) {
+    const missing = round.matches.filter(([id, m]) => !botBets[id] && !locked(m));
+    if(missing.length > 0) return { round, missing };
+  }
+  return null;
+}
+
+async function checkBotRoundAlert() {
+  if(!MEDATA || !MEDATA.isAdmin) return;
+  const banner = el('bot-round-banner');
+  if(!banner) return;
+
+  const allRounds = getAllBotRounds(MATCHES);
+  if(!allRounds.length) { banner.style.display='none'; return; }
+
+  const botBetSnap = await get(ref(db, 'bets/' + BOT_UID));
+  const botBets = botBetSnap.exists() ? botBetSnap.val() : {};
+
+  // ── Render bot rounds status in admin panel ──
+  const statusDiv = el('bot-rounds-status');
+  if(statusDiv) {
+    statusDiv.innerHTML = allRounds.map(round => {
+      const total = round.matches.length;
+      const done = round.matches.filter(([id]) => !!botBets[id]).length;
+      const allDone = done === total;
+      const color = allDone ? '#34d399' : done > 0 ? '#fbbf24' : 'var(--text2)';
+      const icon = allDone ? '✅' : done > 0 ? '⏳' : '⭕';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
+        <span style="color:${color};">${icon} ${round.label}</span>
+        <span style="color:${color};font-weight:700;">${done}/${total} הימורים</span>
+      </div>`;
+    }).join('');
+  }
+
+  const next = getNextBotRound(allRounds, botBets);
+
+  // Stack below pending-banner if visible
+  const pendingBanner = el('pending-banner');
+  const pendingVisible = pendingBanner && pendingBanner.style.display === 'flex';
+  banner.style.top = pendingVisible ? '94px' : '54px';
+
+  if(!next) { banner.style.display='none'; return; }
+
+  const { round, missing } = next;
+  const firstMatchMs = Math.min(...missing.map(([,m]) => new Date(m.datetime).getTime()));
+  const now = Date.now();
+  const hoursUntil = (firstMatchMs - now) / 3600000;
+
+  if(now >= firstMatchMs) { banner.style.display='none'; return; }
+
+  // Format first match date/time
+  const firstMatchDate = new Date(firstMatchMs);
+  const dateStr = firstMatchDate.toLocaleDateString('he-IL', { weekday:'short', day:'numeric', month:'numeric' });
+  const timeStr = firstMatchDate.toLocaleTimeString('he-IL', { hour:'2-digit', minute:'2-digit' });
+
+  // Button active only within 12h before first match
+  const btnActive = hoursUntil <= 12;
+
+  banner.style.display = 'flex';
+  banner.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+      <span style="font-size:13px;font-weight:700;color:#fff;">
+        🤖 Boti-Goal לא הימר עדיין על <strong>${round.label}</strong> — ${missing.length} משחקים ממתינים
+      </span>
+      <span style="font-size:11px;color:rgba(255,255,255,0.75);">
+        משחק ראשון: ${dateStr} בשעה ${timeStr} &nbsp;·&nbsp;
+        <span id="bot-banner-countdown"></span>
+      </span>
+    </div>
+    <button id="bot-banner-btn" onclick="window.runBotiGoalBot()"
+      ${btnActive ? '' : 'disabled'}
+      style="background:${btnActive?'#fff':'rgba(255,255,255,0.25)'};color:${btnActive?'#6d28d9':'rgba(255,255,255,0.5)'};
+             border:none;border-radius:8px;padding:5px 14px;font-weight:900;font-size:12px;
+             cursor:${btnActive?'pointer':'not-allowed'};flex-shrink:0;transition:all 0.3s;white-space:nowrap;">
+      ${btnActive ? '⚡ המר עכשיו' : '🔒 פעיל 12ש׳ לפני'}
+    </button>
+  `;
+
+  // Start/update countdown
+  if(window._botBannerTimer) clearInterval(window._botBannerTimer);
+  function updateCountdown(){
+    const cdEl = document.getElementById('bot-banner-countdown');
+    if(!cdEl){ clearInterval(window._botBannerTimer); return; }
+    const diff = firstMatchMs - Date.now();
+    if(diff <= 0){ clearInterval(window._botBannerTimer); checkBotRoundAlert(); return; }
+    const d = Math.floor(diff/86400000);
+    const h = Math.floor((diff%86400000)/3600000);
+    const m2 = Math.floor((diff%3600000)/60000);
+    const s = Math.floor((diff%60000)/1000);
+    cdEl.textContent = `בעוד ${d>0?d+'י ':''}${String(h).padStart(2,'0')}:${String(m2).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    // Activate button when we cross 12h threshold
+    const hoursLeft = diff/3600000;
+    const btn = document.getElementById('bot-banner-btn');
+    if(btn && hoursLeft <= 12 && btn.disabled){
+      btn.disabled = false;
+      btn.style.background='#fff'; btn.style.color='#6d28d9';
+      btn.style.cursor='pointer'; btn.textContent='⚡ המר עכשיו';
+    }
+  }
+  updateCountdown();
+  window._botBannerTimer = setInterval(updateCountdown, 1000);
+}
+
+
+window.runBotiGoalBot = async function runBotiGoalBot() {
   const statusEl = el('bot-run-status');
   if(statusEl){ statusEl.textContent = '🤖 Boti-Goal מתחבר...'; statusEl.style.color='var(--text2)'; }
+  console.log('🤖 runBotiGoalBot started');
 
   // Ensure bot user exists in Firebase
-  const botSnap = await get(ref(db, 'users/' + BOT_UID));
-  if(!botSnap.exists()){
-    await set(ref(db, 'users/' + BOT_UID), {
-      uid: BOT_UID, email: 'boti-goal@ai.bot',
-      name: BOT_NAME, nickname: BOT_NAME,
-      approved: true, isAdmin: false, isBot: true,
-      createdAt: Date.now()
-    });
+  try {
+    const botSnap = await get(ref(db, 'users/' + BOT_UID));
+    if(!botSnap.exists()){
+      await set(ref(db, 'users/' + BOT_UID), {
+        uid: BOT_UID, email: 'boti-goal@ai.bot',
+        name: BOT_NAME, nickname: BOT_NAME,
+        approved: true, isAdmin: false, isBot: true,
+        createdAt: Date.now()
+      });
+      console.log('🤖 Bot user created');
+    }
+  } catch(e) {
+    console.error('🤖 Failed to create bot user:', e);
+    if(statusEl){ statusEl.textContent='❌ שגיאת הרשאות Firebase'; statusEl.style.color='#f87171'; }
+    toast('❌ שגיאת Firebase — בדוק console');
+    return;
   }
 
   // Get all matches + existing bot bets
-  const matchSnap = await get(ref(db, 'matches'));
-  const betSnap   = await get(ref(db, 'bets/' + BOT_UID));
-  if(!matchSnap.exists()){ toast('אין משחקים לנתח'); return; }
+  console.log('🤖 Fetching matches...');
+  if(statusEl){ statusEl.textContent='📡 טוען משחקים...'; }
+  let matchSnap, betSnap;
+  try {
+    [matchSnap, betSnap] = await Promise.all([
+      get(ref(db, 'matches')),
+      get(ref(db, 'bets/' + BOT_UID))
+    ]);
+  } catch(e) {
+    console.error('🤖 Failed to fetch data:', e);
+    if(statusEl){ statusEl.textContent='❌ שגיאה בטעינת נתונים'; statusEl.style.color='#f87171'; }
+    toast('❌ שגיאה בטעינת נתונים'); return;
+  }
+  if(!matchSnap || !matchSnap.exists()){ toast('אין משחקים לנתח'); return; }
+  console.log('🤖 Matches loaded OK');
 
   const allMatches = matchSnap.val();
   const botBets    = betSnap.exists() ? betSnap.val() : {};
 
-  // Only bet on unlocked matches without existing bet
-  const pending = Object.entries(allMatches).filter(([id,m])=>{
-    return !botBets[id] && m.team1 && m.team2 &&
-           m.team1 !== 'TBD' && m.team2 !== 'TBD' && !locked(m);
-  });
+  // ── Limit to NEXT ROUND ONLY ──
+  const allRounds = getAllBotRounds(allMatches);
+  const nextRoundData = getNextBotRound(allRounds, botBets);
+  console.log('🤖 Rounds detected:', allRounds.map(r=>r.label+' ('+r.matches.length+')'));
+  console.log('🤖 Next round:', nextRoundData ? nextRoundData.round.label + ' — ' + nextRoundData.missing.length + ' missing' : 'none');
 
-  if(!pending.length){
-    toast('🤖 Boti-Goal כבר המר על כל המשחקים!');
+  if(!nextRoundData){
+    toast('🤖 Boti-Goal כבר המר על כל הסיבובים!');
     if(statusEl){ statusEl.textContent='✅ כבר המר על הכל!'; statusEl.style.color='#34d399'; }
     return;
   }
 
-  if(statusEl){ statusEl.textContent='🧠 מנתח ' + pending.length + ' משחקים עם AI...'; }
+  const { round: currentRound, missing: pending } = nextRoundData;
 
-  // Build list for Claude
-  const matchList = pending.map(([id,m])=>
-    id + '|' + m.team1 + ' vs ' + m.team2 + '|' + (m.stage||'group')
-  ).join('\n');
+  if(!pending.length){
+    toast('🤖 Boti-Goal כבר המר על הסיבוב הקרוב!');
+    if(statusEl){ statusEl.textContent='✅ כבר המר על הסיבוב!'; statusEl.style.color='#34d399'; }
+    return;
+  }
 
-  const prompt = `You are a world-class football analyst and predictor for the 2026 FIFA World Cup.
-Analyze each match and predict the exact final score based on:
-- FIFA world rankings and team strength
-- Historical head-to-head records
-- Current form and squad quality
-- Tournament stage importance
-- Home advantage (USA/Canada/Mexico context)
+  if(statusEl){ statusEl.textContent=`🧠 מנתח ${pending.length} משחקים — ${currentRound.label}...`; }
 
-Matches to predict (format: ID|Team1 vs Team2|stage):
-${matchList}
+  // ── SMART PREDICTION ENGINE (no external API needed) ──
+  // FIFA ranking tiers — higher = stronger team
+  const TEAM_TIER = {
+    // Tier 1 — elite
+    'ארגנטינה':10,'צרפת':10,'ספרד':9,'אנגליה':9,'ברזיל':9,'פורטוגל':9,
+    'גרמניה':8,'הולנד':8,'בלגיה':8,'אורוגוואי':8,'קולומביה':8,
+    // Tier 2 — strong
+    'מרוקו':7,'יפן':7,'ארהב':7,'ארה"ב':7,'מקסיקו':7,'קנדה':7,
+    'דנמרק':7,'שוויץ':7,'קרואטיה':7,'סנגל':7,'אוסטרליה':7,'קוריאה הדרומית':7,
+    'נורווגיה':7,'אוקראינה':6,'פולין':6,'טורקיה':6,'אוסטריה':6,'סרביה':6,
+    // Tier 3 — mid
+    'מצרים':6,'ניגריה':6,'חוף השנהב':6,'גאנה':6,'קמרון':6,
+    'אקוודור':5,'פרו':5,'צ׳ילה':5,'ונצואלה':5,'בוליביה':5,'פרגוואי':5,
+    'ערב הסעודית':5,'איראן':5,'עיראק':5,'קטר':5,'אוזבקיסטן':5,
+    'סלובקיה':5,'צכיה':5,'רומניה':5,'הונגריה':5,'סקוטלנד':5,'וולס':5,
+    // Tier 4 — lower
+    'דרום אפריקה':4,'קניה':4,'תוניסיה':4,'אלגריה':4,
+    'ניו זילנד':4,'פנמה':4,'הונדורס':4,'גואטמלה':4,'קוסטה ריקה':4,
+    'ירדן':4,'כף ורדה':4,'האיטי':4,'קוראסאו':4,
+  };
 
-Respond with ONLY a JSON array, no other text:
-[{"id":"MATCH_ID","s1":NUMBER,"s2":NUMBER},...]
+  function getTier(name) {
+    if(!name) return 5;
+    // try exact, then partial match
+    if(TEAM_TIER[name] !== undefined) return TEAM_TIER[name];
+    for(const [k,v] of Object.entries(TEAM_TIER)){
+      if(name.includes(k) || k.includes(name)) return v;
+    }
+    return 5; // default mid-tier
+  }
 
-Rules:
-- s1 = goals for Team1, s2 = goals for Team2
-- Scores must be realistic (0-6 range)
-- Consider upsets occasionally but favor stronger teams
-- Group stage: more draws possible
-- Knockout: decisive scores more likely`;
+  // Check if team has home advantage
+  function isHome(name) {
+    const n = (name||'').toLowerCase();
+    return n.includes('usa') || n.includes('ארה') || n.includes('אמריק') ||
+           n.includes('קנדה') || n.includes('canada') ||
+           n.includes('מקסיקו') || n.includes('mexico');
+  }
 
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+  // Generate a realistic score based on tier difference + results context
+  function predictScore(team1, team2, stage, completedCtx) {
+    let t1 = getTier(team1) + (isHome(team1) ? 1 : 0);
+    let t2 = getTier(team2) + (isHome(team2) ? 1 : 0);
+
+    // Adjust tiers based on completed matches in this tournament
+    completedCtx.forEach(([,m]) => {
+      if(!m.result) return;
+      const [r1, r2] = m.result;
+      if(m.team1 === team1) t1 += (r1 - r2) * 0.15;
+      if(m.team2 === team1) t1 += (r2 - r1) * 0.15;
+      if(m.team1 === team2) t2 += (r1 - r2) * 0.15;
+      if(m.team2 === team2) t2 += (r2 - r1) * 0.15;
     });
 
-    if(!resp.ok) throw new Error('API error: ' + resp.status);
-    const data = await resp.json();
-    const text = data.content && data.content[0] ? data.content[0].text : '';
+    const diff = t1 - t2; // positive = team1 stronger
+    const isKnockout = ['r32','r16','qf','sf','3rd','final'].includes(stage);
+    const isGroup = stage === 'group';
 
-    // Parse JSON from response
-    const jsonMatch = text.match(/\[.*\]/s);
-    if(!jsonMatch) throw new Error('לא ניתן לפרש תשובת AI');
-    const predictions = JSON.parse(jsonMatch[0]);
+    // Base goals scored (avg per team per match)
+    const baseGoals = isKnockout ? 1.3 : 1.1;
 
-    // Save bets to Firebase
-    let saved = 0;
-    for(const pred of predictions){
-      if(pred.id && typeof pred.s1 === 'number' && typeof pred.s2 === 'number'){
-        const m = allMatches[pred.id];
-        if(m && !locked(m)){
-          await set(ref(db, 'bets/' + BOT_UID + '/' + pred.id), [pred.s1, pred.s2]);
-          saved++;
-        }
+    // Randomness seed (deterministic per match pair)
+    const seed = (team1.charCodeAt(0) + team2.charCodeAt(1||0) + (team1.length * team2.length)) % 100;
+    const rng = (offset=0) => ((seed + offset * 37) % 10) / 10; // 0.0–0.9
+
+    let s1, s2;
+
+    if(Math.abs(diff) <= 1) {
+      // Even match — draw likely in group, less in KO
+      const drawChance = isGroup ? 0.35 : 0.15;
+      if(rng(1) < drawChance) {
+        const g = Math.round(baseGoals * (0.8 + rng(2) * 0.6));
+        s1 = g; s2 = g;
+      } else {
+        s1 = Math.round(baseGoals * (0.8 + rng(3) * 0.8));
+        s2 = Math.max(0, s1 - 1 + Math.round(rng(4) * 2 - 0.5));
+        if(rng(5) > 0.5) [s1, s2] = [s2, s1]; // randomly swap winner
+      }
+    } else {
+      // Clear favourite
+      const fav = diff > 0 ? 1 : 2;
+      const gap = Math.min(Math.abs(diff), 4);
+      const favGoals = Math.round(baseGoals + gap * 0.35 + rng(6) * 0.8);
+      const undGoals = Math.max(0, Math.round(baseGoals - gap * 0.2 + rng(7) * 0.6));
+      s1 = fav === 1 ? favGoals : undGoals;
+      s2 = fav === 2 ? favGoals : undGoals;
+      // Occasional upset
+      if(rng(8) < 0.1) [s1, s2] = [s2, s1];
+    }
+
+    // KO can't end in draw after 90 (we predict 90min score, ties are valid for group)
+    if(isKnockout && s1 === s2) {
+      if(rng(9) > 0.5) s1++; else s2++;
+    }
+
+    return [Math.max(0, s1), Math.max(0, s2)];
+  }
+
+  // ── Build completed context for tier adjustment ──
+  const completedCtx = Object.entries(allMatches)
+    .filter(([,m]) => m.result !== undefined && m.team1 && m.team2);
+
+  // Build group standings for status display
+  const groupStandings = {};
+  completedCtx.forEach(([,m]) => {
+    if(m.stage !== 'group') return;
+    const g = m.group || 'A';
+    if(!groupStandings[g]) groupStandings[g] = {};
+    const add = (t, gf, ga, pts) => {
+      if(!groupStandings[g][t]) groupStandings[g][t] = {gf:0,ga:0,pts:0};
+      groupStandings[g][t].gf+=gf; groupStandings[g][t].ga+=ga; groupStandings[g][t].pts+=pts;
+    };
+    const [r1,r2]=m.result;
+    if(r1>r2){add(m.team1,r1,r2,3);add(m.team2,r2,r1,0);}
+    else if(r2>r1){add(m.team2,r2,r1,3);add(m.team1,r1,r2,0);}
+    else{add(m.team1,r1,r2,1);add(m.team2,r2,r1,1);}
+  });
+
+  // ── Save predictions one by one with clear error reporting ──
+  if(statusEl){ statusEl.textContent=`💾 שומר ${pending.length} הימורים...`; }
+
+  let saved = 0;
+  let failed = 0;
+  for(const [id, m] of pending){
+    if(locked(m)) continue;
+    const [s1, s2] = predictScore(m.team1, m.team2, m.stage||'group', completedCtx);
+    try {
+      await set(ref(db, 'bets/' + BOT_UID + '/' + id), [s1, s2]);
+      saved++;
+      console.log(`✅ saved bet ${saved}: ${m.team1} ${s1}-${s2} ${m.team2}`);
+    } catch(e) {
+      failed++;
+      console.error(`❌ failed to save bet for ${id}:`, e.code, e.message);
+      if(failed === 1) {
+        // Show first error to admin
+        if(statusEl){ statusEl.textContent=`❌ שגיאת Firebase: ${e.code||e.message}`; statusEl.style.color='#f87171'; }
+        toast(`❌ שגיאת Firebase: ${e.code||e.message} — בדוק הרשאות`);
+        return;
       }
     }
+    if(statusEl && saved > 0){ statusEl.textContent=`💾 שומר ${saved}/${pending.length}...`; }
+  }
 
-    toast('🤖 Boti-Goal המר על ' + saved + ' משחקים!');
-    if(statusEl){ statusEl.textContent='✅ המר על ' + saved + ' משחקים!'; statusEl.style.color='#34d399'; }
-
-  } catch(err) {
-    console.error('Bot error:', err);
-    // Fallback: smart random based on stage
-    if(statusEl){ statusEl.textContent='⚠️ AI לא זמין, מהמר חכם...'; statusEl.style.color='#fbbf24'; }
-    let saved = 0;
-    for(const [id,m] of pending){
-      if(locked(m)) continue;
-      // Smart fallback: weighted random by stage
-      const maxGoals = m.stage==='group'?4:5;
-      const s1 = Math.floor(Math.random()*maxGoals);
-      const s2 = Math.floor(Math.random()*maxGoals);
-      await set(ref(db, 'bets/'+BOT_UID+'/'+id), [s1, s2]);
-      saved++;
-    }
-    toast('🤖 Boti-Goal המר על ' + saved + ' משחקים (מצב גיבוי)');
-    if(statusEl){ statusEl.textContent='✅ המר על '+saved+' משחקים (גיבוי)'; statusEl.style.color='#fbbf24'; }
+  console.log(`✅ Boti-Goal: ${saved} saved, ${failed} failed`);
+  if(saved > 0){
+    toast(`🤖 Boti-Goal הימר על ${saved} משחקים — ${currentRound.label}!`);
+    if(statusEl){ statusEl.textContent=`✅ הימר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
+    const bb = el('bot-round-banner'); if(bb) bb.style.display='none';
+    // Reload BETS so leaderboard updates immediately
+    const freshBets = await get(ref(db, 'bets'));
+    if(freshBets.exists()) { BETS = freshBets.val(); renderLeader(); }
+    checkBotRoundAlert();
+  } else {
+    toast('❌ לא נשמר אף הימור — בדוק הרשאות Firebase');
+    if(statusEl){ statusEl.textContent='❌ כישלון בשמירה — בדוק הרשאות'; statusEl.style.color='#f87171'; }
   }
 }
 
+// ── KNOCKOUT MATCH EDITOR ──
+let koCurrentStage = 'r32';
 
-// ── TEAM NAME DISPLAY ──
+function renderKoEditor() {
+  const list = el('ko-matches-list');
+  if(!list) return;
+
+  const stageMatches = Object.entries(MATCHES)
+    .filter(([,m]) => m.stage === koCurrentStage)
+    .sort(([,a],[,b]) => (a.datetime||'') > (b.datetime||'') ? 1 : -1);
+
+  if(!stageMatches.length) {
+    list.innerHTML = '<p style="color:var(--text2);font-size:13px;text-align:center;">אין משחקים בשלב זה</p>';
+    return;
+  }
+
+  // Build team list from group stage for dropdown
+  const teamSet = new Set();
+  Object.values(MATCHES).forEach(m => {
+    if(m.stage === 'group' && m.team1 && m.team1 !== 'TBD') teamSet.add(m.team1);
+    if(m.stage === 'group' && m.team2 && m.team2 !== 'TBD') teamSet.add(m.team2);
+  });
+  const teams = ['TBD', ...Array.from(teamSet).sort()];
+  const teamOptions = teams.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  list.innerHTML = stageMatches.map(([id, m]) => {
+    const dt = m.datetime ? m.datetime.replace('T',' ').slice(0,16) : '';
+    const dtParts = dt ? dt.split(' ') : ['',''];
+    const p1=koPlaceholderDisplay(m.team1), p2=koPlaceholderDisplay(m.team2);
+    const hint1=p1.isPlaceholder&&m.team1!=='TBD'?m.team1:'';
+    const hint2=p2.isPlaceholder&&m.team2!=='TBD'?m.team2:'';
+    return `
+    <div style="background:var(--card2);border-radius:10px;padding:12px;border:1px solid var(--border);">
+      <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">📍 ${m.venue||'—'} &nbsp;·&nbsp; ${m.datetime?new Date(m.datetime).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:start;margin-bottom:8px;">
+        <div>
+          ${hint1?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p1.text+'</div>'):''}
+          <select id="ko-t1-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
+            ${teams.map(t=>'<option value="'+t+'" '+(m.team1===t?'selected':'')+'>'+t+'</option>').join('')}
+          </select>
+        </div>
+        <span style="color:var(--text2);font-size:12px;font-weight:700;padding-top:22px;">vs</span>
+        <div>
+          ${hint2?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p2.text+'</div>'):''}
+          <select id="ko-t2-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
+            ${teams.map(t=>'<option value="'+t+'" '+(m.team2===t?'selected':'')+'>'+t+'</option>').join('')}
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">תאריך</div>
+          <input id="ko-date-${id}" type="date" value="${dtParts[0]}"
+            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;width:100%;box-sizing:border-box;">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">שעה</div>
+          <input id="ko-time-${id}" type="time" value="${dtParts[1]}"
+            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;width:100%;box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">אצטדיון</div>
+        <input id="ko-venue-${id}" type="text" value="${m.venue||''}" placeholder="שם האצטדיון"
+          style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;width:100%;box-sizing:border-box;">
+      </div>
+      <button onclick="saveKoMatch('${id}')"
+        style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:7px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">
+        💾 שמור
+      </button>
+      <div id="ko-status-${id}" style="font-size:11px;text-align:center;color:var(--text2);min-height:14px;margin-top:4px;"></div>
+    </div>`;
+  }).join('');
+}
+
+window.saveKoMatch = async function(id) {
+  const t1 = document.getElementById(`ko-t1-${id}`)?.value;
+  const t2 = document.getElementById(`ko-t2-${id}`)?.value;
+  const date = document.getElementById(`ko-date-${id}`)?.value;
+  const time = document.getElementById(`ko-time-${id}`)?.value;
+  const venue = document.getElementById(`ko-venue-${id}`)?.value;
+  const statusEl = document.getElementById(`ko-status-${id}`);
+
+  if(!t1||!t2) return;
+  const datetime = date && time ? `${date}T${time}` : (MATCHES[id]?.datetime||'');
+
+  try {
+    await update(ref(db, 'matches/' + id), { team1: t1, team2: t2, datetime, venue: venue||'' });
+    if(statusEl){ statusEl.textContent='✅ נשמר!'; statusEl.style.color='#34d399'; }
+    setTimeout(()=>{ if(statusEl) statusEl.textContent=''; }, 2000);
+  } catch(e) {
+    if(statusEl){ statusEl.textContent='❌ שגיאה: '+e.message; statusEl.style.color='#f87171'; }
+  }
+};
+
+// Stage filter buttons
+document.querySelectorAll('.ko-stage-filter').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ko-stage-filter').forEach(b => b.classList.remove('active-filter'));
+    btn.classList.add('active-filter');
+    koCurrentStage = btn.dataset.stage;
+    renderKoEditor();
+  });
+});
+
+el('ko-refresh-btn')?.addEventListener('click', renderKoEditor);
+
+// Render when admin tab is opened
+const origTabClick = window._tabClickHandler;
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    if(tab.dataset.tab === 'admin') setTimeout(renderKoEditor, 100);
+  });
+});
+
+
 // Maps English names to Hebrew for display (works regardless of how stored in Firebase)
 const _DISPLAY_NAMES = {
   'Czech Republic':'צכיה','Czechia':'צכיה',
@@ -1954,7 +2449,7 @@ function renderLeader() {
     if(!sorted.length){ lst.innerHTML="<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>הטבלה תתעדכן לאחר המשחקים הראשונים</div>"; return; }
     const medals=['🥇','🥈','🥉']; const cols=['var(--gold)','#c0c0c0','#cd7f32'];
     lst.innerHTML = sorted.map((s,i)=>
-      "<div class='leader-row'><div class='leader-rank' style='color:"+(cols[i]||'var(--text2)')+"'>"+(medals[i]||'#'+(i+1))+"</div>" +
+      "<div class='leader-row' style='cursor:pointer;' onclick='openPlayerStats(\""+s.uid+"\")'><div class='leader-rank' style='color:"+(cols[i]||'var(--text2)')+"'>"+(medals[i]||'#'+(i+1))+"</div>" +
       "<div class='leader-name' style='display:flex;align-items:center;gap:6px;'>" +
         (s.isBot?'<img src="'+BOT_AVATAR+'" style="width:24px;height:24px;border-radius:50%;">':'') +
         s.name+"</div>" +
@@ -1996,7 +2491,7 @@ function renderLeader() {
     html += '</div>';
 
     html += groupScores.map((s,i)=>
-      "<div class='leader-row' style='border-right:3px solid "+groupColor+";'>" +
+      "<div class='leader-row' style='border-right:3px solid "+groupColor+";cursor:pointer;' onclick='openPlayerStats(\""+s.uid+"\")'>" +
       "<div class='leader-rank' style='color:"+(cols[i]||'var(--text2)')+"'>"+(medals[i]||'#'+(i+1))+"</div>" +
       "<div class='leader-name' style='display:flex;align-items:center;gap:6px;'>" +
         (s.isBot?'<img src="'+BOT_AVATAR+'" style="width:22px;height:22px;border-radius:50%;">':'') +
@@ -2221,6 +2716,8 @@ const _knownCodes = {
 // Resolve flag code: check static map first, then fetch from API
 async function resolveFlag(name) {
   if(!name) return null;
+  // Don't try to resolve TBD or knockout placeholders
+  if(/^(TBD|tbd|W\d+|L\d+|\d[A-L]|winner|loser)/i.test(name.trim())) return null;
   const key = name.toLowerCase().trim();
   // Check cache
   if(_flagCache[key] !== undefined) return _flagCache[key];
@@ -2417,6 +2914,8 @@ function initData(){
 }
 function refreshAll(){
   renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket();
+  checkBotRoundAlert();
+  if(MEDATA?.isAdmin) renderKoEditor();
 }
 
 // ── TABS ──
@@ -2905,8 +3404,8 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
       if(!name) return name;
       // Winner/Loser of match (W73, L101) — true TBD
       if(/^(W|L)\d+$|winner$|path/i.test(name)) return 'TBD';
-      // Positional codes like 2A, 1E — keep as-is so koCard can display meaningfully
-      if(/^\d[A-L]$/i.test(name)) return name;
+      // Positional codes like "2A", "1E", "3A/E/H" — keep as-is for display
+      if(/^\d[A-L](\/[A-L])*$/i.test(name)) return name;
       return TEAM_HEB[name] || name; // fallback to English if not in map
     }
 
@@ -3044,6 +3543,42 @@ function flagCircle(name, size) {
 }
 
 const WC_LOGO="data:image/png;base64,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";
+// ── KNOCKOUT PLACEHOLDER DISPLAY ──
+function koPlaceholderDisplay(name) {
+  if(!name || name === 'TBD') return { text: 'TBD', isPlaceholder: true };
+  // Already Hebrew
+  if(/[\u0590-\u05FF]/.test(name)) return { text: displayName(name), isPlaceholder: false };
+
+  // Pattern: "1A", "2B" — rank + single group letter
+  const simple = name.match(/^([123])([A-L])$/);
+  if(simple) {
+    const rank = simple[1], group = simple[2];
+    const medal = rank==='1'?'🥇':rank==='2'?'🥈':'🥉';
+    return { text: `${medal} מקום ${rank} בית ${group}`, isPlaceholder: true };
+  }
+
+  // Pattern: "3A/E/H/I/J" or "3C/D/F/G/H" — 3rd best from multiple groups
+  const multi = name.match(/^3([A-L](?:\/[A-L])+)$/);
+  if(multi) {
+    return { text: `🥉 מיטב מבתים ${multi[1]}`, isPlaceholder: true };
+  }
+
+  // Known English name
+  if(_DISPLAY_NAMES[name]) return { text: _DISPLAY_NAMES[name], isPlaceholder: false };
+
+  // Any remaining placeholder-like (short, all caps/letters/slashes/digits)
+  if(/^[A-L0-9\/]+$/.test(name) && name.length <= 12) {
+    return { text: name, isPlaceholder: true };
+  }
+
+  return { text: displayName(name), isPlaceholder: false };
+}
+
+function koTeamDisplay(name) {
+  const p = koPlaceholderDisplay(name);
+  return p;
+}
+
 function renderBracket(){
   // ── GROUPS ──
   const groups={};
@@ -3101,25 +3636,21 @@ function renderBracket(){
       .sort(([,a],[,b])=>(a.datetime||'')>(b.datetime||'')?1:-1);
   }
   
-  const HEB_GROUPS={'A':'א','B':'ב','C':'ג','D':'ד','E':'ה','F':'ו','G':'ז','H':'ח','I':'ט','J':'י','K':'כ','L':'ל'};
-  function posLabel(name) {
-    const pm=/^(\d)([A-L])$/i.exec(name||'');
-    if(!pm) return null;
-    return 'מקום '+pm[1]+' בית '+(HEB_GROUPS[pm[2].toUpperCase()]||pm[2]);
-  }
-
   function koCard(m) {
     if(!m) return '<div class="ko-empty"><div class="ko-empty-team"></div><div class="ko-empty-team"></div></div>';
     const hasRes=m.result!==undefined;
     const w=hasRes?(m.result[0]>m.result[1]?m.team1:m.result[1]>m.result[0]?m.team2:null):null;
-    const pos1=posLabel(m.team1), pos2=posLabel(m.team2);
-    const t1=pos1||displayName(m.team1)||'TBD', t2=pos2||displayName(m.team2)||'TBD';
-    const c1=getCountryCode(m.team1), c2=getCountryCode(m.team2);
+    const d1=koTeamDisplay(m.team1), d2=koTeamDisplay(m.team2);
+    const t1=d1.text, t2=d2.text;
+    const c1=d1.isPlaceholder?null:getCountryCode(m.team1);
+    const c2=d2.isPlaceholder?null:getCountryCode(m.team2);
     const f1=c1?'<span class="fi fi-'+c1+'" style="width:10px;height:10px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:2px;"></span>':'';
     const f2=c2?'<span class="fi fi-'+c2+'" style="width:10px;height:10px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:2px;"></span>':'';
+    const s1=d1.isPlaceholder?'font-size:7px;color:var(--text2);font-style:italic;':'';
+    const s2=d2.isPlaceholder?'font-size:7px;color:var(--text2);font-style:italic;':'';
     return '<div class="ko-match">'+
-      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'">'+f1+'<span class="ko-team-name" title="'+t1+'">'+t1+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
-      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'">'+f2+'<span class="ko-team-name" title="'+t2+'">'+t2+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'">'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1+'">'+t1+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'">'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2+'">'+t2+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
     '</div>';
   }
   
@@ -3199,7 +3730,54 @@ function renderBracket(){
 
 
 
-// ── CONFETTI ──
+// ── THEME TOGGLE ──
+(function(){
+  const btn = document.getElementById('theme-toggle-btn');
+  const savedTheme = localStorage.getItem('wc2026-theme') || 'dark';
+  function applyTheme(t){
+    if(t==='light'){ document.body.classList.add('light-mode'); btn.textContent='☀️'; }
+    else { document.body.classList.remove('light-mode'); btn.textContent='🌙'; }
+    localStorage.setItem('wc2026-theme', t);
+  }
+  applyTheme(savedTheme);
+  btn.addEventListener('click',()=>{
+    const isLight = document.body.classList.contains('light-mode');
+    applyTheme(isLight?'dark':'light');
+  });
+})();
+
+// ── PLAYER STATS MODAL ──
+document.getElementById('close-player-stats').addEventListener('click',()=>document.getElementById('player-stats-modal').classList.remove('open'));
+document.getElementById('player-stats-modal').addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
+
+function openPlayerStats(uid){
+  const u = USERS[uid]; if(!u) return;
+  const name = u.nickname||u.name||'שחקן';
+  const userBets = BETS[uid]||{};
+  let total=0, hits=0, dirs=0, miss=0, pts=0;
+  Object.entries(userBets).forEach(([mid,bet])=>{
+    const m=MATCHES[mid]; if(!m) return;
+    total++; // count ALL bets including future matches
+    if(m.result===undefined) return; // no result yet — count in total but not in stats
+    const p=calcPts(m,bet); pts+=p.total;
+    if(p.hit){ hits++; }
+    else if(p.dir){ dirs++; }
+    else { miss++; }
+  });
+  const resolved = hits+dirs+miss;
+  const pct = resolved>0 ? Math.round((hits/resolved)*100) : 0;
+  document.getElementById('ps-name').textContent = name;
+  document.getElementById('ps-total').textContent = total;
+  document.getElementById('ps-pct').textContent = resolved>0 ? pct+'%' : '—';
+  document.getElementById('ps-hits').textContent = hits;
+  document.getElementById('ps-dirs').textContent = dirs;
+  document.getElementById('ps-miss').textContent = miss;
+  document.getElementById('ps-pts').textContent = pts+" נק'";
+  document.getElementById('player-stats-modal').classList.add('open');
+}
+window.openPlayerStats = openPlayerStats;
+
+
 function confetti(){
   const c=el('confetti'); c.style.display='block';
   const ctx=c.getContext('2d'); c.width=innerWidth; c.height=innerHeight;
