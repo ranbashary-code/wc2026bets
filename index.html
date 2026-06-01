@@ -743,6 +743,7 @@ select.inp option{background:var(--card2);}
 
     <div class="page" id="page-admin">
       <div class="sec-head"><span style="font-size:22px;">⚙️</span><div class="sec-title">פאנל אדמין</div></div>
+
       <!-- Analytics -->
       <div class="card" style="padding:18px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -755,27 +756,58 @@ select.inp option{background:var(--card2);}
         <div id="analytics-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;"></div>
         <div id="analytics-activity" style="margin-top:4px;"></div>
       </div>
-      <!-- Load WC 2026 Matches -->
-      <div class="card" style="padding:18px;margin-bottom:14px;">
-        <p style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px;">🌍 טעינת לוח משחקי מונדיאל 2026</p>
-        <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">טוען את כל 104 המשחקים הרשמיים מ-openfootball ישירות ל-Firebase</p>
-        <div style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#f87171;">
-          ⚠️ שים לב: פעולה זו תוסיף את המשחקים. משחקים קיימים לא יימחקו.
-        </div>
-        <button class="btn btn-green" id="load-wc-matches" style="width:100%;">⬇️ טען 104 משחקי מונדיאל 2026</button>
-        <div id="load-status" style="margin-top:10px;font-size:12px;text-align:center;display:none;"></div>
-      </div>
+
       <!-- Boti-Goal Bot -->
       <div class="card" style="padding:18px;margin-bottom:14px;background:linear-gradient(135deg,rgba(26,58,107,0.4),rgba(116,185,224,0.1));border-color:rgba(116,185,224,0.3);">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
           <div style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(116,185,224,0.5);background:linear-gradient(135deg,#1a3a6b,#74b9e0);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🤖</div>
           <div>
             <p style="font-size:15px;font-weight:900;color:#74b9e0;">🤖 Boti-Goal</p>
             <p style="font-size:11px;color:var(--text2);">שחקן בוט מבוסס AI — מנתח ומהמר סיבוב אחד בכל פעם</p>
           </div>
         </div>
+        <!-- Bot rounds status -->
+        <div id="bot-rounds-status" style="margin-bottom:12px;display:flex;flex-direction:column;gap:4px;"></div>
         <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על הסיבוב הקרוב</button>
         <div id="bot-run-status" style="font-size:12px;text-align:center;color:var(--text2);min-height:16px;"></div>
+      </div>
+
+      <!-- Groups Management -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <p style="font-size:15px;font-weight:700;color:var(--gold);">🏆 ניהול קבוצות</p>
+          <button class="btn btn-grad btn-xs" id="open-groups-modal-btn">⚙️ נהל קבוצות</button>
+        </div>
+        <div id="groups-summary"></div>
+      </div>
+
+      <!-- Members -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <p style="font-size:15px;font-weight:700;color:var(--gold);">👥 ניהול חברים</p>
+          <button class="btn btn-ghost btn-xs" id="refresh-users">🔄 רענן</button>
+        </div>
+        <div id="users-list"></div>
+      </div>
+
+      <!-- Activity History -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <p style="font-size:15px;font-weight:700;color:var(--gold);">📈 היסטוריית פעילות</p>
+          <button class="btn btn-ghost btn-xs" id="refresh-activity">🔄 רענן</button>
+        </div>
+        <div id="activity-list"></div>
+      </div>
+
+      <!-- Load WC 2026 Matches (disabled - already loaded) -->
+      <div class="card" style="padding:18px;margin-bottom:14px;opacity:0.6;">
+        <p style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px;">🌍 טעינת לוח משחקי מונדיאל 2026</p>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">טוען את כל 104 המשחקים הרשמיים מ-openfootball ישירות ל-Firebase</p>
+        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#34d399;">
+          ✅ המשחקים כבר נטענו. שימוש בכפתור זה יוסיף משחקים כפולים.
+        </div>
+        <button class="btn btn-ghost" id="load-wc-matches" style="width:100%;opacity:0.5;cursor:not-allowed;" disabled>⬇️ טען 104 משחקי מונדיאל 2026</button>
+        <div id="load-status" style="margin-top:10px;font-size:12px;text-align:center;display:none;"></div>
       </div>
 
       <!-- Knockout Match Editor -->
@@ -794,32 +826,6 @@ select.inp option{background:var(--card2);}
           <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="final">גמר</button>
         </div>
         <div id="ko-matches-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-      </div>
-      <!-- Members -->
-      <!-- Groups Management -->
-      <div class="card" style="padding:18px;margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <p style="font-size:15px;font-weight:700;color:var(--gold);">🏆 ניהול קבוצות</p>
-          <button class="btn btn-grad btn-xs" id="open-groups-modal-btn">⚙️ נהל קבוצות</button>
-        </div>
-        <div id="groups-summary"></div>
-      </div>
-
-      <div class="card" style="padding:18px;margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <p style="font-size:15px;font-weight:700;color:var(--gold);">👥 ניהול חברים</p>
-          <button class="btn btn-ghost btn-xs" id="refresh-users">🔄 רענן</button>
-        </div>
-        <div id="users-list"></div>
-      </div>
-
-      <!-- Activity History -->
-      <div class="card" style="padding:18px;margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <p style="font-size:15px;font-weight:700;color:var(--gold);">📈 היסטוריית פעילות</p>
-          <button class="btn btn-ghost btn-xs" id="refresh-activity">🔄 רענן</button>
-        </div>
-        <div id="activity-list"></div>
       </div>
     </div>
 
@@ -901,6 +907,22 @@ async function checkBotRoundAlert() {
 
   const botBetSnap = await get(ref(db, 'bets/' + BOT_UID));
   const botBets = botBetSnap.exists() ? botBetSnap.val() : {};
+
+  // ── Render bot rounds status in admin panel ──
+  const statusDiv = el('bot-rounds-status');
+  if(statusDiv) {
+    statusDiv.innerHTML = allRounds.map(round => {
+      const total = round.matches.length;
+      const done = round.matches.filter(([id]) => !!botBets[id]).length;
+      const allDone = done === total;
+      const color = allDone ? '#34d399' : done > 0 ? '#fbbf24' : 'var(--text2)';
+      const icon = allDone ? '✅' : done > 0 ? '⏳' : '⭕';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
+        <span style="color:${color};">${icon} ${round.label}</span>
+        <span style="color:${color};font-weight:700;">${done}/${total} הימורים</span>
+      </div>`;
+    }).join('');
+  }
 
   const next = getNextBotRound(allRounds, botBets);
 
@@ -1224,17 +1246,26 @@ function renderKoEditor() {
   list.innerHTML = stageMatches.map(([id, m]) => {
     const dt = m.datetime ? m.datetime.replace('T',' ').slice(0,16) : '';
     const dtParts = dt ? dt.split(' ') : ['',''];
+    const p1=koPlaceholderDisplay(m.team1), p2=koPlaceholderDisplay(m.team2);
+    const hint1=p1.isPlaceholder&&m.team1!=='TBD'?m.team1:'';
+    const hint2=p2.isPlaceholder&&m.team2!=='TBD'?m.team2:'';
     return `
     <div style="background:var(--card2);border-radius:10px;padding:12px;border:1px solid var(--border);">
-      <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">📍 ${m.venue||'—'} &nbsp;·&nbsp; ID: ${id.slice(-6)}</div>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-bottom:8px;">
-        <select id="ko-t1-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;">
-          ${teams.map(t=>`<option value="${t}" ${m.team1===t?'selected':''}>${t}</option>`).join('')}
-        </select>
-        <span style="color:var(--text2);font-size:12px;font-weight:700;">vs</span>
-        <select id="ko-t2-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;">
-          ${teams.map(t=>`<option value="${t}" ${m.team2===t?'selected':''}>${t}</option>`).join('')}
-        </select>
+      <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">📍 ${m.venue||'—'} &nbsp;·&nbsp; ${m.datetime?new Date(m.datetime).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:start;margin-bottom:8px;">
+        <div>
+          ${hint1?`<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 ${p1.text}</div>`:''}
+          <select id="ko-t1-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
+            ${teams.map(t=>`<option value="${t}" ${m.team1===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <span style="color:var(--text2);font-size:12px;font-weight:700;padding-top:22px;">vs</span>
+        <div>
+          ${hint2?`<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 ${p2.text}</div>`:''}
+          <select id="ko-t2-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
+            ${teams.map(t=>`<option value="${t}" ${m.team2===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
         <div>
@@ -3509,7 +3540,39 @@ function flagCircle(name, size) {
 }
 
 const WC_LOGO="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCACoASwDASIAAhEBAxEB/8QAHQABAAICAwEBAAAAAAAAAAAAAAcJBggBBAUCA//EAFUQAAAFAgMCBwkKCAsJAAAAAAABAgMEBQYHERITIQgUIjEyQVEVI0JSYWJxgZEJFjdWcoKTlLPRFxgzU1R2obEkJUNXY3WSlcHS0zU4RHSDssTU8P/EABoBAQADAQEBAAAAAAAAAAAAAAAEBQYDAgH/xAArEQEAAgECBAQFBQAAAAAAAAAAAgMSAQQFERMiITJBUSMzQnGhFBVSU5H/2gAMAwEAAhEDEQA/ANMgAAAAAAAAAAAAAAAAAAAAASTglhHdGLFw8QoqW4tPj6Tn1F1J7KMk/wDuWe/Sgv2J3gI2HoQaRVKg1tINMmykJVpUpphS0kfZuIWU4VcHrDWwYza2aIzWqmnpVCpIS85n5iTLQ380s+1RiWm2ybLQgiQhPRSkBUJ72bk+L9U+qOfcHvZuT4v1T6o59wt/ABUB72bk+L9U+qOfcHvZuT4v1T6o59wt/ABUB72bk+L9U+qOfcHvZuT4v1T6o59wt/ABTlNhS4T+wlw3oz3PodbNKsvQY6ouJqtMp1Xhrg1anxahGdTpcZlMpcbUXlSZZGNc8beCdatyxJNTsRDFu1lOakxUZ8TfPsNH8kfNvRu80BoEA9i6aHVrar8yh1yA9AqUNw2pEd0slIP9xkZZGky3GRkZDxwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHrWxRKhcdxU6g0pvazahJbjR0nu5a1Eks+wt/OLUcJLFpGHFiwLWozebUdObzxp5Uh4+m6rymfsLIuoaL8Aqjs1ThAxpL6dXcqmyJjfyuS0X2pixgAAAAcABcwiy/cSzhy10y3jZedQo23pK+UlC+Y0pLmMy7ejnuEbcbivbxym6V1SsljFKWZDncYgyi3NclQlvbSZyEZbRTPfNmZF1pPmPyF2jIvfVUKJPRFqbiH+blNeD6eovWIEeL0y9EmWxmlHcOR4tCuCHVOQ24g16dQ9nqFpXZGyOUUSUZR8JOQAB0eWtnDlwuj3NYD19UyOju7QGtb6kJLVJhl+UI/kZmv0EsusV9i42oRY9Qp8iDKb2kaQ2bLravCSosjL2GKgq9T3KXW59Mc3rhSXI6z8qFmn/AB54AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAO9TqjPpryn4EyRDeUnSbjDqm1ZdmZdXMJAwloeJ+JVzJodsVWruKSRLkSHZ7qGYyPHWvPd6C3n1CP6PT5lXq0SlU6OqTNmvojx2UZanHFmSUJLPtMyFpeB+G9JwxsKHbkBttcnSlyoSyTkqTIMuUv0dSS6kkQDFMLeD9blqRWX67WKxdlTLJSnps1zi5H5rJKyy+XrEvU6BAgM7CDCYis/m2W0pT7CHbABh2LtfctyxJ06O5olPaYsdXiuOHp1eos1eoa+zk9z6IhfF9aF6G29fRz6vZz+oSrwlqjDj0Wgw5HTXUikJ8XJCDSeZ/8AUIdTEJdPcw/ZXH0I2uSW3N3eyJCnDP1kgy+eMvxfXq3Y+y22PbD7oZlX/Ht+nsr44/sY7+lxMdSW3E8/NluMs8t3NlmO5Xr4bcaRS5+tbyM9LjuXKbzMiIyz7C9CRBiY1UrFwdxY7bi0Ou6nNCeiRZazV6Mz592/wRmN9KbkVWG842tlceSuLIb8qkJcQZeXIzP1iPLaxjGOidGXcnix6rI/2mjZ96U28n5HUfsMvZ4I2Cp0puZEZfR4aUq0+LmQ1ys2dT6fZUma3MYQt1jSnlHyV9RbvAzzLtTnpT2DOeDPAlxrbnTZk2VJXNdSpXGHDUpJlmRc/maC9Qk8I3GNnT90HfU849RL4AA06pfjIeajsuPvL0IbQalK7CLeZioC5qidXuSpVYy0cdmOyNPi61mr/EWD8NPE6NZeGMmgRZBd3LgaXFZbT0mo57nXT7N2aE+VXkMVzAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ54C1BYrnCCp78jlopMR+elJ9aiIm0+w3CP1ELHhX57nX8OlS/V9/7eOLAwAAABDHCmoDc+1oNZc2iO57+hSmstSSdNJEfOXhkkvWIei1CQ5SWaLLkP8tRqS5vbSnkKSZmR78sjPf6TTzDay+IDVUtCqwHm9aXojidPlyzL9uQ1Mp9Yjw3V0WQ3sVr5Tby2lcoszLMy3GW8uSfK1FkYy/Gafi9Rc8Nsyhi9uVblrw6UubQW+/o0SO9NLcccMjzzUeZ7j+bpz5WkYPUIblQsuTCbp7cxceEw50dKn1pb069WXPkZdf7h7bdIuBt15+O5xVGnU43qLvm/cR//F84dJur+9uiIqf5ZdQfJt7wtRJb36TLsNHnc5iDXPLypvl8z1LDqLdcaQ9Xqe5raVs4So8s0qckZFrJSct2zSst/nfKG0GGUGHT7Qhoh/kVI1dLV5Of1CAbTap9UqC0N95qbSkMxErzUp3bGSULI8t/5MjV4pN8obOUuHHp1OjQIpaGY7SGm0+aRZELbhFPfKzkruIWeGLtqVoIQXjdwkrDsCK9Bpktm46/kpKYkJ0lNsq7XnS3Fl4pZr9HOJcr1s0C4GVMV2jU+psr6TcthLyf7KyMh4X4IsK/5t7P/uZj/KNAqlYWIF4V++rol3FcUw5M+Qrf1JbSXMhBeCkuwY2LYfwRYV/zb2f/AHMx/lFYGIjEeLiBcUWIwhhhmqSm220JJKUJJ1REkiLmIiAY6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADZT3Or4dKl+r7/27AsDFfnudXw6VL9X3/t2BYGAAAAPzcSS2zSvsGkGJ1F4nWtEdx/jNKfOPxrdqSaTyLpc/Mfyt43h6hrpwk7UkIn91229vFkGo+vUhzRvT2ZHvP1+QVPFa5YaWR9Fhw6zSNmMvV41g3RDui1I20bQioIVs5Pi5p6yPLPLeR5H0fO5Ijm9mHHKrRKREjxdaGOMKTu0qNxGki37sjyUWXN4w9fDv+BtVJ99zWtaj2f7NefoyIR7DqHvgxAjPMNr77JJLakJNSltZGWas15EREWe7rz6Qz+3rytlKK2s7W0WCtFbbr9NQuOtHFYSZWlefel7MmyTl89R+sTqI+wpYXIeqlZdb0a3Sisq8Ztst6i9J/uEgENNw6GFKg3UsrHIAAsHAFReJ3wk3P/XEv7ZQt0FReJ3wk3P/AFxL+2UAxwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGS2Be90WBWnKzadUXTKg4wcdTyW0OZtmojMslkZc6E+wZ3+Mxjf8fH/AKjF/wBIQ+NgOC1wf5mKEv3wXAT1PtOM5pUtPJcnOFztt9iS8JfzU8rM0h07bx14RtyVDiFv3HV6tKy/IwqQw8oi7TJLW4vKJJh/jvTGds3x5CP6XuY0r2LyMbe2hatv2fRmqPbNHi02C0W5phGnM+1R86j8p5mPdAaWcU4cn5x/6ek/eOnUPxkKfKgTsV5L7NJalJ4u5tIKtMg0nluZPPobTn3e0bvCKeFL8E8leyNeiWwrV1N8rpH5Or1iLvPkSddvr8WLU+/LxkR7PksuNsMzKlJW2pTSj5TZb3Dy6i3kWXnDz8J6e5tUSuJoeeX0UrzVpMubMurIz9pjD6pJ7t1vbNuN8SiJJttS+jkR55+XNZ55deaCEr4KUByqXzb81/vNJjy2U8X1FpUrWW93fvWZko/SQp+jGuuMPdday8MmS1Kl8LyBUJcS0ob9PobL60wWOM0vkNajyzzPPM+ff2j8OKcOP84/9PSfvG6Kdw5GghHGOKglLJoxX6pw1aFFVInIrS0J5+Jw4MtXsZSsxGknhH46x33GZN7ymXm1GlxtVPjJUky3GRlstxizIRpjLg3ZWJ9PUitU1DNTSnTHqsdBJkMmXNmf8onzFZl6Ocehon+Mxjf8fH/qMX/SEV1OZIqFRk1CY5tpMp1bzy93KWo8zPd5TMZZjHhvXsMLwft2utav5SJKQk9nKa6loP8AYZdRjBwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGT4XWpIvfEGiWnEXoXUpaGVOfm2+dxfzUEo/ULXbbotMt+gwaHSWEx4EFlDEdsvBQksi9J+UaD+59QmJePS33UcuFRpDzXkUa2m/3OKFhYAAAA+S39ZGID4adbcj2BTbVhyNhJrk7JzeRfwdotTh/2ja9ZkJ79g0v4RUu9L3xjkU6hUvjNPp+inwHEvNJSpeRG8fKMjLl5p9DY4biWMHquWMssef2R7b9k1iubGnwG10+ktZd8WnlOnnvMz6j8Xn3l4PKE0WHa9LtunrfjuLQhCmU7Z1Rq2jqTzLLLLr35eDmYj60Y18U9qTx9xC4SFIZ5brOlLqs8i5e/PkH7B9R4OMketvU+O5tuKOmrY6YupJa9ORkZFnvNJbj6yFDZt77Pq0Tv3KOPytf8b0NmSy1JH2Ia4Nl2XLU41St+72ybmU9SXILmlKdvGMsj3EpXQVl8knEEJlMaKuWUVfpLm5AeLXrlolvsLfrVQbgMNJ1OPPpNLaS7TVlkQxr8NGEn849r/3g3949jF+F1hwxf+Ec9xlgl1miNrn05enlcks3Gy8i0ke7xiR2Cs8WrLxmwkcLQvES11oVyT/jBv7xV3cbESJcFRiwJCH4bUpxDDiFakrbJZklRH1llkA80AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGynudfw6VL9X3/t44sDFfnudXw6VL9X3/t2BYGAAA5ARfwksQDw4wxk1Zjlz5b6YMNOrSe0XmZqI/NQS1ekiGnUXFTi7OxcttjQtOlSlzuUkslkeSTQZZGRlzkovG1Z8neHEPD2hX0UEq7xlaISlqZbRo06lZZmaVIMjPd+0xjD2AtmONaO/I+RDhf8AriHfXnrzx5vsZWR8k+TXGzb4j3BT3oTdDpcVlCTTqRklW81GWWXMRZmSSLqIulknT4Vy4oN0uoz4si04S0OqNOnbpSlXL1Fu2Z9eXVzJJPjKVtlFwQteO1oRJlfPgwFf+MOtKwDsyQ7rckStfmQYCf3Rhx/Ty/h+X2M7v7Pw10oWOT9uu0quHZ69m2rJbiZpuvJQRES0Ga2yNZmRHvM+vpbhu3TJkeoU+NUYj6Ho0hpDrLiOitCizSovSRkI3bwOs9uLsOWvzu58HV7eLjPLYozFv0CHRoS1riwmyZY15aiQXMnkkRERc2RFzEQkbfSUe3lyee76teb2BC2NvB3sTEeK9MbhtUO4Fkam6lCaJO0X/TILc4Xl6XnCaQEoVI4j2XcFgXVMtq5YfFZzHKToPU282fRcbV4ST7fSR5KIyGLCx7hn4aR73wql1qLH/jy321y4609Jxgt7zXlLQWtJeMgu0xXCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA2U9zq+HSpfq+/8AbsCwMVzcA2tMUjhBQ4z5ae6tPkQW1diuS6X2WXrFjIAORwADWXHDhAXvZmNKcO7XtelVl59Mcou2UtLjjjpbkblEXOPaomJONzFAuqu3th5SKBColDkz457VSlSZDZZob5Lh8nJKtXqEFcKCBUKnw0qVTqVU10ufKXTWYs1GeqO4rIkuF6D3jYau2tcdqcGG+6fdl2Srpqy6RUXnJshStxGwZJQglHuIiL2mYDH8PMf7jubAK8sRpFEpTM2gPm2zFRtNksiQ2fLzPPwz5hjNj4+49XxRl1m1sKaRVICHzjqeafUnJxJEZlynCPmUXtGBYEf7kuK//Mq+zZHrcCGy7yq9Gj3HAxAm0m2IVcXx2jM6klLWhtpRmaiPLSrNCVeQjASTj1wgbmwxTa9HRQaTPuWbTDn1eOW02cU8uZGSszLNL28+pGYlnA2+WsR8MaRdhNoZflIUmWy30WnkKNKiLPflmWZeQyGlreJlt1vhOXNfl0Umr1yhkzKgQWaawl7vSmzjoMyUpJElTRuK+Uv1jPPc8LtOHW7mw8fccQhf8ZQkutaVak5NukZZ7jMtkeXmKAboDkcAA/OQy2+ytl1GtC0mlSe0j5yFP90U46Rc1VpJ/wDBTHo/9hZp/wABb1Upken06VUJbmxjRWlvPLPwUJLMz9hCoGuT3KpWp9Uf6c2S5IWXlWo1H+8B0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAenblYnUCvQK5TXNjNp8luTHXl0VpURl6twtQwdv6kYlWJBuakOp76nRLj6s1RZBERraV6P2kaT6xU4JBwXxUujCq5O69AkE5FeyTOgPGexloLqMupZZnpWW9PyTUSgtWAQthZwj8Mr3itIfrLNvVJWWuFVnCZLVnzIdPkL3+XV5pCY477EhpLzDrbyF9FaFEpJ+sgGL1XDeyKtd7F3VG3IUmvR3W3WZyyVtEKay2Zlv6siGQVmm0+s0mZSalGblQprK2ZDK+i42oslEfpId4AGG0rDKw6Xa1Rtam2xCjUapK1TYaNWzdPcW/f5pewdy2LItW2Lfk29b1GYplLlLW49HjqUlKlKSSFHnnnmZEReoZMADFrGsOz7HbmItK34lJRNUhUji+ffDTnlnmfVmftH4x8OrIj3sq9GLciM3GpSnFT0akuKNSdCs9+W8syGXgAAPLr1fodAiKmVusU+mRk9JyXJQylPrUZDW3Gzhb2zQ4z9Lw8JFfqas2znLSpMNg+0s97p+jJPXqPmAdvh14qsW3Y67CpMgl1mutaZWhW+ND1crPyuZaMvF1+QaBiTcMam/c2LLlwXQ4isuqbkzagqc2w5t0k2eZHtzS2nq0nmWjLk8xDB7mcZcuKpLYbbbZXLdU2lGjSlOs8iLSZpy+SZl2APKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB+rTrjZ8hxaPkq0gAD745L/SX/pDDjkv9Jf8ApDAADjkv9Jf+kMOOS/0l/wCkMAAOOS/0l/6Qw45L/SX/AKQwAB+JmZnqHyAAPpJj5AAAAAAAAAAAAAAAAAAAZBTrfbmU9Ety4KJD1Oqb2Uh9SXEmWjIzSSDySern81WeWQ6twUxFKn8Vbn02po06kyITxrbUWZl1kkyPdnkZEeRkAAP/2Q==";
-function renderBracket(){
+// ── KNOCKOUT PLACEHOLDER DISPLAY ──
+// Converts raw placeholders like "1A", "2B", "3C/D/F/G/H" to readable Hebrew
+function koPlaceholderDisplay(name) {
+  if(!name || name === 'TBD') return { text: 'TBD', isPlaceholder: true };
+  // Already a real team name (contains Hebrew or is a known country)
+  if(/[\u0590-\u05FF]/.test(name)) return { text: displayName(name), isPlaceholder: false };
+  // Known English team names (not placeholders)
+  if(_DISPLAY_NAMES[name] || name.length > 6) return { text: displayName(name), isPlaceholder: false };
+
+  // Pattern: "1A", "2B", "3C" — single digit + single letter
+  const simple = name.match(/^([123])([A-L])$/);
+  if(simple) {
+    const rank = simple[1];
+    const group = simple[2];
+    const rankHe = rank==='1' ? '1' : rank==='2' ? '2' : '3';
+    const medal = rank==='1' ? '🥇' : rank==='2' ? '🥈' : '🥉';
+    return { text: `${medal} מקום ${rankHe} בית ${group}`, isPlaceholder: true };
+  }
+
+  // Pattern: "3C/D/F/G/H" — 3rd place best of multiple groups
+  const multi = name.match(/^3([A-L](?:\/[A-L])+)$/);
+  if(multi) {
+    return { text: `🥉 מיטב מבתים ${multi[1].replace(/\//g,'/')}`, isPlaceholder: true };
+  }
+
+  // Fallback
+  return { text: name, isPlaceholder: name === 'TBD' };
+}
+
+function koTeamDisplay(name) {
+  const p = koPlaceholderDisplay(name);
+  return p;
+}
   // ── GROUPS ──
   const groups={};
   Object.entries(MATCHES).filter(([,m])=>m.stage==='group'&&m.group).forEach(([,m])=>{
@@ -3570,13 +3633,17 @@ function renderBracket(){
     if(!m) return '<div class="ko-empty"><div class="ko-empty-team"></div><div class="ko-empty-team"></div></div>';
     const hasRes=m.result!==undefined;
     const w=hasRes?(m.result[0]>m.result[1]?m.team1:m.result[1]>m.result[0]?m.team2:null):null;
-    const t1=displayName(m.team1)||'TBD', t2=displayName(m.team2)||'TBD';
-    const c1=getCountryCode(m.team1), c2=getCountryCode(m.team2);
+    const d1=koTeamDisplay(m.team1), d2=koTeamDisplay(m.team2);
+    const t1=d1.text, t2=d2.text;
+    const c1=d1.isPlaceholder?null:getCountryCode(m.team1);
+    const c2=d2.isPlaceholder?null:getCountryCode(m.team2);
     const f1=c1?'<span class="fi fi-'+c1+'" style="width:10px;height:10px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:2px;"></span>':'';
     const f2=c2?'<span class="fi fi-'+c2+'" style="width:10px;height:10px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:2px;"></span>':'';
+    const s1=d1.isPlaceholder?'font-size:7px;color:var(--text2);font-style:italic;':'';
+    const s2=d2.isPlaceholder?'font-size:7px;color:var(--text2);font-style:italic;':'';
     return '<div class="ko-match">'+
-      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'">'+f1+'<span class="ko-team-name" title="'+t1+'">'+t1+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
-      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'">'+f2+'<span class="ko-team-name" title="'+t2+'">'+t2+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'">'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1+'">'+t1+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'">'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2+'">'+t2+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
     '</div>';
   }
   
