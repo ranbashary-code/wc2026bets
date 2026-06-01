@@ -81,6 +81,7 @@ body.light-mode .modal-title{color:#c8960a;}
 body.light-mode .modal-close{color:#4a6080;}
 body.light-mode .adm-tbl th{background:rgba(200,150,10,0.08);color:#c8960a;}
 body.light-mode .adm-tbl td{border-bottom-color:rgba(0,0,0,0.05);}
+.active-filter{border-color:var(--gold)!important;color:var(--gold)!important;}
 /* Theme toggle button */
 .theme-toggle{background:none;border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);transition:border-color 0.2s,color 0.2s;}
 .theme-toggle:hover{border-color:var(--gold);color:var(--gold);}
@@ -776,6 +777,24 @@ select.inp option{background:var(--card2);}
         <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על הסיבוב הקרוב</button>
         <div id="bot-run-status" style="font-size:12px;text-align:center;color:var(--text2);min-height:16px;"></div>
       </div>
+
+      <!-- Knockout Match Editor -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <p style="font-size:15px;font-weight:700;color:var(--gold);">🏆 עריכת משחקי נוקאאוט</p>
+          <button class="btn btn-ghost btn-xs" id="ko-refresh-btn">🔄 רענן</button>
+        </div>
+        <p style="font-size:11px;color:var(--text2);margin-bottom:14px;">עדכן נבחרות, תאריך ואצטדיון לכל משחק נוקאאוט. לחץ שמור אחרי כל שורה.</p>
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="ko-stage-filter btn btn-ghost btn-xs active-filter" data-stage="r32">R32</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="r16">R16</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="qf">רבע גמר</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="sf">חצי גמר</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="3rd">מקום 3</button>
+          <button class="ko-stage-filter btn btn-ghost btn-xs" data-stage="final">גמר</button>
+        </div>
+        <div id="ko-matches-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
       <!-- Members -->
       <!-- Groups Management -->
       <div class="card" style="padding:18px;margin-bottom:14px;">
@@ -895,19 +914,61 @@ async function checkBotRoundAlert() {
   const { round, missing } = next;
   const firstMatchMs = Math.min(...missing.map(([,m]) => new Date(m.datetime).getTime()));
   const now = Date.now();
+  const hoursUntil = (firstMatchMs - now) / 3600000;
 
   if(now >= firstMatchMs) { banner.style.display='none'; return; }
 
-  const hoursLeft = Math.round((firstMatchMs - now) / 3600000);
+  // Format first match date/time
+  const firstMatchDate = new Date(firstMatchMs);
+  const dateStr = firstMatchDate.toLocaleDateString('he-IL', { weekday:'short', day:'numeric', month:'numeric' });
+  const timeStr = firstMatchDate.toLocaleTimeString('he-IL', { hour:'2-digit', minute:'2-digit' });
+
+  // Button active only within 12h before first match
+  const btnActive = hoursUntil <= 12;
 
   banner.style.display = 'flex';
   banner.innerHTML = `
-    <span style="font-size:13px;font-weight:700;color:#fff;">
-      🤖 Boti-Goal לא הימר עדיין על <strong>${round.label}</strong> — ${missing.length} משחקים ממתינים
-      <span style="opacity:0.75;font-size:11px;"> · המשחק הראשון בעוד ~${hoursLeft} שעות</span>
-    </span>
-    <button onclick="window.runBotiGoalBot()" style="background:#fff;color:#6d28d9;border:none;border-radius:8px;padding:5px 14px;font-weight:900;font-size:12px;cursor:pointer;flex-shrink:0;">⚡ המר עכשיו</button>
+    <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+      <span style="font-size:13px;font-weight:700;color:#fff;">
+        🤖 Boti-Goal לא הימר עדיין על <strong>${round.label}</strong> — ${missing.length} משחקים ממתינים
+      </span>
+      <span style="font-size:11px;color:rgba(255,255,255,0.75);">
+        משחק ראשון: ${dateStr} בשעה ${timeStr} &nbsp;·&nbsp;
+        <span id="bot-banner-countdown"></span>
+      </span>
+    </div>
+    <button id="bot-banner-btn" onclick="window.runBotiGoalBot()"
+      ${btnActive ? '' : 'disabled'}
+      style="background:${btnActive?'#fff':'rgba(255,255,255,0.25)'};color:${btnActive?'#6d28d9':'rgba(255,255,255,0.5)'};
+             border:none;border-radius:8px;padding:5px 14px;font-weight:900;font-size:12px;
+             cursor:${btnActive?'pointer':'not-allowed'};flex-shrink:0;transition:all 0.3s;white-space:nowrap;">
+      ${btnActive ? '⚡ המר עכשיו' : '🔒 פעיל 12ש׳ לפני'}
+    </button>
   `;
+
+  // Start/update countdown
+  if(window._botBannerTimer) clearInterval(window._botBannerTimer);
+  function updateCountdown(){
+    const cdEl = document.getElementById('bot-banner-countdown');
+    if(!cdEl){ clearInterval(window._botBannerTimer); return; }
+    const diff = firstMatchMs - Date.now();
+    if(diff <= 0){ clearInterval(window._botBannerTimer); checkBotRoundAlert(); return; }
+    const d = Math.floor(diff/86400000);
+    const h = Math.floor((diff%86400000)/3600000);
+    const m2 = Math.floor((diff%3600000)/60000);
+    const s = Math.floor((diff%60000)/1000);
+    cdEl.textContent = `בעוד ${d>0?d+'י ':''}${String(h).padStart(2,'0')}:${String(m2).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    // Activate button when we cross 12h threshold
+    const hoursLeft = diff/3600000;
+    const btn = document.getElementById('bot-banner-btn');
+    if(btn && hoursLeft <= 12 && btn.disabled){
+      btn.disabled = false;
+      btn.style.background='#fff'; btn.style.color='#6d28d9';
+      btn.style.cursor='pointer'; btn.textContent='⚡ המר עכשיו';
+    }
+  }
+  updateCountdown();
+  window._botBannerTimer = setInterval(updateCountdown, 1000);
 }
 
 
@@ -1135,7 +1196,113 @@ window.runBotiGoalBot = async function runBotiGoalBot() {
   }
 }
 
-// ── TEAM NAME DISPLAY ──
+// ── KNOCKOUT MATCH EDITOR ──
+let koCurrentStage = 'r32';
+
+function renderKoEditor() {
+  const list = el('ko-matches-list');
+  if(!list) return;
+
+  const stageMatches = Object.entries(MATCHES)
+    .filter(([,m]) => m.stage === koCurrentStage)
+    .sort(([,a],[,b]) => (a.datetime||'') > (b.datetime||'') ? 1 : -1);
+
+  if(!stageMatches.length) {
+    list.innerHTML = '<p style="color:var(--text2);font-size:13px;text-align:center;">אין משחקים בשלב זה</p>';
+    return;
+  }
+
+  // Build team list from group stage for dropdown
+  const teamSet = new Set();
+  Object.values(MATCHES).forEach(m => {
+    if(m.stage === 'group' && m.team1 && m.team1 !== 'TBD') teamSet.add(m.team1);
+    if(m.stage === 'group' && m.team2 && m.team2 !== 'TBD') teamSet.add(m.team2);
+  });
+  const teams = ['TBD', ...Array.from(teamSet).sort()];
+  const teamOptions = teams.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  list.innerHTML = stageMatches.map(([id, m]) => {
+    const dt = m.datetime ? m.datetime.replace('T',' ').slice(0,16) : '';
+    const dtParts = dt ? dt.split(' ') : ['',''];
+    return `
+    <div style="background:var(--card2);border-radius:10px;padding:12px;border:1px solid var(--border);">
+      <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">📍 ${m.venue||'—'} &nbsp;·&nbsp; ID: ${id.slice(-6)}</div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-bottom:8px;">
+        <select id="ko-t1-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;">
+          ${teams.map(t=>`<option value="${t}" ${m.team1===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+        <span style="color:var(--text2);font-size:12px;font-weight:700;">vs</span>
+        <select id="ko-t2-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;">
+          ${teams.map(t=>`<option value="${t}" ${m.team2===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">תאריך</div>
+          <input id="ko-date-${id}" type="date" value="${dtParts[0]}"
+            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;width:100%;box-sizing:border-box;">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">שעה</div>
+          <input id="ko-time-${id}" type="time" value="${dtParts[1]}"
+            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;width:100%;box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">אצטדיון</div>
+        <input id="ko-venue-${id}" type="text" value="${m.venue||''}" placeholder="שם האצטדיון"
+          style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;width:100%;box-sizing:border-box;">
+      </div>
+      <button onclick="saveKoMatch('${id}')"
+        style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:7px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">
+        💾 שמור
+      </button>
+      <div id="ko-status-${id}" style="font-size:11px;text-align:center;color:var(--text2);min-height:14px;margin-top:4px;"></div>
+    </div>`;
+  }).join('');
+}
+
+window.saveKoMatch = async function(id) {
+  const t1 = document.getElementById(`ko-t1-${id}`)?.value;
+  const t2 = document.getElementById(`ko-t2-${id}`)?.value;
+  const date = document.getElementById(`ko-date-${id}`)?.value;
+  const time = document.getElementById(`ko-time-${id}`)?.value;
+  const venue = document.getElementById(`ko-venue-${id}`)?.value;
+  const statusEl = document.getElementById(`ko-status-${id}`);
+
+  if(!t1||!t2) return;
+  const datetime = date && time ? `${date}T${time}` : (MATCHES[id]?.datetime||'');
+
+  try {
+    await update(ref(db, 'matches/' + id), { team1: t1, team2: t2, datetime, venue: venue||'' });
+    if(statusEl){ statusEl.textContent='✅ נשמר!'; statusEl.style.color='#34d399'; }
+    setTimeout(()=>{ if(statusEl) statusEl.textContent=''; }, 2000);
+  } catch(e) {
+    if(statusEl){ statusEl.textContent='❌ שגיאה: '+e.message; statusEl.style.color='#f87171'; }
+  }
+};
+
+// Stage filter buttons
+document.querySelectorAll('.ko-stage-filter').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ko-stage-filter').forEach(b => b.classList.remove('active-filter'));
+    btn.classList.add('active-filter');
+    koCurrentStage = btn.dataset.stage;
+    renderKoEditor();
+  });
+});
+
+el('ko-refresh-btn')?.addEventListener('click', renderKoEditor);
+
+// Render when admin tab is opened
+const origTabClick = window._tabClickHandler;
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    if(tab.dataset.tab === 'admin') setTimeout(renderKoEditor, 100);
+  });
+});
+
+
 // Maps English names to Hebrew for display (works regardless of how stored in Firebase)
 const _DISPLAY_NAMES = {
   'Czech Republic':'צכיה','Czechia':'צכיה',
@@ -2716,6 +2883,7 @@ function initData(){
 function refreshAll(){
   renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket();
   checkBotRoundAlert();
+  if(MEDATA?.isAdmin) renderKoEditor();
 }
 
 // ── TABS ──
