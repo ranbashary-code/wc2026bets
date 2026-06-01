@@ -614,7 +614,7 @@ select.inp option{background:var(--card2);}
   <div class="tabs">
     <div class="tab active" data-page="main" id="tab-main">🏆 ראשי</div>
     <div class="tab" data-page="mybets">🎯 ההימורים שלי</div>
-    <div class="tab" data-page="bracket">🗂 בראקט</div>
+    <div class="tab" data-page="bracket">🏟️ בראקט</div>
     <div class="tab" data-page="scoring">📊 ניקוד</div>
     <div class="tab admin-only" data-page="admin" id="tab-admin" style="display:none;">⚙️ אדמין</div>
   </div>
@@ -689,7 +689,7 @@ select.inp option{background:var(--card2);}
     </div>
 
     <div class="page" id="page-bracket">
-      <div class="sec-head"><span style="font-size:22px;">🗂</span><div class="sec-title">בראקט</div></div>
+      <div class="sec-head"><span style="font-size:22px;">🏟️</span><div class="sec-title">בראקט</div></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="btn btn-grad btn-xs btab" data-btab="groups" style="flex-shrink:0;">שלב בתים</button>
         <button class="btn btn-ghost btn-xs btab" data-btab="ko" style="flex-shrink:0;">נוקאאוט</button>
@@ -3414,7 +3414,7 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
       if(/^(W|L)\d+$|winner$|path/i.test(name)) return 'TBD';
       // Positional codes like "2A", "1E", "3A/E/H" — keep as-is for display
       if(/^\d[A-L](\/[A-L])*$/i.test(name)) return name;
-      return TEAM_HEB[name] || name; // fallback to English if not in map
+      return TEAM_HEB[name] || name;
     }
 
     const urls = [
@@ -3520,89 +3520,39 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
   }
 });
 
-// ── UPDATE KO TEAMS (fill TBD with positional codes) ──
+// ── UPDATE KO TEAMS ──
 el('update-ko-teams-btn')&&el('update-ko-teams-btn').addEventListener('click', async()=>{
-  const btn = el('update-ko-teams-btn');
-  const status = el('update-ko-status');
-  btn.disabled = true; btn.textContent = '⏳ מעדכן...';
-  status.style.color = 'var(--text2)'; status.textContent = 'מוריד נתונים מ-openfootball...';
-
+  const btn=el('update-ko-teams-btn'), status=el('update-ko-status');
+  btn.disabled=true; btn.textContent='⏳ מעדכן...';
+  status.style.color='var(--text2)'; status.textContent='מוריד נתונים...';
   try {
-    const urls = [
-      'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json',
-      'https://cdn.jsdelivr.net/gh/openfootball/worldcup.json@master/2026/worldcup.json',
-    ];
-    let data = null;
-    for(const url of urls){
-      try { const r=await fetch(url); if(r.ok){data=await r.json();break;} } catch(e){continue;}
-    }
+    const urls=['https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json','https://cdn.jsdelivr.net/gh/openfootball/worldcup.json@master/2026/worldcup.json'];
+    let data=null;
+    for(const url of urls){ try{const r=await fetch(url);if(r.ok){data=await r.json();break;}}catch(e){continue;} }
     if(!data||!data.matches) throw new Error('לא ניתן לטעון נתונים');
-
-    // Build datetime→{team1,team2} map from openfootball (KO only)
-    function toIsraelTime2(dateStr, timeStr) {
-      if(!dateStr) return null;
-      if(!timeStr) return dateStr+'T12:00';
-      const m=timeStr.match(/(\d+):(\d+)\s*UTC([+-]\d+(?:\.\d+)?)?/);
-      if(!m) return dateStr+'T'+timeStr.substring(0,5);
-      const h=parseInt(m[1]),mn=parseInt(m[2]);
-      const offset=m[3]?parseFloat(m[3]):0;
-      const totalMins=h*60+mn-Math.round(offset*60)+3*60;
-      const daysDelta=Math.floor(totalMins/(24*60));
-      const ilH=Math.floor((totalMins%(24*60)+24*60)%(24*60)/60);
-      const ilM=((totalMins%60)+60)%60;
-      const d=new Date(dateStr+'T00:00:00Z');
-      d.setUTCDate(d.getUTCDate()+daysDelta);
-      return d.toISOString().substring(0,10)+'T'+String(ilH).padStart(2,'0')+':'+String(ilM).padStart(2,'0');
-    }
-    function isKO(round,group){ if(group) return false; const r=(round||'').toLowerCase(); return r.includes('round')||r.includes('quarter')||r.includes('semi')||r.includes('final')||r.includes('third')||r.includes('3rd'); }
-    function translateT(name){
-      if(!name) return 'TBD';
-      if(/^(W|L)\d+$|winner$|path/i.test(name)) return 'TBD';
-      if(/^\d[A-L](\/[A-L])*$/i.test(name)) return name; // keep positional codes
-      return name;
-    }
-
-    const koMap = {}; // datetime → {team1, team2}
-    for(const m of data.matches){
-      if(!isKO(m.round, m.group)) continue;
-      const dt = toIsraelTime2(m.date, m.time);
-      if(!dt) continue;
-      koMap[dt] = { team1: translateT(m.team1||''), team2: translateT(m.team2||'') };
-    }
-
-    // Read existing Firebase matches and update TBD ones
-    const snap = await get(ref(db,'matches'));
-    if(!snap.exists()){ throw new Error('אין משחקים ב-Firebase'); }
-    const existing = snap.val();
-    let updated = 0;
-    const updates = {};
-    for(const [key, match] of Object.entries(existing)){
+    function toIL(d,t){if(!d)return null;if(!t)return d+'T12:00';const m=t.match(/(\d+):(\d+)\s*UTC([+-]\d+(?:\.\d+)?)?/);if(!m)return d+'T'+t.substring(0,5);const h=parseInt(m[1]),mn=parseInt(m[2]),off=m[3]?parseFloat(m[3]):0,tot=h*60+mn-Math.round(off*60)+180,dd=Math.floor(tot/1440),ih=Math.floor((tot%1440+1440)%1440/60),im=(tot%60+60)%60,dt=new Date(d+'T00:00:00Z');dt.setUTCDate(dt.getUTCDate()+dd);return dt.toISOString().substring(0,10)+'T'+String(ih).padStart(2,'0')+':'+String(im).padStart(2,'0');}
+    function isKO(round,group){if(group)return false;const r=(round||'').toLowerCase();return r.includes('round')||r.includes('quarter')||r.includes('semi')||r.includes('final')||r.includes('third')||r.includes('3rd');}
+    function transT(n){if(!n)return'TBD';if(/^(W|L)\d+$|winner$|path/i.test(n))return'TBD';if(/^\d[A-L](\/[A-L])*$/i.test(n))return n;return n;}
+    const koMap={};
+    for(const m of data.matches){if(!isKO(m.round,m.group))continue;const dt=toIL(m.date,m.time);if(!dt)continue;koMap[dt]={team1:transT(m.team1||''),team2:transT(m.team2||'')};}
+    const snap=await get(ref(db,'matches'));
+    if(!snap.exists()) throw new Error('אין משחקים ב-Firebase');
+    const existing=snap.val(); let updated=0; const updates={};
+    for(const [key,match] of Object.entries(existing)){
       if(match.stage==='group') continue;
-      const hasTBD = match.team1==='TBD'||match.team2==='TBD';
+      const hasTBD=match.team1==='TBD'||match.team2==='TBD';
       if(!hasTBD) continue;
-      const dt = match.datetime;
-      if(!dt||!koMap[dt]) continue;
-      const src = koMap[dt];
-      if(match.team1==='TBD' && src.team1!=='TBD') updates['matches/'+key+'/team1'] = src.team1;
-      if(match.team2==='TBD' && src.team2!=='TBD') updates['matches/'+key+'/team2'] = src.team2;
+      const src=koMap[match.datetime];
+      if(!src) continue;
+      if(match.team1==='TBD'&&src.team1!=='TBD') updates['matches/'+key+'/team1']=src.team1;
+      if(match.team2==='TBD'&&src.team2!=='TBD') updates['matches/'+key+'/team2']=src.team2;
       if(updates['matches/'+key+'/team1']||updates['matches/'+key+'/team2']) updated++;
     }
-    if(Object.keys(updates).length===0){
-      status.style.color='#34d399'; status.textContent='✅ אין TBD לעדכון — הכל כבר מעודכן!';
-    } else {
-      await update(ref(db), updates);
-      status.style.color='#34d399'; status.textContent='✅ עודכנו '+updated+' משחקים!';
-      toast('✅ עודכנו '+updated+' משחקי נוקאאוט');
-    }
-  } catch(err){
-    console.error(err);
-    status.style.color='#f87171'; status.textContent='❌ שגיאה: '+err.message;
-  } finally {
-    btn.disabled=false; btn.textContent='🔁 עדכן קבוצות TBD בנוקאאוט';
-  }
+    if(!Object.keys(updates).length){ status.style.color='#34d399'; status.textContent='✅ אין TBD לעדכון!'; }
+    else { await update(ref(db),updates); status.style.color='#34d399'; status.textContent='✅ עודכנו '+updated+' משחקים!'; toast('✅ עודכנו '+updated+' משחקי נוקאאוט'); }
+  } catch(err){ console.error(err); status.style.color='#f87171'; status.textContent='❌ '+err.message; }
+  finally { btn.disabled=false; btn.textContent='🔁 עדכן קבוצות TBD בנוקאאוט'; }
 });
-
-// ── BRACKET ──
 document.querySelectorAll('.btab').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const t=btn.dataset.btab;
@@ -3644,13 +3594,14 @@ function koPlaceholderDisplay(name) {
   if(simple) {
     const rank = simple[1], group = simple[2];
     const medal = rank==='1'?'🥇':rank==='2'?'🥈':'🥉';
-    return { text: `${medal} מקום ${rank} בית ${group}`, isPlaceholder: true };
+    // Use LRM/RLM markers so Hebrew and English render correctly in RTL context
+    return { text: `${medal} מקום ${rank} בית\u200F ${group}`, isPlaceholder: true };
   }
 
   // Pattern: "3A/E/H/I/J" or "3C/D/F/G/H" — 3rd best from multiple groups
   const multi = name.match(/^3([A-L](?:\/[A-L])+)$/);
   if(multi) {
-    return { text: `🥉 מיטב מבתים ${multi[1]}`, isPlaceholder: true };
+    return { text: `🥉 מיטב מבתים\u200F ${multi[1]}`, isPlaceholder: true };
   }
 
   // Known English name
