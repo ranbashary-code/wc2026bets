@@ -811,6 +811,14 @@ select.inp option{background:var(--card2);}
         <div id="load-status" style="margin-top:10px;font-size:12px;text-align:center;display:none;"></div>
       </div>
 
+      <!-- Update KO Teams -->
+      <div class="card" style="padding:18px;margin-bottom:14px;">
+        <p style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px;">🔄 עדכון קבוצות נוקאאוט</p>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">מוריד מ-openfootball ומעדכן רק משחקי נוקאאוט שהקבוצה שלהם עדיין TBD — ללא כפילויות.</p>
+        <button class="btn btn-primary" id="update-ko-teams-btn" style="width:100%;">🔁 עדכן קבוצות TBD בנוקאאוט</button>
+        <div id="update-ko-status" style="margin-top:10px;font-size:12px;text-align:center;"></div>
+      </div>
+
       <!-- Knockout Match Editor -->
       <div class="card" style="padding:18px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -3509,6 +3517,88 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
     status.textContent = '❌ שגיאה: ' + err.message;
     btn.disabled = false;
     btn.textContent = '⬇️ נסה שוב';
+  }
+});
+
+// ── UPDATE KO TEAMS (fill TBD with positional codes) ──
+el('update-ko-teams-btn')&&el('update-ko-teams-btn').addEventListener('click', async()=>{
+  const btn = el('update-ko-teams-btn');
+  const status = el('update-ko-status');
+  btn.disabled = true; btn.textContent = '⏳ מעדכן...';
+  status.style.color = 'var(--text2)'; status.textContent = 'מוריד נתונים מ-openfootball...';
+
+  try {
+    const urls = [
+      'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json',
+      'https://cdn.jsdelivr.net/gh/openfootball/worldcup.json@master/2026/worldcup.json',
+    ];
+    let data = null;
+    for(const url of urls){
+      try { const r=await fetch(url); if(r.ok){data=await r.json();break;} } catch(e){continue;}
+    }
+    if(!data||!data.matches) throw new Error('לא ניתן לטעון נתונים');
+
+    // Build datetime→{team1,team2} map from openfootball (KO only)
+    function toIsraelTime2(dateStr, timeStr) {
+      if(!dateStr) return null;
+      if(!timeStr) return dateStr+'T12:00';
+      const m=timeStr.match(/(\d+):(\d+)\s*UTC([+-]\d+(?:\.\d+)?)?/);
+      if(!m) return dateStr+'T'+timeStr.substring(0,5);
+      const h=parseInt(m[1]),mn=parseInt(m[2]);
+      const offset=m[3]?parseFloat(m[3]):0;
+      const totalMins=h*60+mn-Math.round(offset*60)+3*60;
+      const daysDelta=Math.floor(totalMins/(24*60));
+      const ilH=Math.floor((totalMins%(24*60)+24*60)%(24*60)/60);
+      const ilM=((totalMins%60)+60)%60;
+      const d=new Date(dateStr+'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate()+daysDelta);
+      return d.toISOString().substring(0,10)+'T'+String(ilH).padStart(2,'0')+':'+String(ilM).padStart(2,'0');
+    }
+    function isKO(round,group){ if(group) return false; const r=(round||'').toLowerCase(); return r.includes('round')||r.includes('quarter')||r.includes('semi')||r.includes('final')||r.includes('third')||r.includes('3rd'); }
+    function translateT(name){
+      if(!name) return 'TBD';
+      if(/^(W|L)\d+$|winner$|path/i.test(name)) return 'TBD';
+      if(/^\d[A-L](\/[A-L])*$/i.test(name)) return name; // keep positional codes
+      return name;
+    }
+
+    const koMap = {}; // datetime → {team1, team2}
+    for(const m of data.matches){
+      if(!isKO(m.round, m.group)) continue;
+      const dt = toIsraelTime2(m.date, m.time);
+      if(!dt) continue;
+      koMap[dt] = { team1: translateT(m.team1||''), team2: translateT(m.team2||'') };
+    }
+
+    // Read existing Firebase matches and update TBD ones
+    const snap = await get(ref(db,'matches'));
+    if(!snap.exists()){ throw new Error('אין משחקים ב-Firebase'); }
+    const existing = snap.val();
+    let updated = 0;
+    const updates = {};
+    for(const [key, match] of Object.entries(existing)){
+      if(match.stage==='group') continue;
+      const hasTBD = match.team1==='TBD'||match.team2==='TBD';
+      if(!hasTBD) continue;
+      const dt = match.datetime;
+      if(!dt||!koMap[dt]) continue;
+      const src = koMap[dt];
+      if(match.team1==='TBD' && src.team1!=='TBD') updates['matches/'+key+'/team1'] = src.team1;
+      if(match.team2==='TBD' && src.team2!=='TBD') updates['matches/'+key+'/team2'] = src.team2;
+      if(updates['matches/'+key+'/team1']||updates['matches/'+key+'/team2']) updated++;
+    }
+    if(Object.keys(updates).length===0){
+      status.style.color='#34d399'; status.textContent='✅ אין TBD לעדכון — הכל כבר מעודכן!';
+    } else {
+      await update(ref(db), updates);
+      status.style.color='#34d399'; status.textContent='✅ עודכנו '+updated+' משחקים!';
+      toast('✅ עודכנו '+updated+' משחקי נוקאאוט');
+    }
+  } catch(err){
+    console.error(err);
+    status.style.color='#f87171'; status.textContent='❌ שגיאה: '+err.message;
+  } finally {
+    btn.disabled=false; btn.textContent='🔁 עדכן קבוצות TBD בנוקאאוט';
   }
 });
 
