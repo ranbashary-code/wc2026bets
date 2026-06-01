@@ -1125,6 +1125,9 @@ window.runBotiGoalBot = async function runBotiGoalBot() {
     toast(`🤖 Boti-Goal הימר על ${saved} משחקים — ${currentRound.label}!`);
     if(statusEl){ statusEl.textContent=`✅ הימר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
     const bb = el('bot-round-banner'); if(bb) bb.style.display='none';
+    // Reload BETS so leaderboard updates immediately
+    const freshBets = await get(ref(db, 'bets'));
+    if(freshBets.exists()) { BETS = freshBets.val(); renderLeader(); }
     checkBotRoundAlert();
   } else {
     toast('❌ לא נשמר אף הימור — בדוק הרשאות Firebase');
@@ -3511,8 +3514,9 @@ function openPlayerStats(uid){
   const userBets = BETS[uid]||{};
   let total=0, hits=0, dirs=0, miss=0, pts=0;
   Object.entries(userBets).forEach(([mid,bet])=>{
-    const m=MATCHES[mid]; if(!m||m.result===undefined) return;
-    total++;
+    const m=MATCHES[mid]; if(!m) return;
+    total++; // count ALL bets including future matches
+    if(m.result===undefined) return; // no result yet — count in total but not in stats
     const p=calcPts(m,bet); pts+=p.total;
     if(p.hit){ hits++; }
     else if(p.dir){ dirs++; }
@@ -3522,7 +3526,7 @@ function openPlayerStats(uid){
   const pct = resolved>0 ? Math.round((hits/resolved)*100) : 0;
   document.getElementById('ps-name').textContent = name;
   document.getElementById('ps-total').textContent = total;
-  document.getElementById('ps-pct').textContent = pct+'%';
+  document.getElementById('ps-pct').textContent = resolved>0 ? pct+'%' : '—';
   document.getElementById('ps-hits').textContent = hits;
   document.getElementById('ps-dirs').textContent = dirs;
   document.getElementById('ps-miss').textContent = miss;
