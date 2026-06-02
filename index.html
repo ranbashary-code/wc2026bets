@@ -1236,6 +1236,7 @@ let koCurrentStage = 'r32';
 function renderKoEditor() {
   const list = el('ko-matches-list');
   if(!list) return;
+  buildKoTeamsList();
 
   const stageMatches = Object.entries(MATCHES)
     .filter(([,m]) => m.stage === koCurrentStage)
@@ -1253,37 +1254,42 @@ function renderKoEditor() {
     if(m.stage === 'group' && m.team2 && m.team2 !== 'TBD') teamSet.add(m.team2);
   });
   const teams = ['TBD', ...Array.from(teamSet).sort()];
-  const teamOptions = teams.map(t => `<option value="${t}">${t}</option>`).join('');
 
   list.innerHTML = stageMatches.map(([id, m]) => {
     const dt = m.datetime ? m.datetime.replace('T',' ').slice(0,16) : '';
     const dtParts = dt ? dt.split(' ') : ['',''];
     const p1=koPlaceholderDisplay(m.team1), p2=koPlaceholderDisplay(m.team2);
-    const hint1=p1.isPlaceholder&&m.team1!=='TBD'?m.team1:'';
-    const hint2=p2.isPlaceholder&&m.team2!=='TBD'?m.team2:'';
-    const cur1 = m.team1||'TBD', cur2 = m.team2||'TBD';
+    // Show display label in input, store raw value in data attr
+    const disp1 = p1.text.replace(/\u202B|\u202C/g,'');
+    const disp2 = p2.text.replace(/\u202B|\u202C/g,'');
     return `
     <div style="background:var(--card2);border-radius:10px;padding:12px;border:1px solid var(--border);">
       <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">📍 ${m.venue||'—'} &nbsp;·&nbsp; ${m.datetime?new Date(m.datetime).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div>
       <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:start;margin-bottom:8px;">
         <div style="position:relative;">
-          ${hint1?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p1.text+'</div>'):''}
-          <input id="ko-t1-${id}" type="text" value="${cur1}" placeholder="חיפוש נבחרת..." autocomplete="off"
-            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;box-sizing:border-box;"
-            oninput="koTeamSearch(this,'ko-t1-dd-${id}',teams)"
-            onfocus="koTeamSearch(this,'ko-t1-dd-${id}',teams)"
-            onblur="setTimeout(()=>{ const d=document.getElementById('ko-t1-dd-${id}'); if(d)d.style.display='none'; },200)">
-          <div id="ko-t1-dd-${id}" style="display:none;position:absolute;top:100%;right:0;left:0;background:var(--navy);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto;z-index:100;"></div>
+          <input id="ko-t1-${id}" type="text"
+            value="${disp1}"
+            data-raw="${m.team1||'TBD'}"
+            placeholder="חיפוש נבחרת..."
+            autocomplete="off"
+            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;direction:rtl;width:100%;box-sizing:border-box;"
+            oninput="koSearch(this,'ko-dd1-${id}',koTeamsList)"
+            onfocus="koSearch(this,'ko-dd1-${id}',koTeamsList)"
+            onblur="setTimeout(()=>{const d=document.getElementById('ko-dd1-${id}');if(d)d.style.display='none'},150)">
+          <div id="ko-dd1-${id}" style="display:none;position:absolute;top:100%;right:0;left:0;background:#1a2744;border:1px solid var(--border);border-radius:6px;max-height:150px;overflow-y:auto;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
         </div>
-        <span style="color:var(--text2);font-size:12px;font-weight:700;padding-top:22px;">vs</span>
+        <span style="color:var(--text2);font-size:12px;font-weight:700;padding-top:6px;">vs</span>
         <div style="position:relative;">
-          ${hint2?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p2.text+'</div>'):''}
-          <input id="ko-t2-${id}" type="text" value="${cur2}" placeholder="חיפוש נבחרת..." autocomplete="off"
-            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;box-sizing:border-box;"
-            oninput="koTeamSearch(this,'ko-t2-dd-${id}',teams)"
-            onfocus="koTeamSearch(this,'ko-t2-dd-${id}',teams)"
-            onblur="setTimeout(()=>{ const d=document.getElementById('ko-t2-dd-${id}'); if(d)d.style.display='none'; },200)">
-          <div id="ko-t2-dd-${id}" style="display:none;position:absolute;top:100%;right:0;left:0;background:var(--navy);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto;z-index:100;"></div>
+          <input id="ko-t2-${id}" type="text"
+            value="${disp2}"
+            data-raw="${m.team2||'TBD'}"
+            placeholder="חיפוש נבחרת..."
+            autocomplete="off"
+            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;direction:rtl;width:100%;box-sizing:border-box;"
+            oninput="koSearch(this,'ko-dd2-${id}',koTeamsList)"
+            onfocus="koSearch(this,'ko-dd2-${id}',koTeamsList)"
+            onblur="setTimeout(()=>{const d=document.getElementById('ko-dd2-${id}');if(d)d.style.display='none'},150)">
+          <div id="ko-dd2-${id}" style="display:none;position:absolute;top:100%;right:0;left:0;background:#1a2744;border:1px solid var(--border);border-radius:6px;max-height:150px;overflow-y:auto;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
@@ -1312,23 +1318,44 @@ function renderKoEditor() {
   }).join('');
 }
 
-window.koTeamSearch = function(input, ddId, teams) {
-  const q = input.value.trim().toLowerCase();
+// Build searchable team list: [{raw, label}]
+let koTeamsList = [];
+function buildKoTeamsList() {
+  const teamSet = new Set(['TBD']);
+  Object.values(MATCHES).forEach(m => {
+    if(m.stage === 'group') {
+      if(m.team1 && m.team1 !== 'TBD') teamSet.add(m.team1);
+      if(m.team2 && m.team2 !== 'TBD') teamSet.add(m.team2);
+    }
+  });
+  koTeamsList = Array.from(teamSet).sort().map(t => ({ raw: t, label: t }));
+}
+
+window.koSearch = function(input, ddId, list) {
   const dd = document.getElementById(ddId);
   if(!dd) return;
-  const filtered = teams.filter(t => t.toLowerCase().includes(q)).slice(0, 20);
+  const q = input.value.trim();
+  const filtered = q
+    ? list.filter(t => t.label.includes(q) || t.raw.toLowerCase().includes(q.toLowerCase()))
+    : list;
   if(!filtered.length){ dd.style.display='none'; return; }
-  dd.innerHTML = filtered.map(t =>
-    `<div style="padding:6px 10px;font-size:12px;cursor:pointer;direction:rtl;border-bottom:1px solid rgba(255,255,255,0.05);"
-      onmousedown="document.getElementById('${ddId}').style.display='none'; document.getElementById('${input.id}').value='${t.replace(/'/g,"\\'")}'"
-    >${t}</div>`
+  dd.innerHTML = filtered.slice(0,25).map(t =>
+    `<div style="padding:7px 10px;font-size:12px;cursor:pointer;direction:rtl;border-bottom:1px solid rgba(255,255,255,0.05);"
+      onmousedown="
+        document.getElementById('${input.id}').value='${t.label.replace(/'/g,"\\'").replace(/\u202B|\u202C/g,'')}';
+        document.getElementById('${input.id}').dataset.raw='${t.raw.replace(/'/g,"\\'")}';
+        document.getElementById('${ddId}').style.display='none';
+      ">${t.label}</div>`
   ).join('');
   dd.style.display = 'block';
 };
 
 window.saveKoMatch = async function(id) {
-  const t1 = document.getElementById(`ko-t1-${id}`)?.value;
-  const t2 = document.getElementById(`ko-t2-${id}`)?.value;
+  const t1el = document.getElementById(`ko-t1-${id}`);
+  const t2el = document.getElementById(`ko-t2-${id}`);
+  // Use data-raw if set (chosen from dropdown), otherwise use value directly
+  const t1 = (t1el?.dataset.raw) || t1el?.value;
+  const t2 = (t2el?.dataset.raw) || t2el?.value;
   const date = document.getElementById(`ko-date-${id}`)?.value;
   const time = document.getElementById(`ko-time-${id}`)?.value;
   const venue = document.getElementById(`ko-venue-${id}`)?.value;
@@ -2947,7 +2974,7 @@ function initData(){
 function refreshAll(){
   renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket();
   checkBotRoundAlert();
-  if(MEDATA?.isAdmin) renderKoEditor();
+  if(MEDATA?.isAdmin) { buildKoTeamsList(); renderKoEditor(); }
 }
 
 // ── TABS ──
@@ -3655,22 +3682,18 @@ const WC_LOGO="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0Z
 function koPlaceholderDisplay(name) {
   if(!name || name === 'TBD') return { text: 'TBD', isPlaceholder: true };
   if(/[\u0590-\u05FF]/.test(name)) return { text: displayName(name), isPlaceholder: false };
-
   const simple = name.match(/^([123])([A-L])$/);
   if(simple) {
     const rank = simple[1], group = simple[2];
     const medal = rank==='1'?'🥇':rank==='2'?'🥈':'🥉';
     return { text: `\u202B${medal} מקום ${rank} בית ${group}\u202C`, isPlaceholder: true };
   }
-
   const multi = name.match(/^3([A-L](?:\/[A-L])+)$/);
   if(multi) {
     return { text: `\u202B🥉 מיטב מבתים ${multi[1]}\u202C`, isPlaceholder: true };
   }
-
   if(_DISPLAY_NAMES[name]) return { text: _DISPLAY_NAMES[name], isPlaceholder: false };
   if(/^[A-L0-9\/]+$/.test(name) && name.length <= 12) return { text: name, isPlaceholder: true };
-
   return { text: displayName(name), isPlaceholder: false };
 }
 
