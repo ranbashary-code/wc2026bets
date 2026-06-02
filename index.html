@@ -614,7 +614,7 @@ select.inp option{background:var(--card2);}
   <div class="tabs">
     <div class="tab active" data-page="main" id="tab-main">🏆 ראשי</div>
     <div class="tab" data-page="mybets">🎯 ההימורים שלי</div>
-    <div class="tab" data-page="bracket">🏟️ בראקט</div>
+    <div class="tab" data-page="bracket">🗂 בראקט</div>
     <div class="tab" data-page="scoring">📊 ניקוד</div>
     <div class="tab admin-only" data-page="admin" id="tab-admin" style="display:none;">⚙️ אדמין</div>
   </div>
@@ -689,7 +689,7 @@ select.inp option{background:var(--card2);}
     </div>
 
     <div class="page" id="page-bracket">
-      <div class="sec-head"><span style="font-size:22px;">🏟️</span><div class="sec-title">בראקט</div></div>
+      <div class="sec-head"><span style="font-size:22px;">🗂</span><div class="sec-title">בראקט</div></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="btn btn-grad btn-xs btab" data-btab="groups" style="flex-shrink:0;">שלב בתים</button>
         <button class="btn btn-ghost btn-xs btab" data-btab="ko" style="flex-shrink:0;">נוקאאוט</button>
@@ -821,6 +821,8 @@ select.inp option{background:var(--card2);}
         <button class="btn btn-primary" id="update-ko-teams-btn" style="width:100%;">🔁 עדכן קבוצות TBD בנוקאאוט</button>
         <div id="update-ko-status" style="margin-top:10px;font-size:12px;text-align:center;"></div>
       </div>
+
+      <!-- Knockout Match Editor -->
       <div class="card" style="padding:18px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
           <p style="font-size:15px;font-weight:700;color:var(--gold);">🏆 עריכת משחקי נוקאאוט</p>
@@ -1259,22 +1261,29 @@ function renderKoEditor() {
     const p1=koPlaceholderDisplay(m.team1), p2=koPlaceholderDisplay(m.team2);
     const hint1=p1.isPlaceholder&&m.team1!=='TBD'?m.team1:'';
     const hint2=p2.isPlaceholder&&m.team2!=='TBD'?m.team2:'';
+    const cur1 = m.team1||'TBD', cur2 = m.team2||'TBD';
     return `
     <div style="background:var(--card2);border-radius:10px;padding:12px;border:1px solid var(--border);">
       <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">📍 ${m.venue||'—'} &nbsp;·&nbsp; ${m.datetime?new Date(m.datetime).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div>
       <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:start;margin-bottom:8px;">
-        <div>
+        <div style="position:relative;">
           ${hint1?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p1.text+'</div>'):''}
-          <select id="ko-t1-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
-            ${teams.map(t=>'<option value="'+t+'" '+(m.team1===t?'selected':'')+'>'+t+'</option>').join('')}
-          </select>
+          <input id="ko-t1-${id}" type="text" value="${cur1}" placeholder="חיפוש נבחרת..." autocomplete="off"
+            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;box-sizing:border-box;"
+            oninput="koTeamSearch(this,'ko-t1-dd-${id}',teams)"
+            onfocus="koTeamSearch(this,'ko-t1-dd-${id}',teams)"
+            onblur="setTimeout(()=>{ const d=document.getElementById('ko-t1-dd-${id}'); if(d)d.style.display='none'; },200)">
+          <div id="ko-t1-dd-${id}" style="display:none;position:absolute;top:100%;right:0;left:0;background:var(--navy);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto;z-index:100;"></div>
         </div>
         <span style="color:var(--text2);font-size:12px;font-weight:700;padding-top:22px;">vs</span>
-        <div>
+        <div style="position:relative;">
           ${hint2?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p2.text+'</div>'):''}
-          <select id="ko-t2-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
-            ${teams.map(t=>'<option value="'+t+'" '+(m.team2===t?'selected':'')+'>'+t+'</option>').join('')}
-          </select>
+          <input id="ko-t2-${id}" type="text" value="${cur2}" placeholder="חיפוש נבחרת..." autocomplete="off"
+            style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;box-sizing:border-box;"
+            oninput="koTeamSearch(this,'ko-t2-dd-${id}',teams)"
+            onfocus="koTeamSearch(this,'ko-t2-dd-${id}',teams)"
+            onblur="setTimeout(()=>{ const d=document.getElementById('ko-t2-dd-${id}'); if(d)d.style.display='none'; },200)">
+          <div id="ko-t2-dd-${id}" style="display:none;position:absolute;top:100%;right:0;left:0;background:var(--navy);border:1px solid var(--border);border-radius:6px;max-height:160px;overflow-y:auto;z-index:100;"></div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
@@ -1302,6 +1311,20 @@ function renderKoEditor() {
     </div>`;
   }).join('');
 }
+
+window.koTeamSearch = function(input, ddId, teams) {
+  const q = input.value.trim().toLowerCase();
+  const dd = document.getElementById(ddId);
+  if(!dd) return;
+  const filtered = teams.filter(t => t.toLowerCase().includes(q)).slice(0, 20);
+  if(!filtered.length){ dd.style.display='none'; return; }
+  dd.innerHTML = filtered.map(t =>
+    `<div style="padding:6px 10px;font-size:12px;cursor:pointer;direction:rtl;border-bottom:1px solid rgba(255,255,255,0.05);"
+      onmousedown="document.getElementById('${ddId}').style.display='none'; document.getElementById('${input.id}').value='${t.replace(/'/g,"\\'")}'"
+    >${t}</div>`
+  ).join('');
+  dd.style.display = 'block';
+};
 
 window.saveKoMatch = async function(id) {
   const t1 = document.getElementById(`ko-t1-${id}`)?.value;
@@ -3539,16 +3562,16 @@ async function loadKoUpdateHistory() {
       const entry = log.filter(e=>e.stage===s).pop();
       if(entry){
         const d = new Date(entry.ts).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
-        html += `<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:#34d399;">✅ ${lbl}</span><span style="color:var(--text2);font-size:10px;white-space:nowrap;">${d} · ${entry.count} משחקים</span></div>`;
+        html += `<div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;"><span style="color:#34d399;">✅ ${lbl}</span><span style="color:var(--text2);font-size:10px;white-space:nowrap;">${d} · ${entry.count} משחקים</span></div>`;
       } else if(s===nextStage){
-        html += `<div style="color:var(--gold);">⏭️ הבא: ${lbl}</div>`;
+        html += `<div style="color:var(--gold);font-size:11px;">⏭️ הבא: ${lbl}</div>`;
       } else {
-        html += `<div style="color:rgba(255,255,255,0.25);">⏳ ${lbl}</div>`;
+        html += `<div style="color:rgba(255,255,255,0.25);font-size:11px;">⏳ ${lbl}</div>`;
       }
     });
     html += '</div>';
     box.innerHTML = html;
-  } catch(e){ el('ko-update-history').innerHTML='<div style="color:var(--text2);">שגיאה בטעינת היסטוריה</div>'; }
+  } catch(e){ if(el('ko-update-history')) el('ko-update-history').innerHTML='<div style="color:var(--text2);">שגיאה בטעינה</div>'; }
 }
 loadKoUpdateHistory();
 
@@ -3561,54 +3584,40 @@ el('update-ko-teams-btn')&&el('update-ko-teams-btn').addEventListener('click', a
     let data=null;
     for(const u of urls){ try{const r=await fetch(u);if(r.ok){data=await r.json();break;}}catch(e){continue;} }
     if(!data||!data.matches) throw new Error('לא ניתן לטעון נתונים');
-
     function toIL(d,t){if(!d)return null;if(!t)return d+'T12:00';const m=t.match(/(\d+):(\d+)\s*UTC([+-]\d+(?:\.\d+)?)?/);if(!m)return d+'T'+t.substring(0,5);const h=parseInt(m[1]),mn=parseInt(m[2]),off=m[3]?parseFloat(m[3]):0,tot=h*60+mn-Math.round(off*60)+180,dd=Math.floor(tot/1440),ih=Math.floor((tot%1440+1440)%1440/60),im=(tot%60+60)%60,dt=new Date(d+'T00:00:00Z');dt.setUTCDate(dt.getUTCDate()+dd);return dt.toISOString().substring(0,10)+'T'+String(ih).padStart(2,'0')+':'+String(im).padStart(2,'0');}
     function isKO(round,group){if(group)return false;const r=(round||'').toLowerCase();return r.includes('round')||r.includes('quarter')||r.includes('semi')||r.includes('final')||r.includes('third')||r.includes('3rd');}
     function transT(n){if(!n)return'TBD';if(/^(W|L)\d+$|winner$|path/i.test(n))return'TBD';if(/^\d[A-L](\/[A-L])*$/i.test(n))return n;return n;}
-
     const koMap={};
-    for(const m of data.matches){
-      if(!isKO(m.round,m.group)) continue;
-      const dt=toIL(m.date,m.time); if(!dt) continue;
-      koMap[dt]={team1:transT(m.team1||''),team2:transT(m.team2||'')};
-    }
-
+    for(const m of data.matches){if(!isKO(m.round,m.group))continue;const dt=toIL(m.date,m.time);if(!dt)continue;koMap[dt]={team1:transT(m.team1||''),team2:transT(m.team2||'')};}
     const snap=await get(ref(db,'matches'));
     if(!snap.exists()) throw new Error('אין משחקים ב-Firebase');
     const existing=snap.val();
     const updates={};
     const updatedStages=new Set();
     let updated=0;
-
     for(const [key,match] of Object.entries(existing)){
       if(match.stage==='group') continue;
-      if(match.team1!=='TBD' && match.team2!=='TBD') continue;
+      if(match.team1!=='TBD'&&match.team2!=='TBD') continue;
       const src=koMap[match.datetime]; if(!src) continue;
       let changed=false;
-      if(match.team1==='TBD'&&src.team1!=='TBD'){ updates['matches/'+key+'/team1']=src.team1; changed=true; }
-      if(match.team2==='TBD'&&src.team2!=='TBD'){ updates['matches/'+key+'/team2']=src.team2; changed=true; }
-      if(changed){ updated++; updatedStages.add(match.stage||'r32'); }
+      if(match.team1==='TBD'&&src.team1!=='TBD'){updates['matches/'+key+'/team1']=src.team1;changed=true;}
+      if(match.team2==='TBD'&&src.team2!=='TBD'){updates['matches/'+key+'/team2']=src.team2;changed=true;}
+      if(changed){updated++;updatedStages.add(match.stage||'r32');}
     }
-
     if(!Object.keys(updates).length){
       status.style.color='#34d399'; status.textContent='✅ אין TBD לעדכון!';
     } else {
       await update(ref(db),updates);
-      // Save log
       const logSnap=await get(ref(db,'admin/ko_update_log'));
       const log=(logSnap.exists()&&Array.isArray(logSnap.val()))?logSnap.val():[];
       for(const stage of updatedStages) log.push({stage, ts:Date.now(), count:updated});
-      await set(ref(db,'admin/ko_update_log'), log);
+      await set(ref(db,'admin/ko_update_log'),log);
       status.style.color='#34d399'; status.textContent='✅ עודכנו '+updated+' משחקים!';
       toast('✅ עודכנו '+updated+' משחקי נוקאאוט');
       loadKoUpdateHistory();
     }
-  } catch(err){
-    console.error(err);
-    status.style.color='#f87171'; status.textContent='❌ '+err.message;
-  } finally {
-    btn.disabled=false; btn.textContent='🔁 עדכן קבוצות TBD בנוקאאוט';
-  }
+  } catch(err){ console.error(err); status.style.color='#f87171'; status.textContent='❌ '+err.message; }
+  finally{ btn.disabled=false; btn.textContent='🔁 עדכן קבוצות TBD בנוקאאוט'; }
 });
 
 // ── BRACKET ──
@@ -3645,31 +3654,22 @@ const WC_LOGO="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0Z
 // ── KNOCKOUT PLACEHOLDER DISPLAY ──
 function koPlaceholderDisplay(name) {
   if(!name || name === 'TBD') return { text: 'TBD', isPlaceholder: true };
-  // Already Hebrew
   if(/[\u0590-\u05FF]/.test(name)) return { text: displayName(name), isPlaceholder: false };
 
-  // Pattern: "1A", "2B" — rank + single group letter
   const simple = name.match(/^([123])([A-L])$/);
   if(simple) {
     const rank = simple[1], group = simple[2];
     const medal = rank==='1'?'🥇':rank==='2'?'🥈':'🥉';
-    // \u202B = RIGHT-TO-LEFT EMBEDDING, \u202C = POP DIRECTIONAL FORMATTING
     return { text: `\u202B${medal} מקום ${rank} בית ${group}\u202C`, isPlaceholder: true };
   }
 
-  // Pattern: "3A/E/H/I/J" or "3C/D/F/G/H" — 3rd best from multiple groups
   const multi = name.match(/^3([A-L](?:\/[A-L])+)$/);
   if(multi) {
     return { text: `\u202B🥉 מיטב מבתים ${multi[1]}\u202C`, isPlaceholder: true };
   }
 
-  // Known English name
   if(_DISPLAY_NAMES[name]) return { text: _DISPLAY_NAMES[name], isPlaceholder: false };
-
-  // Any remaining placeholder-like (short, all caps/letters/slashes/digits)
-  if(/^[A-L0-9\/]+$/.test(name) && name.length <= 12) {
-    return { text: name, isPlaceholder: true };
-  }
+  if(/^[A-L0-9\/]+$/.test(name) && name.length <= 12) return { text: name, isPlaceholder: true };
 
   return { text: displayName(name), isPlaceholder: false };
 }
@@ -3746,8 +3746,8 @@ function renderBracket(){
     const c2=d2.isPlaceholder?null:getCountryCode(m.team2);
     const f1=c1?'<span class="fi fi-'+c1+'" style="width:10px;height:10px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:2px;"></span>':'';
     const f2=c2?'<span class="fi fi-'+c2+'" style="width:10px;height:10px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:2px;"></span>':'';
-    const s1=d1.isPlaceholder?'font-size:7px;color:var(--text2);font-style:italic;direction:rtl;unicode-bidi:embed;':'';
-    const s2=d2.isPlaceholder?'font-size:7px;color:var(--text2);font-style:italic;direction:rtl;unicode-bidi:embed;':'';
+    const s1=d1.isPlaceholder?'font-size:7px;color:var(--text2);font-style:italic;':'';
+    const s2=d2.isPlaceholder?'font-size:7px;color:var(--text2);font-style:italic;':'';
     return '<div class="ko-match">'+
       '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'">'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1+'">'+t1+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
       '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'">'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2+'">'+t2+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
