@@ -294,7 +294,6 @@ select.inp option{background:var(--card2);}
   padding:4px 5px;font-size:10px;font-weight:700;
   border-bottom:1px solid rgba(255,255,255,0.05);
   min-height:22px;
-  direction:rtl;
 }
 .ko-team:last-child{border-bottom:none;}
 .ko-team.winner{color:var(--gold);}
@@ -410,7 +409,7 @@ select.inp option{background:var(--card2);}
         <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">שעה:</label><input type="time" id="m-time" class="inp"></div>
       </div>
       <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">שלב:</label>
-        <select id="m-stage" class="inp"><option value="group">שלב בתים</option><option value="r32">שלב 32 האחרונות</option><option value="r16">שמינית גמר</option><option value="qf">רבע גמר</option><option value="sf">חצי גמר</option><option value="3rd">מקום שלישי</option><option value="final">גמר</option></select></div>
+        <select id="m-stage" class="inp"><option value="group">שלב בתים</option><option value="r32">שמינית גמר</option><option value="r16">שמינית פינאל</option><option value="qf">רבע גמר</option><option value="sf">חצי גמר</option><option value="3rd">מקום שלישי</option><option value="final">גמר</option></select></div>
       <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">בית:</label><input type="text" id="m-group" class="inp" placeholder="A"></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;">
@@ -434,7 +433,7 @@ select.inp option{background:var(--card2);}
         <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">שעה:</label><input type="time" id="em-time" class="inp"></div>
       </div>
       <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">שלב:</label>
-        <select id="em-stage" class="inp"><option value="group">שלב בתים</option><option value="r32">שלב 32 האחרונות</option><option value="r16">שמינית גמר</option><option value="qf">רבע גמר</option><option value="sf">חצי גמר</option><option value="3rd">מקום שלישי</option><option value="final">גמר</option></select></div>
+        <select id="em-stage" class="inp"><option value="group">שלב בתים</option><option value="r32">שמינית גמר</option><option value="r16">שמינית פינאל</option><option value="qf">רבע גמר</option><option value="sf">חצי גמר</option><option value="3rd">מקום שלישי</option><option value="final">גמר</option></select></div>
       <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">בית:</label><input type="text" id="em-group" class="inp" placeholder="A"></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;">
@@ -595,15 +594,15 @@ select.inp option{background:var(--card2);}
         <span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;animation:pulse 2s infinite;"></span>
         <span id="online-num">1</span>
       </span>
-      <button class="theme-toggle" id="theme-toggle-btn" title="החלפת מצב תצוגה">🌙</button>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+        <button class="theme-toggle" id="theme-toggle-btn" title="החלפת מצב תצוגה">🌙</button>
+        <span style="font-size:8px;color:var(--text2);">תצוגה</span>
+      </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
         <button id="noti-header-btn" onclick="toggleNotiFromHeader()" style="background:none;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer;color:var(--text2);display:none;">📧</button>
-        <span style="font-size:8px;color:var(--text2);white-space:nowrap;display:none;" id="noti-header-label">התראות</span>
+        <span id="noti-header-label" style="font-size:8px;color:var(--text2);display:none;">התראות</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-        <button class="btn-sm-logout" id="logout-btn">יציאה</button>
-        <span style="font-size:8px;color:var(--text2);white-space:nowrap;">התנתקות</span>
-      </div>
+      <button class="btn-sm-logout" id="logout-btn">יציאה</button>
     </div>
   </div>
   <div id="pending-banner" class="pending-banner">
@@ -880,8 +879,8 @@ function getAllBotRounds(allMatches) {
 
   // KNOCKOUT STAGES: each stage = one round
   const koStages = [
-    { key: 'r32',   label: 'שלב 32 האחרונות' },
-    { key: 'r16',   label: 'שמינית גמר' },
+    { key: 'r32',   label: 'שמינית גמר' },
+    { key: 'r16',   label: 'שמינית פינאל' },
     { key: 'qf',    label: 'רבע גמר' },
     { key: 'sf',    label: 'חצי גמר' },
     { key: '3rd',   label: 'מקום שלישי' },
@@ -1904,7 +1903,6 @@ el('push-decline')&&el('push-decline').addEventListener('click', async()=>{
     decidedAt: Date.now()
   });
   el('push-modal').classList.remove('open');
-  renderNotiHeaderBtn();
 });
 
 // Load activity history for admin
@@ -2807,7 +2805,7 @@ const ADMIN = 'ranbashary@gmail.com';
 
 // Dynamic scoring — loaded from Firebase or defaults
 let SCORING = {group:{d:1,h:2},r32:{d:2,h:4},r16:{d:2,h:4},qf:{d:3,h:6},sf:{d:4,h:8},'3rd':{d:2,h:4},final:{d:5,h:10}};
-const SLBL = {group:'שלב בתים',r32:'שלב 32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר'};
+const SLBL = {group:'שלב בתים',r32:'שמינית גמר',r16:'שמינית פינאל',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר'};
 const SCSS = {group:'pill-group',r32:'pill-r32',r16:'pill-r16',qf:'pill-qf',sf:'pill-sf','3rd':'pill-3rd',final:'pill-final'};
 
 let ME = null, MEDATA = null;
@@ -2839,6 +2837,7 @@ el('google-btn').addEventListener('click', async ()=>{
   try { await signInWithPopup(auth, gp); }
   catch(e){ console.error(e); el('login-error').style.display='block'; }
 });
+el('logout-btn').addEventListener('click', ()=> signOut(auth));
 
 async function renderNotiHeaderBtn() {
   const btn = el('noti-header-btn');
@@ -2875,8 +2874,6 @@ window.toggleNotiFromHeader = async function() {
   toast(newVal ? '📧 תזכורות מייל הופעלו!' : '🔕 תזכורות מייל כובו');
   renderNotiHeaderBtn();
 };
-
-el('logout-btn').addEventListener('click', ()=> signOut(auth));
 el('pending-logout').addEventListener('click', ()=> signOut(auth));
 el('pending-nick-btn').addEventListener('click', async ()=>{
   const v=el('pending-nick').value.trim(); if(!v||!ME) return;
@@ -3300,7 +3297,7 @@ el('confirm-add').addEventListener('click', async()=>{
 // ── SCORING ──
 function renderScoringTable(){
   const stages=['group','r32','r16','qf','sf','3rd','final'];
-  const labels={group:'שלב בתים',r32:'שלב 32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
+  const labels={group:'שלב בתים',r32:'שמינית גמר',r16:'שמינית פינאל',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
   const tbody=el('scoring-tbody'); if(!tbody) return;
   tbody.innerHTML=stages.map(s=>{
     const p=SCORING[s]||{d:0,h:0};
@@ -3310,7 +3307,7 @@ function renderScoringTable(){
 function renderScoringEdit(){
   const lst=el('scoring-edit'); if(!lst) return;
   const stages=['group','r32','r16','qf','sf','3rd','final'];
-  const labels={group:'שלב בתים',r32:'שלב 32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
+  const labels={group:'שלב בתים',r32:'שמינית גמר',r16:'שמינית פינאל',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
   let html='';
   stages.forEach(stage=>{
     const cur=SCORING[stage]||{d:0,h:0};
@@ -3734,8 +3731,8 @@ function renderBracket(){
     
     // Stages from outside-in on left, inside-out on right
     const stageOrder = [
-      {stage:'r32', label:'שלב 32 האחרונות', matches:r32},
-      {stage:'r16', label:'שמינית גמר', matches:r16},
+      {stage:'r32', label:'שמינית גמר', matches:r32},
+      {stage:'r16', label:'שמינית פינאל', matches:r16},
       {stage:'qf',  label:'רבע גמר', matches:qf},
       {stage:'sf',  label:'חצי גמר', matches:sf},
     ];
