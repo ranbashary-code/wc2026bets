@@ -1775,15 +1775,8 @@ async function loadAnalytics() {
       icon:'🏆', val:champBetters.length, lbl:'הימרו על מנצחת', clickable:true,
       onClick:()=>showDetail('🏆 הימרו על נבחרת מנצחת',
         champBetters.length
-          ? '<div style="display:flex;flex-direction:column;gap:6px;">' +
-            champBetters.map(b=>{
-              const code=getCountryCode(b.val);
-              const flag=code?'<span class="fi fi-'+code+'" style="width:18px;height:18px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;margin-left:6px;"></span>':'';
-              return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.04);border-radius:8px;">' +
-                '<span style="font-weight:700;font-size:13px;">'+b.name+'</span>' +
-                '<span style="display:flex;align-items:center;gap:6px;font-size:13px;">'+flag+b.val+'</span>' +
-                '</div>';
-            }).join('') +
+          ? '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+            champBetters.map(b=>'<div style="padding:5px 10px;background:rgba(255,255,255,0.06);border-radius:8px;font-size:13px;font-weight:700;">'+b.name+'</div>').join('') +
             '</div>'
           : '<p style="color:var(--text2);font-size:13px;">אף אחד עדיין לא הימר</p>'
       )
@@ -1792,11 +1785,8 @@ async function loadAnalytics() {
       icon:'👟', val:scorerBetters.length, lbl:'הימרו על מלך שערים', clickable:true,
       onClick:()=>showDetail('👟 הימרו על מלך שערים',
         scorerBetters.length
-          ? '<div style="display:flex;flex-direction:column;gap:6px;">' +
-            scorerBetters.map(b=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.04);border-radius:8px;">' +
-              '<span style="font-weight:700;font-size:13px;">'+b.name+'</span>' +
-              '<span style="font-size:13px;color:var(--gold);">⚽ '+b.val+'</span>' +
-              '</div>').join('') +
+          ? '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+            scorerBetters.map(b=>'<div style="padding:5px 10px;background:rgba(255,255,255,0.06);border-radius:8px;font-size:13px;font-weight:700;">'+b.name+'</div>').join('') +
             '</div>'
           : '<p style="color:var(--text2);font-size:13px;">אף אחד עדיין לא הימר</p>'
       )
@@ -2916,7 +2906,6 @@ function refreshAll(){
   renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket();
   checkBotRoundAlert();
   if(MEDATA?.isAdmin) renderKoEditor();
-  renderSpecialBetsReveal(specialLocked());
 }
 
 // ── TABS ──
