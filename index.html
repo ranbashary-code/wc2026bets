@@ -596,7 +596,14 @@ select.inp option{background:var(--card2);}
         <span id="online-num">1</span>
       </span>
       <button class="theme-toggle" id="theme-toggle-btn" title="החלפת מצב תצוגה">🌙</button>
-      <button class="btn-sm-logout" id="logout-btn">יציאה</button>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+        <button id="noti-header-btn" onclick="toggleNotiFromHeader()" style="background:none;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer;color:var(--text2);display:none;">📧</button>
+        <span style="font-size:8px;color:var(--text2);white-space:nowrap;display:none;" id="noti-header-label">התראות</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+        <button class="btn-sm-logout" id="logout-btn">יציאה</button>
+        <span style="font-size:8px;color:var(--text2);white-space:nowrap;">התנתקות</span>
+      </div>
     </div>
   </div>
   <div id="pending-banner" class="pending-banner">
@@ -1887,6 +1894,7 @@ el('push-accept')&&el('push-accept').addEventListener('click', async()=>{
   el('push-modal').classList.remove('open');
   toast('✅ תקבל התרעות לפני משחקים!');
   logActivity('notification_subscribe', {email: ME.email});
+  renderNotiHeaderBtn();
 });
 
 el('push-decline')&&el('push-decline').addEventListener('click', async()=>{
@@ -1896,6 +1904,7 @@ el('push-decline')&&el('push-decline').addEventListener('click', async()=>{
     decidedAt: Date.now()
   });
   el('push-modal').classList.remove('open');
+  renderNotiHeaderBtn();
 });
 
 // Load activity history for admin
@@ -2830,6 +2839,43 @@ el('google-btn').addEventListener('click', async ()=>{
   try { await signInWithPopup(auth, gp); }
   catch(e){ console.error(e); el('login-error').style.display='block'; }
 });
+
+async function renderNotiHeaderBtn() {
+  const btn = el('noti-header-btn');
+  const lbl = el('noti-header-label');
+  if(!btn||!ME) return;
+  const snap = await get(ref(db,'notifications/'+ME.uid));
+  const enabled = snap.exists() ? snap.val().enabled === true : null;
+  btn.style.display = '';
+  if(lbl) lbl.style.display = '';
+  if(enabled) {
+    btn.title = 'תזכורות מייל פעילות — לחץ לכיבוי';
+    btn.style.opacity = '1';
+    btn.style.borderColor = '#10b981';
+    btn.style.color = '#10b981';
+  } else {
+    btn.title = enabled === null ? 'הגדר תזכורות מייל' : 'תזכורות מייל כבויות — לחץ להפעלה';
+    btn.style.opacity = '0.5';
+    btn.style.borderColor = 'rgba(255,255,255,0.12)';
+    btn.style.color = 'var(--text2)';
+  }
+}
+
+window.toggleNotiFromHeader = async function() {
+  if(!ME) return;
+  const snap = await get(ref(db,'notifications/'+ME.uid));
+  const current = snap.exists() ? snap.val().enabled === true : false;
+  const newVal = !current;
+  const data = snap.exists() ? snap.val() : {};
+  await set(ref(db,'notifications/'+ME.uid), {
+    ...data, email: ME.email,
+    name: MEDATA.nickname||MEDATA.name,
+    enabled: newVal, updatedAt: Date.now(),
+  });
+  toast(newVal ? '📧 תזכורות מייל הופעלו!' : '🔕 תזכורות מייל כובו');
+  renderNotiHeaderBtn();
+};
+
 el('logout-btn').addEventListener('click', ()=> signOut(auth));
 el('pending-logout').addEventListener('click', ()=> signOut(auth));
 el('pending-nick-btn').addEventListener('click', async ()=>{
@@ -2868,6 +2914,7 @@ onAuthStateChanged(auth, async user=>{
   logActivity('login', {page: 'home'});
   checkNotificationPrompt();
   initGroups();
+  renderNotiHeaderBtn();
   // Check reminders every 5 minutes
   setTimeout(checkAndSendReminders, 5000);
   setInterval(checkAndSendReminders, 300000);
