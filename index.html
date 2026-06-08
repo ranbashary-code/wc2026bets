@@ -294,6 +294,7 @@ select.inp option{background:var(--card2);}
   padding:4px 5px;font-size:10px;font-weight:700;
   border-bottom:1px solid rgba(255,255,255,0.05);
   min-height:22px;
+  direction:rtl;
 }
 .ko-team:last-child{border-bottom:none;}
 .ko-team.winner{color:var(--gold);}
@@ -3552,13 +3553,13 @@ function koPlaceholderDisplay(name) {
   if(simple) {
     const rank = simple[1], group = simple[2];
     const medal = rank==='1'?'🥇':rank==='2'?'🥈':'🥉';
-    return { text: `‫בית ${group} מקום ${rank} ${medal}‬`, isPlaceholder: true };
+    return { text: `${medal} מקום ${rank} בית ${group}`, isPlaceholder: true };
   }
 
   // Pattern: "3A/E/H/I/J" or "3C/D/F/G/H" — 3rd best from multiple groups
   const multi = name.match(/^3([A-L](?:\/[A-L])+)$/);
   if(multi) {
-    return { text: `‫מבתים ${multi[1]} מיטב 🥉‬`, isPlaceholder: true };
+    return { text: `🥉 מיטב מבתים ${multi[1]}`, isPlaceholder: true };
   }
 
   // Known English name
