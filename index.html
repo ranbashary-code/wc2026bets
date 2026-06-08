@@ -293,12 +293,12 @@ select.inp option{background:var(--card2);}
   display:flex;align-items:center;justify-content:space-between;
   padding:4px 5px;font-size:10px;font-weight:700;
   border-bottom:1px solid rgba(255,255,255,0.05);
-  min-height:22px;direction:rtl;
+  min-height:22px;
 }
 .ko-team:last-child{border-bottom:none;}
 .ko-team.winner{color:var(--gold);}
 .ko-team.loser{color:var(--text2);}
-.ko-team-name{flex:1;white-space:normal;word-break:break-word;max-width:100%;min-width:0;font-size:8.5px;line-height:1.3;direction:rtl;unicode-bidi:embed;}
+.ko-team-name{flex:1;white-space:normal;word-break:break-word;max-width:100%;min-width:0;font-size:8.5px;line-height:1.3;}
 .ko-score{font-family:'Bebas Neue',sans-serif;font-size:12px;min-width:12px;text-align:center;flex-shrink:0;}
 .ko-team-flag{width:14px;height:14px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:4px;}
 .ko-round-label{font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:var(--text2);text-align:center;margin-bottom:3px;}
@@ -595,6 +595,7 @@ select.inp option{background:var(--card2);}
         <span id="online-num">1</span>
       </span>
       <button class="theme-toggle" id="theme-toggle-btn" title="החלפת מצב תצוגה">🌙</button>
+      <button id="noti-header-btn" title="תזכורות מייל" style="background:none;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer;display:none;" onclick="toggleNotiFromHeader()">📧</button>
       <button class="btn-sm-logout" id="logout-btn">יציאה</button>
     </div>
   </div>
@@ -809,17 +810,6 @@ select.inp option{background:var(--card2);}
         </div>
         <button class="btn btn-ghost" id="load-wc-matches" style="width:100%;opacity:0.5;cursor:not-allowed;" disabled>⬇️ טען 104 משחקי מונדיאל 2026</button>
         <div id="load-status" style="margin-top:10px;font-size:12px;text-align:center;display:none;"></div>
-      </div>
-
-      <!-- Update KO Teams -->
-      <div class="card" style="padding:18px;margin-bottom:14px;">
-        <p style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px;">🔄 עדכון קבוצות נוקאאוט</p>
-        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">מוריד מ-openfootball ומעדכן רק משחקי נוקאאוט שהקבוצה שלהם עדיין TBD — ללא כפילויות.</p>
-        <div id="ko-update-history" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:11px;">
-          <div style="color:var(--text2);">טוען היסטוריה...</div>
-        </div>
-        <button class="btn btn-primary" id="update-ko-teams-btn" style="width:100%;">🔁 עדכן קבוצות TBD בנוקאאוט</button>
-        <div id="update-ko-status" style="margin-top:10px;font-size:12px;text-align:center;"></div>
       </div>
 
       <!-- Knockout Match Editor -->
@@ -1246,43 +1236,38 @@ function renderKoEditor() {
     return;
   }
 
-  // Build team list from group stage
+  // Build team list from group stage for dropdown
   const teamSet = new Set();
   Object.values(MATCHES).forEach(m => {
     if(m.stage === 'group' && m.team1 && m.team1 !== 'TBD') teamSet.add(m.team1);
     if(m.stage === 'group' && m.team2 && m.team2 !== 'TBD') teamSet.add(m.team2);
   });
-  const teams = Array.from(teamSet).sort();
-
-  function buildOpts(cur) {
-    const p = koPlaceholderDisplay(cur);
-    const isPos = cur && cur !== 'TBD' && /^\d[A-L]/.test(cur);
-    const label = p.text.replace(/\u202B|\u202C/g,'');
-    let opts = '';
-    if(isPos) opts += `<option value="${cur}" selected>${cur} — ${label}</option>`;
-    opts += `<option value="TBD" ${(!isPos && (!cur||cur==='TBD'))?'selected':''}>TBD</option>`;
-    teams.forEach(t => { opts += `<option value="${t}" ${(!isPos && cur===t)?'selected':''}>${t}</option>`; });
-    return opts;
-  }
+  const teams = ['TBD', ...Array.from(teamSet).sort()];
+  const teamOptions = teams.map(t => `<option value="${t}">${t}</option>`).join('');
 
   list.innerHTML = stageMatches.map(([id, m]) => {
     const dt = m.datetime ? m.datetime.replace('T',' ').slice(0,16) : '';
     const dtParts = dt ? dt.split(' ') : ['',''];
+    const p1=koPlaceholderDisplay(m.team1), p2=koPlaceholderDisplay(m.team2);
+    const hint1=p1.isPlaceholder&&m.team1!=='TBD'?m.team1:'';
+    const hint2=p2.isPlaceholder&&m.team2!=='TBD'?m.team2:'';
     return `
     <div style="background:var(--card2);border-radius:10px;padding:12px;border:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div style="font-size:10px;color:var(--text2);">📍 ${m.venue||'—'} &nbsp;·&nbsp; ${m.datetime?new Date(m.datetime).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div>
-        <button onclick="resetKoMatch('${id}')" title="אפס לערכים מ-openfootball"
-          style="background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;">🔄 אפס</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-bottom:8px;">
-        <select id="ko-t1-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
-          ${buildOpts(m.team1)}
-        </select>
-        <span style="color:var(--text2);font-size:12px;font-weight:700;text-align:center;">vs</span>
-        <select id="ko-t2-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
-          ${buildOpts(m.team2)}
-        </select>
+      <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">📍 ${m.venue||'—'} &nbsp;·&nbsp; ${m.datetime?new Date(m.datetime).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:start;margin-bottom:8px;">
+        <div>
+          ${hint1?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p1.text+'</div>'):''}
+          <select id="ko-t1-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
+            ${teams.map(t=>'<option value="'+t+'" '+(m.team1===t?'selected':'')+'>'+t+'</option>').join('')}
+          </select>
+        </div>
+        <span style="color:var(--text2);font-size:12px;font-weight:700;padding-top:22px;">vs</span>
+        <div>
+          ${hint2?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p2.text+'</div>'):''}
+          <select id="ko-t2-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
+            ${teams.map(t=>'<option value="'+t+'" '+(m.team2===t?'selected':'')+'>'+t+'</option>').join('')}
+          </select>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
         <div>
@@ -1311,54 +1296,22 @@ function renderKoEditor() {
 }
 
 window.saveKoMatch = async function(id) {
-  const t1 = document.getElementById(`ko-t1-${id}`)?.value?.trim();
-  const t2 = document.getElementById(`ko-t2-${id}`)?.value?.trim();
+  const t1 = document.getElementById(`ko-t1-${id}`)?.value;
+  const t2 = document.getElementById(`ko-t2-${id}`)?.value;
   const date = document.getElementById(`ko-date-${id}`)?.value;
   const time = document.getElementById(`ko-time-${id}`)?.value;
   const venue = document.getElementById(`ko-venue-${id}`)?.value;
   const statusEl = document.getElementById(`ko-status-${id}`);
+
   if(!t1||!t2) return;
   const datetime = date && time ? `${date}T${time}` : (MATCHES[id]?.datetime||'');
+
   try {
     await update(ref(db, 'matches/' + id), { team1: t1, team2: t2, datetime, venue: venue||'' });
     if(statusEl){ statusEl.textContent='✅ נשמר!'; statusEl.style.color='#34d399'; }
     setTimeout(()=>{ if(statusEl) statusEl.textContent=''; }, 2000);
   } catch(e) {
     if(statusEl){ statusEl.textContent='❌ שגיאה: '+e.message; statusEl.style.color='#f87171'; }
-  }
-};
-
-// Cache for openfootball ko data
-let _ofKoCache = null;
-async function getOFKoMap() {
-  if(_ofKoCache) return _ofKoCache;
-  const urls=['https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json','https://cdn.jsdelivr.net/gh/openfootball/worldcup.json@master/2026/worldcup.json'];
-  let data=null;
-  for(const u of urls){ try{const r=await fetch(u);if(r.ok){data=await r.json();break;}}catch(e){continue;} }
-  if(!data||!data.matches) throw new Error('לא ניתן לטעון נתונים');
-  function toIL(d,t){if(!d)return null;if(!t)return d+'T12:00';const m=t.match(/(\d+):(\d+)\s*UTC([+-]\d+(?:\.\d+)?)?/);if(!m)return d+'T'+t.substring(0,5);const h=parseInt(m[1]),mn=parseInt(m[2]),off=m[3]?parseFloat(m[3]):0,tot=h*60+mn-Math.round(off*60)+180,dd=Math.floor(tot/1440),ih=Math.floor((tot%1440+1440)%1440/60),im=(tot%60+60)%60,dt=new Date(d+'T00:00:00Z');dt.setUTCDate(dt.getUTCDate()+dd);return dt.toISOString().substring(0,10)+'T'+String(ih).padStart(2,'0')+':'+String(im).padStart(2,'0');}
-  function isKO(round,group){if(group)return false;const r=(round||'').toLowerCase();return r.includes('round')||r.includes('quarter')||r.includes('semi')||r.includes('final')||r.includes('third')||r.includes('3rd');}
-  function transT(n){if(!n)return'TBD';if(/^(W|L)\d+$|winner$|path/i.test(n))return'TBD';if(/^\d[A-L](\/[A-L])*$/i.test(n))return n;return n;}
-  const map={};
-  for(const m of data.matches){if(!isKO(m.round,m.group))continue;const dt=toIL(m.date,m.time);if(!dt)continue;map[dt]={team1:transT(m.team1||''),team2:transT(m.team2||'')};}
-  _ofKoCache = map;
-  return map;
-}
-
-window.resetKoMatch = async function(id) {
-  const statusEl = document.getElementById(`ko-status-${id}`);
-  if(statusEl){ statusEl.textContent='⏳ מוריד מ-openfootball...'; statusEl.style.color='var(--text2)'; }
-  try {
-    const match = MATCHES[id];
-    if(!match) throw new Error('משחק לא נמצא');
-    const koMap = await getOFKoMap();
-    const src = koMap[match.datetime];
-    if(!src) throw new Error('לא נמצא ב-openfootball לפי תאריך');
-    await update(ref(db,'matches/'+id), { team1: src.team1, team2: src.team2 });
-    if(statusEl){ statusEl.textContent='✅ אופס!'; statusEl.style.color='#34d399'; }
-    setTimeout(()=>{ if(statusEl) statusEl.textContent=''; renderKoEditor(); }, 1000);
-  } catch(e) {
-    if(statusEl){ statusEl.textContent='❌ '+e.message; statusEl.style.color='#f87171'; }
   }
 };
 
@@ -1934,6 +1887,7 @@ el('push-accept')&&el('push-accept').addEventListener('click', async()=>{
   el('push-modal').classList.remove('open');
   toast('✅ תקבל התרעות לפני משחקים!');
   logActivity('notification_subscribe', {email: ME.email});
+  renderNotiHeaderBtn();
 });
 
 el('push-decline')&&el('push-decline').addEventListener('click', async()=>{
@@ -1943,7 +1897,48 @@ el('push-decline')&&el('push-decline').addEventListener('click', async()=>{
     decidedAt: Date.now()
   });
   el('push-modal').classList.remove('open');
+  renderNotiHeaderBtn();
 });
+
+async function renderNotiHeaderBtn() {
+  const btn = el('noti-header-btn'); if(!btn||!ME) return;
+  const snap = await get(ref(db,'notifications/'+ME.uid));
+  const enabled = snap.exists() ? snap.val().enabled === true : null;
+  btn.style.display = '';
+  if(enabled === null) {
+    // Never decided — show neutral
+    btn.textContent = '📧';
+    btn.title = 'הגדר תזכורות מייל';
+    btn.style.opacity = '0.5';
+  } else if(enabled) {
+    btn.textContent = '📧';
+    btn.title = 'תזכורות מייל פעילות — לחץ לכיבוי';
+    btn.style.opacity = '1';
+    btn.style.borderColor = '#10b981';
+  } else {
+    btn.textContent = '📧';
+    btn.title = 'תזכורות מייל כבויות — לחץ להפעלה';
+    btn.style.opacity = '0.4';
+    btn.style.borderColor = 'rgba(255,255,255,0.12)';
+  }
+}
+
+window.toggleNotiFromHeader = async function() {
+  if(!ME) return;
+  const snap = await get(ref(db,'notifications/'+ME.uid));
+  const current = snap.exists() ? snap.val().enabled === true : false;
+  const newVal = !current;
+  const data = snap.exists() ? snap.val() : {};
+  await set(ref(db,'notifications/'+ME.uid), {
+    ...data,
+    email: ME.email,
+    name: MEDATA.nickname||MEDATA.name,
+    enabled: newVal,
+    updatedAt: Date.now(),
+  });
+  toast(newVal ? '📧 תזכורות מייל הופעלו!' : '🔕 תזכורות מייל כובו');
+  renderNotiHeaderBtn();
+};
 
 // Load activity history for admin
 async function loadActivity() {
@@ -2915,6 +2910,7 @@ onAuthStateChanged(auth, async user=>{
   logActivity('login', {page: 'home'});
   checkNotificationPrompt();
   initGroups();
+  renderNotiHeaderBtn();
   // Check reminders every 5 minutes
   setTimeout(checkAndSendReminders, 5000);
   setInterval(checkAndSendReminders, 300000);
@@ -3450,9 +3446,9 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
 
     function translateTeam(name) {
       if(!name) return name;
-      if(/^(W|L)\d+$|winner$|path/i.test(name)) return 'TBD';
-      if(/^\d[A-L](\/[A-L])*$/i.test(name)) return name;
-      return TEAM_HEB[name] || name;
+      // If already has TBD patterns (W73, 2A, etc) keep as is
+      if(/^(W|L)\d+$|^\d[A-L]$|winner$|path/i.test(name)) return 'TBD';
+      return TEAM_HEB[name] || name; // fallback to English if not in map
     }
 
     const urls = [
@@ -3558,79 +3554,6 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
   }
 });
 
-// ── UPDATE KO TEAMS ──
-const KO_STAGE_LABELS = {r32:'שמינית גמר (R32)', r16:'שמינית פינאל (R16)', qf:'רבע גמר', sf:'חצי גמר', '3rd':'מקום שלישי', final:'גמר'};
-const KO_STAGE_ORDER = ['r32','r16','qf','sf','3rd','final'];
-
-async function loadKoUpdateHistory() {
-  const box = el('ko-update-history'); if(!box) return;
-  try {
-    const snap = await get(ref(db,'admin/ko_update_log'));
-    if(!snap.exists()||!snap.val()||!Array.isArray(snap.val())||!snap.val().length){
-      box.innerHTML='<div style="color:var(--text2);font-size:11px;">טרם בוצע עדכון</div>'; return;
-    }
-    const log = snap.val();
-    const done = new Set(log.map(e=>e.stage));
-    const nextStage = KO_STAGE_ORDER.find(s=>!done.has(s));
-    let html = '<div style="margin-bottom:6px;font-weight:700;font-size:11px;color:var(--gold);">היסטוריית עדכונים:</div><div style="display:flex;flex-direction:column;gap:4px;">';
-    KO_STAGE_ORDER.forEach(s=>{
-      const lbl = KO_STAGE_LABELS[s]||s;
-      const entry = log.filter(e=>e.stage===s).pop();
-      if(entry){
-        const d = new Date(entry.ts).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
-        html += `<div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;"><span style="color:#34d399;">✅ ${lbl}</span><span style="color:var(--text2);font-size:10px;white-space:nowrap;">${d} · ${entry.count} משחקים</span></div>`;
-      } else if(s===nextStage){
-        html += `<div style="color:var(--gold);font-size:11px;">⏭️ הבא: ${lbl}</div>`;
-      } else {
-        html += `<div style="color:rgba(255,255,255,0.25);font-size:11px;">⏳ ${lbl}</div>`;
-      }
-    });
-    html += '</div>';
-    box.innerHTML = html;
-  } catch(e){ if(el('ko-update-history')) el('ko-update-history').innerHTML='<div style="color:var(--text2);">שגיאה בטעינה</div>'; }
-}
-loadKoUpdateHistory();
-
-el('update-ko-teams-btn')&&el('update-ko-teams-btn').addEventListener('click', async()=>{
-  const btn=el('update-ko-teams-btn'), status=el('update-ko-status');
-  btn.disabled=true; btn.textContent='⏳ מעדכן...';
-  status.style.color='var(--text2)'; status.textContent='מוריד נתונים...';
-  try {
-    const koMap = await getOFKoMap();
-    status.textContent=`נמצאו ${Object.keys(koMap).length} משחקי נוקאאוט. מעדכן Firebase...`;
-    const snap=await get(ref(db,'matches'));
-    if(!snap.exists()) throw new Error('אין משחקים ב-Firebase');
-    const existing=snap.val();
-    const updates={};
-    const updatedStages=new Set();
-    let updated=0;
-    for(const [key,match] of Object.entries(existing)){
-      if(match.stage==='group') continue;
-      if(match.team1!=='TBD'&&match.team2!=='TBD') continue;
-      const src=koMap[match.datetime]; if(!src) continue;
-      let changed=false;
-      if(match.team1==='TBD'&&src.team1!=='TBD'){updates['matches/'+key+'/team1']=src.team1;changed=true;}
-      if(match.team2==='TBD'&&src.team2!=='TBD'){updates['matches/'+key+'/team2']=src.team2;changed=true;}
-      if(changed){updated++;updatedStages.add(match.stage||'r32');}
-    }
-    if(!Object.keys(updates).length){
-      status.style.color='#f59e0b';
-      status.textContent='⚠️ אין TBD לעדכון — הנתונים כבר עדכניים.';
-    } else {
-      await update(ref(db),updates);
-      const logSnap=await get(ref(db,'admin/ko_update_log'));
-      let log=(logSnap.exists()&&Array.isArray(logSnap.val()))?logSnap.val():[];
-      for(const stage of updatedStages) log.push({stage, ts:Date.now(), count:updated});
-      await set(ref(db,'admin/ko_update_log'),log);
-      status.style.color='#34d399'; status.textContent='✅ עודכנו '+updated+' משחקים!';
-      toast('✅ עודכנו '+updated+' משחקי נוקאאוט');
-      loadKoUpdateHistory();
-      _ofKoCache=null; // reset cache
-    }
-  } catch(err){ console.error(err); status.style.color='#f87171'; status.textContent='❌ '+err.message; }
-  finally{ btn.disabled=false; btn.textContent='🔁 עדכן קבוצות TBD בנוקאאוט'; }
-});
-
 // ── BRACKET ──
 document.querySelectorAll('.btab').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -3665,19 +3588,31 @@ const WC_LOGO="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0Z
 // ── KNOCKOUT PLACEHOLDER DISPLAY ──
 function koPlaceholderDisplay(name) {
   if(!name || name === 'TBD') return { text: 'TBD', isPlaceholder: true };
+  // Already Hebrew
   if(/[\u0590-\u05FF]/.test(name)) return { text: displayName(name), isPlaceholder: false };
+
+  // Pattern: "1A", "2B" — rank + single group letter
   const simple = name.match(/^([123])([A-L])$/);
   if(simple) {
     const rank = simple[1], group = simple[2];
     const medal = rank==='1'?'🥇':rank==='2'?'🥈':'🥉';
-    return { text: `\u202B${medal} מקום ${rank} בית ${group}\u202C`, isPlaceholder: true };
+    return { text: `${medal} מקום ${rank} בית ${group}`, isPlaceholder: true };
   }
+
+  // Pattern: "3A/E/H/I/J" or "3C/D/F/G/H" — 3rd best from multiple groups
   const multi = name.match(/^3([A-L](?:\/[A-L])+)$/);
   if(multi) {
-    return { text: `\u202B🥉 מיטב מבתים ${multi[1]}\u202C`, isPlaceholder: true };
+    return { text: `🥉 מיטב מבתים ${multi[1]}`, isPlaceholder: true };
   }
+
+  // Known English name
   if(_DISPLAY_NAMES[name]) return { text: _DISPLAY_NAMES[name], isPlaceholder: false };
-  if(/^[A-L0-9\/]+$/.test(name) && name.length <= 12) return { text: name, isPlaceholder: true };
+
+  // Any remaining placeholder-like (short, all caps/letters/slashes/digits)
+  if(/^[A-L0-9\/]+$/.test(name) && name.length <= 12) {
+    return { text: name, isPlaceholder: true };
+  }
+
   return { text: displayName(name), isPlaceholder: false };
 }
 
