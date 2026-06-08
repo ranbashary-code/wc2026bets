@@ -779,6 +779,12 @@ select.inp option{background:var(--card2);}
           <div id="analytics-activity" style="margin-top:4px;"></div>
         </div>
         <div class="card" style="padding:18px;margin-bottom:14px;">
+          <p style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px;">✏️ עדכון שמות נבחרות ב-Firebase</p>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">מעדכן את שמות הנבחרות בכל המשחקים לפי הכתיב הנכון.</p>
+          <button class="btn btn-primary" id="fix-team-names-btn" style="width:100%;">🔁 תקן שמות נבחרות</button>
+          <div id="fix-team-names-status" style="margin-top:8px;font-size:12px;text-align:center;"></div>
+        </div>
+        <div class="card" style="padding:18px;margin-bottom:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <p style="font-size:15px;font-weight:700;color:var(--gold);">📈 היסטוריית פעילות</p>
             <button class="btn btn-ghost btn-xs" id="refresh-activity">🔄 רענן</button>
@@ -1347,6 +1353,37 @@ window.saveKoMatch = async function(id) {
 };
 
 // Stage filter buttons
+// ── FIX TEAM NAMES IN FIREBASE ──
+const TEAM_RENAMES = {
+  'קטר':'קטאר', 'צכיה':"צ׳כיה", 'אלגריה':"אלג׳יריה",
+  'קוריאה הדרומית':'דרום קוריאה', 'שוויץ':'שווייץ',
+  'מוקסיקו':'מקסיקו', 'סוקוטלנד':'סקוטלנד',
+};
+el('fix-team-names-btn')&&el('fix-team-names-btn').addEventListener('click', async()=>{
+  const btn=el('fix-team-names-btn'), status=el('fix-team-names-status');
+  btn.disabled=true; btn.textContent='⏳ מעדכן...';
+  status.style.color='var(--text2)'; status.textContent='טוען משחקים...';
+  try {
+    const snap=await get(ref(db,'matches'));
+    if(!snap.exists()) throw new Error('אין משחקים');
+    const existing=snap.val();
+    const updates={};
+    let fixed=0;
+    for(const [key,match] of Object.entries(existing)){
+      const t1=TEAM_RENAMES[match.team1]; const t2=TEAM_RENAMES[match.team2];
+      if(t1){ updates['matches/'+key+'/team1']=t1; fixed++; }
+      if(t2){ updates['matches/'+key+'/team2']=t2; fixed++; }
+    }
+    if(!Object.keys(updates).length){ status.style.color='#34d399'; status.textContent='✅ אין מה לתקן — הכל עדכני!'; }
+    else {
+      await update(ref(db), updates);
+      status.style.color='#34d399'; status.textContent='✅ תוקנו '+fixed+' שמות!';
+      toast('✅ שמות נבחרות עודכנו!');
+    }
+  } catch(err){ status.style.color='#f87171'; status.textContent='❌ '+err.message; }
+  finally { btn.disabled=false; btn.textContent='🔁 תקן שמות נבחרות'; }
+});
+
 // ── ADMIN TABS ──
 document.querySelectorAll('.admin-tab').forEach(btn => {
   btn.addEventListener('click', () => {
