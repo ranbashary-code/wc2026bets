@@ -255,7 +255,7 @@ select.inp option{background:var(--card2);}
 #confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;}
 
 /* ── VISUAL BRACKET ── */
-.ko-wrap{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:2px;padding:8px 0 12px;width:100%;direction:ltr;}
+.ko-wrap{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:2px;padding:8px 0 12px;width:100%;overflow:hidden;direction:ltr;}
 .ko-side{display:flex;flex-direction:row;gap:2px;align-items:center;flex:1;min-width:0;direction:ltr;}
 .ko-side-right{}
 .ko-col{display:flex;flex-direction:column;gap:4px;flex:1;justify-content:center;min-width:90px;}
@@ -270,7 +270,6 @@ select.inp option{background:var(--card2);}
   padding:10px 0 20px;
 }
 .ko-bracket-scroll{width:100%;}
-@media(max-width:768px){.ko-bracket-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}.ko-wrap{min-width:900px;overflow:visible;}}
 .ko-bracket-inner{
   display:grid;
   grid-template-columns:1fr 1fr 1fr auto 1fr 1fr 1fr;
@@ -410,7 +409,7 @@ select.inp option{background:var(--card2);}
         <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">שעה:</label><input type="time" id="m-time" class="inp"></div>
       </div>
       <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">שלב:</label>
-        <select id="m-stage" class="inp"><option value="group">שלב בתים</option><option value="r32">32 האחרונות</option><option value="r16">שמינית גמר</option><option value="qf">רבע גמר</option><option value="sf">חצי גמר</option><option value="3rd">מקום שלישי</option><option value="final">גמר</option></select></div>
+        <select id="m-stage" class="inp"><option value="group">שלב בתים</option><option value="r32">‎32 האחרונות</option><option value="r16">שמינית גמר</option><option value="qf">רבע גמר</option><option value="sf">חצי גמר</option><option value="3rd">מקום שלישי</option><option value="final">גמר</option></select></div>
       <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">בית:</label><input type="text" id="m-group" class="inp" placeholder="A"></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;">
@@ -434,7 +433,7 @@ select.inp option{background:var(--card2);}
         <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">שעה:</label><input type="time" id="em-time" class="inp"></div>
       </div>
       <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">שלב:</label>
-        <select id="em-stage" class="inp"><option value="group">שלב בתים</option><option value="r32">32 האחרונות</option><option value="r16">שמינית גמר</option><option value="qf">רבע גמר</option><option value="sf">חצי גמר</option><option value="3rd">מקום שלישי</option><option value="final">גמר</option></select></div>
+        <select id="em-stage" class="inp"><option value="group">שלב בתים</option><option value="r32">‎32 האחרונות</option><option value="r16">שמינית גמר</option><option value="qf">רבע גמר</option><option value="sf">חצי גמר</option><option value="3rd">מקום שלישי</option><option value="final">גמר</option></select></div>
       <div><label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">בית:</label><input type="text" id="em-group" class="inp" placeholder="A"></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;">
@@ -873,7 +872,7 @@ function getAllBotRounds(allMatches) {
 
   // KNOCKOUT STAGES: each stage = one round
   const koStages = [
-    { key: 'r32',   label: '32 האחרונות' },
+    { key: 'r32',   label: '‎32 האחרונות' },
     { key: 'r16',   label: 'שמינית גמר' },
     { key: 'qf',    label: 'רבע גמר' },
     { key: 'sf',    label: 'חצי גמר' },
@@ -2798,7 +2797,7 @@ const ADMIN = 'ranbashary@gmail.com';
 
 // Dynamic scoring — loaded from Firebase or defaults
 let SCORING = {group:{d:1,h:2},r32:{d:2,h:4},r16:{d:2,h:4},qf:{d:3,h:6},sf:{d:4,h:8},'3rd':{d:2,h:4},final:{d:5,h:10}};
-const SLBL = {group:'שלב בתים',r32:'32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר'};
+const SLBL = {group:'שלב בתים',r32:'‎32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר'};
 const SCSS = {group:'pill-group',r32:'pill-r32',r16:'pill-r16',qf:'pill-qf',sf:'pill-sf','3rd':'pill-3rd',final:'pill-final'};
 
 let ME = null, MEDATA = null;
@@ -3253,7 +3252,7 @@ el('confirm-add').addEventListener('click', async()=>{
 // ── SCORING ──
 function renderScoringTable(){
   const stages=['group','r32','r16','qf','sf','3rd','final'];
-  const labels={group:'שלב בתים',r32:'32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
+  const labels={group:'שלב בתים',r32:'‎32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
   const tbody=el('scoring-tbody'); if(!tbody) return;
   tbody.innerHTML=stages.map(s=>{
     const p=SCORING[s]||{d:0,h:0};
@@ -3263,7 +3262,7 @@ function renderScoringTable(){
 function renderScoringEdit(){
   const lst=el('scoring-edit'); if(!lst) return;
   const stages=['group','r32','r16','qf','sf','3rd','final'];
-  const labels={group:'שלב בתים',r32:'32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
+  const labels={group:'שלב בתים',r32:'‎32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
   let html='';
   stages.forEach(stage=>{
     const cur=SCORING[stage]||{d:0,h:0};
@@ -3553,13 +3552,13 @@ function koPlaceholderDisplay(name) {
   if(simple) {
     const rank = simple[1], group = simple[2];
     const medal = rank==='1'?'🥇':rank==='2'?'🥈':'🥉';
-    return { text: `${medal} מקום ${rank} בית ${group}`, isPlaceholder: true };
+    return { text: `${medal} מקום ${rank} בית ‏${group}`, isPlaceholder: true };
   }
 
   // Pattern: "3A/E/H/I/J" or "3C/D/F/G/H" — 3rd best from multiple groups
   const multi = name.match(/^3([A-L](?:\/[A-L])+)$/);
   if(multi) {
-    return { text: `🥉 מיטב מבתים ${multi[1]}`, isPlaceholder: true };
+    return { text: `🥉 מיטב מבתים ‏${multi[1]}`, isPlaceholder: true };
   }
 
   // Known English name
@@ -3687,7 +3686,7 @@ function renderBracket(){
     
     // Stages from outside-in on left, inside-out on right
     const stageOrder = [
-      {stage:'r32', label:'32 האחרונות', matches:r32},
+      {stage:'r32', label:'‎32 האחרונות', matches:r32},
       {stage:'r16', label:'שמינית גמר', matches:r16},
       {stage:'qf',  label:'רבע גמר', matches:qf},
       {stage:'sf',  label:'חצי גמר', matches:sf},
