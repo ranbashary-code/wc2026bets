@@ -1905,19 +1905,12 @@ async function renderNotiHeaderBtn() {
   const snap = await get(ref(db,'notifications/'+ME.uid));
   const enabled = snap.exists() ? snap.val().enabled === true : null;
   btn.style.display = '';
-  if(enabled === null) {
-    // Never decided — show neutral
-    btn.textContent = '📧';
-    btn.title = 'הגדר תזכורות מייל';
-    btn.style.opacity = '0.5';
-  } else if(enabled) {
-    btn.textContent = '📧';
+  if(enabled) {
     btn.title = 'תזכורות מייל פעילות — לחץ לכיבוי';
     btn.style.opacity = '1';
     btn.style.borderColor = '#10b981';
   } else {
-    btn.textContent = '📧';
-    btn.title = 'תזכורות מייל כבויות — לחץ להפעלה';
+    btn.title = enabled === null ? 'הגדר תזכורות מייל' : 'תזכורות מייל כבויות — לחץ להפעלה';
     btn.style.opacity = '0.4';
     btn.style.borderColor = 'rgba(255,255,255,0.12)';
   }
