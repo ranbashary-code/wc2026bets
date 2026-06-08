@@ -3552,13 +3552,13 @@ function koPlaceholderDisplay(name) {
   if(simple) {
     const rank = simple[1], group = simple[2];
     const medal = rank==='1'?'🥇':rank==='2'?'🥈':'🥉';
-    return { text: `${medal} מקום ${rank} בית ‏${group}`, isPlaceholder: true };
+    return { text: `‫בית ${group} מקום ${rank} ${medal}‬`, isPlaceholder: true };
   }
 
   // Pattern: "3A/E/H/I/J" or "3C/D/F/G/H" — 3rd best from multiple groups
   const multi = name.match(/^3([A-L](?:\/[A-L])+)$/);
   if(multi) {
-    return { text: `🥉 מיטב מבתים ‏${multi[1]}`, isPlaceholder: true };
+    return { text: `‫מבתים ${multi[1]} מיטב 🥉‬`, isPlaceholder: true };
   }
 
   // Known English name
