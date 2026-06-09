@@ -2161,12 +2161,14 @@ async function sendReminderEmail(userEmail, userName, daySummary) {
 
 // Notify admin when a new user registers and awaits approval
 async function sendNewUserNotification(newUserName, newUserEmail) {
+  console.log('sendNewUserNotification called:', newUserName, newUserEmail);
   try {
-    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_ADMIN, {
+    console.log('Sending via EmailJS...');
+    const result = await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_ADMIN, {
       to_name: newUserName || newUserEmail,
       day_summary: newUserEmail,
     });
-    console.log('New user notification sent to admin');
+    console.log('Email sent successfully:', result);
   } catch(err) {
     console.error('Admin notification error:', err);
   }
@@ -3232,6 +3234,11 @@ function renderMatches(){
       bb.addEventListener('click',()=>openBetModal(id)); card.appendChild(bb);
     } else {
       const nb=document.createElement('div'); nb.style.cssText='text-align:center;margin-top:8px;font-size:12px;color:var(--text2);'; nb.textContent='לא הימרת'; card.appendChild(nb);
+    }
+    if(m.stage && m.stage!=='group'){
+      const note=document.createElement('div'); note.style.cssText='text-align:center;margin-top:6px;font-size:10px;color:var(--text2);';
+      note.textContent='⏱️ התוצאה הקובעת היא בסוף 90 דקות';
+      card.appendChild(note);
     }
     if(isAdm){
       const ar=document.createElement('div'); ar.style.cssText='display:flex;gap:6px;margin-top:10px;';
