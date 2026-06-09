@@ -594,7 +594,7 @@ select.inp option{background:var(--card2);}
   <div class="topbar">
     <span class="topbar-logo" id="topbar-logo">WC2026 BETS</span>
     <div style="display:flex;align-items:center;gap:8px;">
-      <span class="topbar-user" id="topbar-user"></span>
+      <span class="topbar-user" id="topbar-user" style="cursor:pointer;" onclick="editMyName()" title="לחץ לשינוי שם"></span>
       <span id="online-count" style="font-size:11px;color:#34d399;font-weight:700;display:flex;align-items:center;gap:4px;">
         <span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;animation:pulse 2s infinite;"></span>
         <span id="online-num">1</span>
@@ -685,6 +685,7 @@ select.inp option{background:var(--card2);}
         <button class="btn btn-ghost btn-xs filter-btn" data-stage="r16" style="flex-shrink:0;">R16</button>
         <button class="btn btn-ghost btn-xs filter-btn" data-stage="qf" style="flex-shrink:0;">QF</button>
         <button class="btn btn-ghost btn-xs filter-btn" data-stage="sf" style="flex-shrink:0;">SF</button>
+        <button class="btn btn-ghost btn-xs filter-btn" data-stage="3rd" style="flex-shrink:0;">מקום 3</button>
         <button class="btn btn-ghost btn-xs filter-btn" data-stage="final" style="flex-shrink:0;">גמר</button>
       </div>
       <div id="matches-list"></div>
@@ -3101,6 +3102,16 @@ document.querySelectorAll('.tab[data-page]').forEach(tab=>{
   });
 });
 el('topbar-logo').addEventListener('click',()=>{
+window.editMyName = async function() {
+  if(!ME||!MEDATA) return;
+  const cur = MEDATA.nickname||MEDATA.name||'';
+  const newName = prompt('שנה שם מוצג:', cur);
+  if(!newName||!newName.trim()||newName.trim()===cur) return;
+  await update(ref(db,'users/'+ME.uid), {nickname: newName.trim()});
+  MEDATA.nickname = newName.trim();
+  el('topbar-user').textContent = newName.trim();
+  toast('✅ השם עודכן!');
+};
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el('page-main').classList.add('active');
