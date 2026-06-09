@@ -2139,9 +2139,14 @@ const EMAILJS_TEMPLATE_ADMIN = 'template_9pnyno9';
 const EMAILJS_KEY      = 'smg7O8slOyKa2nxWP';
 
 // Initialize EmailJS
-if(typeof emailjs !== 'undefined') {
-  emailjs.init(EMAILJS_KEY);
+function initEmailJS() {
+  if(typeof emailjs !== 'undefined') {
+    emailjs.init(EMAILJS_KEY);
+    return true;
+  }
+  return false;
 }
+initEmailJS();
 
 // Send reminder email to a single user
 async function sendReminderEmail(userEmail, userName, daySummary) {
@@ -2163,6 +2168,7 @@ async function sendReminderEmail(userEmail, userName, daySummary) {
 async function sendNewUserNotification(newUserName, newUserEmail) {
   console.log('sendNewUserNotification called:', newUserName, newUserEmail);
   try {
+    initEmailJS();
     console.log('Sending via EmailJS...');
     const result = await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_ADMIN, {
       to_name: newUserName || newUserEmail,
