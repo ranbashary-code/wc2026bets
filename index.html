@@ -3249,13 +3249,13 @@ function renderMatches(){
     teams.appendChild(t1); teams.appendChild(vs); teams.appendChild(t2); card.appendChild(teams);
     if(myBet!==undefined){
       const pts=hasRes?calcPts(m,myBet):null;
-      const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;';
-      const lbl=document.createElement('span'); lbl.style.cssText='font-size:12px;color:var(--text2);'; lbl.textContent='ההימור שלי:';
-      const rhs=document.createElement('div'); rhs.style.cssText='display:flex;align-items:center;gap:8px;';
-      const sc=document.createElement('span'); sc.style.cssText='font-weight:700;'; sc.textContent=myBet[0]+' : '+myBet[1];
-      rhs.appendChild(sc);
-      if(pts){ const b=document.createElement('span'); b.className=pts.hit?'badge-hit':pts.dir?'badge-dir':'badge-miss'; b.textContent=(pts.total>0?'+':'')+pts.total+" נק'"; rhs.appendChild(b); }
-      row.appendChild(lbl); row.appendChild(rhs); card.appendChild(row);
+      const row=document.createElement('div');
+      row.style.cssText='margin-top:10px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px;text-align:center;';
+      const lbl=document.createElement('div'); lbl.style.cssText='font-size:11px;color:var(--text2);margin-bottom:4px;'; lbl.textContent='ההימור שלי';
+      const sc=document.createElement('div'); sc.style.cssText='font-size:26px;font-weight:900;color:var(--gold);letter-spacing:4px;'; sc.textContent=myBet[0]+' : '+myBet[1];
+      row.appendChild(lbl); row.appendChild(sc);
+      if(pts){ const b=document.createElement('span'); b.className=pts.hit?'badge-hit':pts.dir?'badge-dir':'badge-miss'; b.style.marginTop='6px'; b.style.display='inline-block'; b.textContent=(pts.total>0?'+':'')+pts.total+" נק'"; row.appendChild(b); }
+      card.appendChild(row);
     } else if(!lk){
       const bb=document.createElement('button'); bb.className='btn btn-grad'; bb.style.cssText='width:100%;margin-top:10px;font-size:13px;'; bb.textContent='✍️ המר עכשיו';
       bb.addEventListener('click',()=>openBetModal(id)); card.appendChild(bb);
@@ -3382,25 +3382,24 @@ function renderMyBets(){
     const lk=locked(m);
     const t1=displayName(m.team1); const t2=displayName(m.team2);
     const f1=flagCircle(m.team1,22); const f2=flagCircle(m.team2,22);
-    const waitTitle = 'ממתין לתוצאה — המשחק טרם נגמר';
-
+    const stageLbl = (SLBL[m.stage]||m.stage) + (m.group?' — בית '+m.group:'');
     html+=`<div class='match-card' style='padding:0;overflow:hidden;'>
       <!-- Header -->
       <div style='display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;'>
-        <span class='pill ${SCSS[m.stage]||'pill-group'}'>${SLBL[m.stage]||m.stage}</span>
-        <span class='${bc}' ${bt==='⏳'?`title="${waitTitle}" style="cursor:help;"`:''}>${bt}</span>
+        <span class='pill ${SCSS[m.stage]||'pill-group'}'>${stageLbl}</span>
+        <span class='${bc}' ${bt==='⏳'?`title="ממתין לתוצאה — המשחק טרם נגמר" style="cursor:help;"`:''}>${bt}</span>
       </div>
       <!-- Teams -->
       <div style='display:flex;align-items:center;justify-content:space-between;padding:0 14px 10px;gap:8px;'>
         <div style='display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;flex:1;justify-content:flex-end;'>${t1}${f1}</div>
-        <div style='font-size:11px;color:var(--text2);flex-shrink:0;'>vs</div>
+        <div style='font-size:16px;font-weight:900;color:rgba(255,255,255,0.3);flex-shrink:0;'>VS</div>
         <div style='display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;flex:1;'>${f2}${t2}</div>
       </div>
       <!-- Bet Score -->
-      <div style='background:rgba(255,215,0,0.07);border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);padding:10px 14px;text-align:center;'>
-        <div style='font-size:10px;color:var(--text2);margin-bottom:4px;'>ההימור שלי</div>
-        <div style='font-size:28px;font-weight:900;color:var(--gold);letter-spacing:6px;'>${bet[0]} : ${bet[1]}</div>
-        ${hasRes?`<div style='font-size:11px;color:var(--text2);margin-top:4px;'>תוצאה בפועל: <strong style='color:var(--gold);'>${m.result[0]} : ${m.result[1]}</strong></div>`:''}
+      <div style='background:rgba(255,215,0,0.07);border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);padding:12px 14px;text-align:center;'>
+        <div style='font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:600;'>ההימור שלי</div>
+        <div style='font-size:32px;font-weight:900;color:var(--gold);letter-spacing:6px;'>${bet[0]} : ${bet[1]}</div>
+        ${hasRes?`<div style='font-size:12px;color:var(--text2);margin-top:6px;'>תוצאה בפועל: <strong style='color:var(--gold);'>${m.result[0]} : ${m.result[1]}</strong></div>`:''}
       </div>
       ${!lk?`<!-- Actions -->
       <div style='display:flex;gap:8px;padding:10px 14px;'>
