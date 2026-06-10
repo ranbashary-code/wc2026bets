@@ -3409,6 +3409,26 @@ function renderMyBets(){
         <button class='btn btn-ghost btn-xs' style='flex:1;' data-editbet='${id}'>✏️ ערוך</button>
         <button class='btn btn-red btn-xs' style='flex:1;' data-deletebet='${id}'>🗑 מחק</button>
       </div>`:''}
+      ${(()=>{
+        if(!lk) return '';
+        const myGroups=(ME&&USERS[ME&&ME.uid]&&USERS[ME.uid].groups)||[];
+        const isAdminUser=MEDATA&&MEDATA.isAdmin;
+        const allB=Object.entries(BETS).map(([uid2,ub])=>{
+          const bet2=ub&&ub[id]; if(bet2===undefined) return null;
+          const u=USERS[uid2]||{};
+          const uG=u.groups||[];
+          const ok=u.isBot||u.isAdmin||isAdminUser||myGroups.length===0||uG.length===0||myGroups.some(g=>uG.includes(g));
+          if(!ok) return null;
+          return {name:u.nickname||u.name||'?',bet:bet2,pts:hasRes?calcPts(m,bet2):null,isBot:u.isBot,isMe:uid2===(ME&&ME.uid)};
+        }).filter(Boolean).sort((a,b)=>(a.isBot&&!b.isBot)?1:(!a.isBot&&b.isBot)?-1:0);
+        if(!allB.length) return '';
+        const rows=allB.map(b=>{
+          const cls=b.pts?(b.pts.hit?'badge-hit':b.pts.dir?'badge-dir':'badge-miss'):'badge-wait';
+          const pts=b.pts?((b.pts.total>0?'+':'')+b.pts.total+' נק\''):'\u23f3';
+          return "<div style='display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);"+(b.isMe?"background:rgba(255,215,0,0.06);border-radius:6px;padding:5px 6px;":"")+"'><span style='font-size:12px;font-weight:700;"+(b.isBot?'color:#74b9e0;':b.isMe?'color:var(--gold);':'')+";'>"+( b.isMe?'\u2b50 ':'')+b.name+"</span><div style='display:flex;align-items:center;gap:8px;'><span style='font-size:13px;font-weight:900;'>"+b.bet[0]+" : "+b.bet[1]+"</span><span class='"+cls+"'>"+pts+"</span></div></div>";
+        }).join('');
+        return "<div style='padding:10px 14px;border-top:1px solid rgba(255,255,255,0.06);'><details><summary style='font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;'>הימורי כולם ("+allB.length+")</summary><div style='margin-top:8px;'>"+rows+"</div></details></div>";
+      })()}
     </div>`;
   });
   lst.innerHTML=html;
