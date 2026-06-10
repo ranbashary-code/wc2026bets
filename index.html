@@ -3240,11 +3240,14 @@ function renderMatches(){
     const pill=document.createElement('span'); pill.className='pill '+(SCSS[m.stage]||'pill-group'); pill.textContent=(SLBL[m.stage]||m.stage)+(m.group?' - בית '+m.group:'');
     const dtEl=document.createElement('span'); dtEl.style.cssText='font-size:11px;color:var(--text2);'; dtEl.textContent=dtStr;
     hdr.appendChild(pill); hdr.appendChild(dtEl); card.appendChild(hdr);
-    const teams=document.createElement('div'); teams.style.cssText='display:flex;align-items:center;justify-content:space-between;';
-    const t1=document.createElement('div'); t1.style.cssText='display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;';
+    const teams=document.createElement('div'); teams.style.cssText='display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:4px;';
+    const t1=document.createElement('div'); t1.style.cssText='display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;justify-content:flex-end;';
     t1.innerHTML=flagCircle(m.team1,20)+'<span>'+(displayName(m.team1)||'?')+'</span>';
-    const vs=document.createElement('span'); vs.style.cssText='font-size:22px;font-weight:900;color:'+(hasRes?'var(--gold)':'rgba(255,255,255,0.25)')+';flex-shrink:0;'; vs.textContent=hasRes?m.result[0]+' : '+m.result[1]:'VS';
-    const t2=document.createElement('div'); t2.style.cssText='display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;direction:ltr;';
+    const vs=document.createElement('div'); vs.style.cssText='text-align:center;flex-shrink:0;';
+    vs.innerHTML=hasRes
+      ? `<span style="font-size:22px;font-weight:900;color:var(--gold);">${m.result[0]} : ${m.result[1]}</span>`
+      : `<span style="font-size:18px;font-weight:900;color:#6366f1;">VS</span>`;
+    const t2=document.createElement('div'); t2.style.cssText='display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;';
     t2.innerHTML='<span>'+(displayName(m.team2)||'?')+'</span>'+flagCircle(m.team2,20);
     teams.appendChild(t1); teams.appendChild(vs); teams.appendChild(t2); card.appendChild(teams);
     if(myBet!==undefined){
@@ -3269,7 +3272,7 @@ function renderMatches(){
     }
     if(isAdm){
       const ar=document.createElement('div'); ar.style.cssText='display:flex;gap:6px;margin-top:10px;';
-      const rb=document.createElement('button'); rb.style.cssText='flex:1;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:7px;color:var(--gold);font-weight:700;font-size:12px;cursor:pointer;'; rb.textContent=hasRes?'✏️ עדכן תוצאה':'📝 הכנס תוצאה'; rb.addEventListener('click',()=>openResModal(id));
+      const rb=document.createElement('button'); rb.style.cssText='flex:1;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:7px;color:var(--gold);font-weight:700;font-size:12px;cursor:pointer;'; rb.textContent=hasRes?'✏️ עדכן תוצאת אמת':'📝 הכנס תוצאת אמת'; rb.addEventListener('click',()=>openResModal(id));
       const eb=document.createElement('button'); eb.style.cssText='background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:7px 12px;color:#60a5fa;cursor:pointer;font-size:12px;'; eb.textContent='✏️ ערוך'; eb.addEventListener('click',()=>openEditMatchModal(id));
       const db2=document.createElement('button'); db2.style.cssText='background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.2);border-radius:8px;padding:7px 12px;color:#f87171;cursor:pointer;'; db2.textContent='🗑'; db2.addEventListener('click',()=>delMatch(id));
       ar.appendChild(rb); ar.appendChild(eb); ar.appendChild(db2); card.appendChild(ar);
@@ -3392,7 +3395,7 @@ function renderMyBets(){
       <!-- Teams -->
       <div style='display:flex;align-items:center;justify-content:space-between;padding:0 14px 10px;gap:8px;'>
         <div style='display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;flex:1;justify-content:flex-end;'>${t1}${f1}</div>
-        <div style='font-size:16px;font-weight:900;color:rgba(255,255,255,0.3);flex-shrink:0;'>VS</div>
+        <div style='font-size:16px;font-weight:900;color:#6366f1;flex-shrink:0;'>VS</div>
         <div style='display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;flex:1;'>${f2}${t2}</div>
       </div>
       <!-- Bet Score -->
