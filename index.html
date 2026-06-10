@@ -3169,8 +3169,17 @@ function renderToday(){
     card.appendChild(teamsRow);
 
     if(isLocked){
-      const lb=document.createElement('div'); lb.className='tm-locked-badge';
-      lb.textContent='🔴 הימורים נעולים'+(myBet?' — הימרת: '+myBet[0]+':'+myBet[1]:'');
+      const lb=document.createElement('div');
+      lb.style.cssText='margin-top:10px;';
+      if(myBet){
+        lb.innerHTML=`
+          <div style="text-align:center;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:10px;">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">ההימור שלי</div>
+            <div style="font-size:26px;font-weight:900;color:var(--gold);letter-spacing:4px;">${myBet[0]} : ${myBet[1]}</div>
+          </div>`;
+      } else {
+        lb.innerHTML=`<div style="text-align:center;padding:8px;font-size:12px;color:var(--text2);">🔴 הימורים נעולים</div>`;
+      }
       card.appendChild(lb);
     } else {
       const betRow=document.createElement('div'); betRow.className='tm-bet-row';
@@ -3371,16 +3380,34 @@ function renderMyBets(){
     const bc=p?(p.hit?'badge-hit':p.dir?'badge-dir':'badge-miss'):'badge-wait';
     const bt=p?((p.total>0?'+':'')+p.total+" נק'"):'⏳';
     const lk=locked(m);
-    html+="<div class='match-card'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'><span class='pill "+(SCSS[m.stage]||'pill-group')+"'>"+(SLBL[m.stage]||m.stage)+"</span><span class='"+bc+"'>"+bt+"</span></div><div style='display:flex;align-items:center;justify-content:space-between;'><span style='display:flex;align-items:center;gap:5px;font-weight:700;'>"+flagCircle(m.team1,18)+"<span>"+displayName(m.team1)+"</span><span style='color:var(--text2);font-size:11px;margin:0 2px;'>vs</span><span>"+displayName(m.team2)+"</span>"+flagCircle(m.team2,18)+"</div>";
-    if(!lk) {
-      html+="<div style='display:flex;gap:6px;'>";
-      html+="<button class='btn btn-ghost btn-xs' data-editbet='"+id+"'>✏️ ערוך</button>";
-      html+="<button class='btn btn-red btn-xs' data-deletebet='"+id+"'>🗑 מחק</button>";
-      html+="</div>";
-    }
-    html+="</div><div style='display:flex;gap:12px;margin-top:8px;font-size:13px;'><span style='color:var(--text2);'>הימור: <strong>"+bet[0]+" : "+bet[1]+"</strong></span>";
-    if(hasRes) html+="<span style='color:var(--text2);'>תוצאה: <strong style='color:var(--gold);'>"+m.result[0]+" : "+m.result[1]+"</strong></span>";
-    html+="</div></div>";
+    const t1=displayName(m.team1); const t2=displayName(m.team2);
+    const f1=flagCircle(m.team1,22); const f2=flagCircle(m.team2,22);
+    const waitTitle = 'ממתין לתוצאה — המשחק טרם נגמר';
+
+    html+=`<div class='match-card' style='padding:0;overflow:hidden;'>
+      <!-- Header -->
+      <div style='display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;'>
+        <span class='pill ${SCSS[m.stage]||'pill-group'}'>${SLBL[m.stage]||m.stage}</span>
+        <span class='${bc}' ${bt==='⏳'?`title="${waitTitle}" style="cursor:help;"`:''}>${bt}</span>
+      </div>
+      <!-- Teams -->
+      <div style='display:flex;align-items:center;justify-content:space-between;padding:0 14px 10px;gap:8px;'>
+        <div style='display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;flex:1;justify-content:flex-end;'>${t1}${f1}</div>
+        <div style='font-size:11px;color:var(--text2);flex-shrink:0;'>vs</div>
+        <div style='display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;flex:1;'>${f2}${t2}</div>
+      </div>
+      <!-- Bet Score -->
+      <div style='background:rgba(255,215,0,0.07);border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);padding:10px 14px;text-align:center;'>
+        <div style='font-size:10px;color:var(--text2);margin-bottom:4px;'>ההימור שלי</div>
+        <div style='font-size:28px;font-weight:900;color:var(--gold);letter-spacing:6px;'>${bet[0]} : ${bet[1]}</div>
+        ${hasRes?`<div style='font-size:11px;color:var(--text2);margin-top:4px;'>תוצאה בפועל: <strong style='color:var(--gold);'>${m.result[0]} : ${m.result[1]}</strong></div>`:''}
+      </div>
+      ${!lk?`<!-- Actions -->
+      <div style='display:flex;gap:8px;padding:10px 14px;'>
+        <button class='btn btn-ghost btn-xs' style='flex:1;' data-editbet='${id}'>✏️ ערוך</button>
+        <button class='btn btn-red btn-xs' style='flex:1;' data-deletebet='${id}'>🗑 מחק</button>
+      </div>`:''}
+    </div>`;
   });
   lst.innerHTML=html;
   lst.querySelectorAll('[data-editbet]').forEach(b=>b.addEventListener('click',()=>openBetModal(b.dataset.editbet)));
