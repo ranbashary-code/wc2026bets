@@ -205,7 +205,7 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 .badge-wait{background:rgba(148,163,184,0.08);color:#94a3b8;border:1px solid rgba(148,163,184,0.15);padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;}
 
 /* Leaderboard */
-.leader-row{display:grid;grid-template-columns:54px 1fr 64px 64px 64px 76px;align-items:stretch;border-radius:14px;background:var(--card);border:1px solid var(--border);margin-bottom:8px;overflow:hidden;transition:transform .15s,box-shadow .15s;cursor:pointer;}
+.leader-row{display:grid;grid-template-columns:54px minmax(90px,1fr) 90px 90px 90px 90px;align-items:stretch;border-radius:14px;background:var(--card);border:1px solid var(--border);margin-bottom:8px;overflow:hidden;transition:transform .15s,box-shadow .15s;cursor:pointer;}
 .leader-row:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.22);}
 .leader-row.rank-1{border-color:rgba(255,215,0,0.4);background:linear-gradient(100deg,rgba(255,215,0,0.1) 0%,var(--card) 50%);}
 .leader-row.rank-2{border-color:rgba(192,192,192,0.3);background:linear-gradient(100deg,rgba(192,192,192,0.07) 0%,var(--card) 50%);}
@@ -223,12 +223,42 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 .leader-pts{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);line-height:1;}
 .leader-pts-lbl{font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.5px;text-transform:uppercase;}
 .leader-table-wrap{border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px;}
-.leader-table-head{display:grid;grid-template-columns:54px 1fr 64px 64px 64px 76px;padding:7px 0;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);}
+.leader-table-head{display:grid;grid-template-columns:54px minmax(90px,1fr) 90px 90px 90px 90px;padding:7px 0;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);}
 .leader-table-head span{font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;text-align:center;}
 .leader-table-head span:nth-child(2){text-align:right;padding-right:12px;}
 .leader-table-wrap .leader-row{border-radius:0;border:none;border-bottom:1px solid var(--border);margin-bottom:0;}
 .leader-table-wrap .leader-row:last-child{border-bottom:none;}
 .leader-table-wrap .leader-row.rank-1,.leader-table-wrap .leader-row.rank-2,.leader-table-wrap .leader-row.rank-3{border:none;border-bottom:1px solid var(--border);}
+
+
+/* Rank delta arrows */
+.leader-rank-col{flex-direction:column;gap:2px;}
+.rank-up{font-size:10px;font-weight:900;color:#34d399;}
+.rank-down{font-size:10px;font-weight:900;color:#f87171;}
+
+/* Achievement badges + tooltip */
+.ach-badge{font-size:14px;margin-right:5px;cursor:help;position:relative;}
+.ach-badge:hover::after{content:attr(data-tip);position:absolute;bottom:130%;right:50%;transform:translateX(50%);background:#0f1828;color:#fff;border:1px solid var(--gold);padding:6px 10px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.4);}
+
+/* News ticker */
+#news-ticker{display:none;overflow:hidden;background:linear-gradient(90deg,rgba(255,215,0,0.08),rgba(255,215,0,0.03));border-top:1px solid rgba(255,215,0,0.15);border-bottom:1px solid rgba(255,215,0,0.15);padding:7px 0;white-space:nowrap;position:relative;}
+.ticker-track{display:inline-block;font-size:12.5px;font-weight:700;color:var(--gold);animation:tickerMove 40s linear infinite;padding-right:100%;}
+@keyframes tickerMove{0%{transform:translateX(0);}100%{transform:translateX(50%);}}
+body.light-mode #news-ticker{background:linear-gradient(90deg,rgba(200,150,10,0.06),rgba(200,150,10,0.02));}
+body.light-mode .ticker-track{color:#c8960a;}
+
+/* Skeleton loading */
+.skel{position:relative;overflow:hidden;background:rgba(255,255,255,0.05);border-radius:12px;}
+.skel::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent);animation:skelShine 1.4s infinite;}
+@keyframes skelShine{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+.skel-row{height:58px;margin-bottom:8px;}
+body.light-mode .skel{background:rgba(0,0,0,0.05);}
+body.light-mode .skel::after{background:linear-gradient(90deg,transparent,rgba(0,0,0,0.04),transparent);}
+
+/* Crowd stats line */
+.crowd-line{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.04);margin-bottom:8px;}
+.crowd-bar{flex:1;height:6px;border-radius:3px;background:rgba(239,68,68,0.25);overflow:hidden;}
+.crowd-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#34d399,#10b981);}
 
 /* Inputs & Buttons */
 .inp{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'Rubik',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;direction:rtl;}
@@ -546,6 +576,8 @@ select.inp option{background:var(--card2);}
         <div class="stat-lbl">נקודות כולל</div>
       </div>
     </div>
+    <div id="ps-chart-lbl" style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin:14px 0 6px;display:none;">📈 התקדמות נקודות (זהב = השחקן, מקווקו = ממוצע הקבוצה)</div>
+    <canvas id="ps-chart" style="width:100%;height:160px;display:none;"></canvas>
   </div>
 </div>
 
@@ -645,9 +677,11 @@ select.inp option{background:var(--card2);}
   <div class="hero">
     <div class="hero-inner">
       <div class="hero-day-label">משחקי היום — המר עכשיו</div>
-      <div class="today-matches" id="today-matches"></div>
+      <div class="today-matches" id="today-matches"><div class="skel skel-row"></div><div class="skel skel-row"></div></div>
     </div>
   </div>
+
+  <div id="news-ticker"></div>
 
   <div class="tabs">
     <div class="tab active" data-page="main" id="tab-main">🏆 ראשי</div>
@@ -673,7 +707,7 @@ select.inp option{background:var(--card2);}
         </div>
       </div>
       <div class="sec-head"><span style="font-size:22px;">🏆</span><div class="sec-title">טבלת מובילים</div></div>
-      <div id="leader-list" style="margin-bottom:24px;"></div>
+      <div id="leader-list" style="margin-bottom:24px;"><div class="skel skel-row"></div><div class="skel skel-row"></div><div class="skel skel-row"></div></div>
       <div class="sec-divider"></div>
 
       <!-- SPECIAL BETS -->
@@ -2599,6 +2633,280 @@ function openUserGroupAssign(uid, name) {
 }
 
 // ── MODIFIED LEADERBOARD — grouped ──
+// ══════════════ RANK DELTA + ACHIEVEMENTS + TICKER ══════════════
+
+// Compute scores for a set of users, optionally excluding matches from the latest result date
+function _scoreMap(excludeLatestDay){
+  var latestDay = null;
+  if(excludeLatestDay){
+    Object.values(MATCHES).forEach(function(m){
+      if(m && m.result!==undefined && m.datetime){
+        var d = new Date(m.datetime).toDateString();
+        if(!latestDay || new Date(d) > new Date(latestDay)) latestDay = d;
+      }
+    });
+  }
+  var sc = {};
+  Object.entries(USERS).filter(function(e){return e[1].approved;}).forEach(function(e){
+    sc[e[0]] = {uid:e[0], pts:0};
+  });
+  Object.entries(BETS).forEach(function(e){
+    var uid=e[0], ub=e[1];
+    if(!sc[uid]) return;
+    Object.entries(ub).forEach(function(e2){
+      var mid=e2[0], bet=e2[1];
+      var m=MATCHES[mid]; if(!m||m.result===undefined) return;
+      if(excludeLatestDay && latestDay && m.datetime && new Date(m.datetime).toDateString()===latestDay) return;
+      sc[uid].pts += calcPts(m,bet).total;
+    });
+  });
+  return {sc:sc, latestDay:latestDay};
+}
+
+// Returns map uid -> delta (+n = climbed n places since before latest matchday, -n = dropped)
+function _rankDeltas(uids){
+  var prev = _scoreMap(true);
+  if(!prev.latestDay) return {}; // no results yet
+  var cur = _scoreMap(false);
+  function ranksOf(scMap){
+    var arr = uids.map(function(u){return {uid:u, pts:(scMap[u]?scMap[u].pts:0)};})
+      .sort(function(a,b){return b.pts-a.pts;});
+    var r={}; arr.forEach(function(s,i){r[s.uid]=i;});
+    return r;
+  }
+  var pr = ranksOf(prev.sc), cr = ranksOf(cur.sc);
+  var out={};
+  uids.forEach(function(u){
+    if(pr[u]===undefined||cr[u]===undefined) return;
+    out[u] = pr[u]-cr[u]; // positive = climbed
+  });
+  return out;
+}
+
+// Achievements for a set of uids (group-scoped). Returns map uid -> [{icon,label}]
+function _achievements(uids){
+  var out={};
+  uids.forEach(function(u){out[u]=[];});
+
+  // Collect per-user finished bets sorted by match datetime
+  var finished={};
+  uids.forEach(function(u){
+    var ub=BETS[u]||{};
+    finished[u]=Object.entries(ub).map(function(e){
+      var m=MATCHES[e[0]];
+      if(!m||m.result===undefined) return null;
+      return {mid:e[0], dt:m.datetime||'', p:calcPts(m,e[1])};
+    }).filter(Boolean).sort(function(a,b){return a.dt>b.dt?1:-1;});
+  });
+
+  // 1) Top scorer of hits: "מלך הבולים"
+  var bestHit=null, bestHitUid=null;
+  uids.forEach(function(u){
+    var h=finished[u].filter(function(f){return f.p.hit;}).length;
+    if(h>0 && (bestHit===null||h>bestHit)){ bestHit=h; bestHitUid=u; }
+  });
+  if(bestHitUid) out[bestHitUid].push({icon:'\uD83C\uDFAF', label:'\u05DE\u05DC\u05DA \u05D4\u05D1\u05D5\u05DC\u05D9\u05DD \u2014 '+bestHit+' \u05D1\u05D5\u05DC\u05D9\u05DD, \u05D4\u05DB\u05D9 \u05D4\u05E8\u05D1\u05D4 \u05D1\u05E7\u05D1\u05D5\u05E6\u05D4'});
+
+  // 2) Hot streak: 3+ exact hits in a row (most recent finished bets)
+  uids.forEach(function(u){
+    var f=finished[u];
+    var streak=0;
+    for(var i=f.length-1;i>=0;i--){
+      if(f[i].p.hit) streak++;
+      else break;
+    }
+    if(streak>=3) out[u].push({icon:'\uD83D\uDD25', label:'\u05E8\u05E6\u05E3 \u05D7\u05DD \u2014 '+streak+' \u05D1\u05D5\u05DC\u05D9\u05DD \u05E8\u05E6\u05D5\u05E4\u05D9\u05DD'});
+  });
+
+  // 3) Prophet: exact hit on an upset (under 25% of group got even the direction, min 4 bettors)
+  var matchStats={};
+  Object.values(MATCHES).length && Object.entries(MATCHES).forEach(function(me){
+    var mid=me[0], m=me[1];
+    if(!m||m.result===undefined) return;
+    var bettors=0, dirOk=0;
+    uids.forEach(function(u){
+      var b=BETS[u]&&BETS[u][mid];
+      if(b===undefined) return;
+      bettors++;
+      var p=calcPts(m,b);
+      if(p.hit||p.dir) dirOk++;
+    });
+    matchStats[mid]={bettors:bettors, dirOk:dirOk};
+  });
+  // Prophet resets daily: only upsets from the latest day with results count
+  var latestResDay=null;
+  Object.values(MATCHES).forEach(function(m){
+    if(m&&m.result!==undefined&&m.datetime){
+      var d=new Date(m.datetime).toDateString();
+      if(!latestResDay||new Date(d)>new Date(latestResDay)) latestResDay=d;
+    }
+  });
+  uids.forEach(function(u){
+    var best=null;
+    (finished[u]||[]).forEach(function(f){
+      var ms=matchStats[f.mid];
+      if(!ms||ms.bettors<4) return;
+      var fm=MATCHES[f.mid];
+      if(!fm||!fm.datetime||new Date(fm.datetime).toDateString()!==latestResDay) return;
+      var pctOk=ms.dirOk/ms.bettors;
+      if(f.p.hit && pctOk<0.25){
+        if(!best||pctOk<best.pct) best={mid:f.mid,pct:pctOk};
+      }
+    });
+    if(best){
+      var bm=MATCHES[best.mid];
+      var nm=bm?(displayName(bm.team1)+' \u05E0\u05D2\u05D3 '+displayName(bm.team2)):'';
+      var pcs=Math.round(best.pct*100);
+      out[u].push({icon:'\uD83D\uDD2E', label:'\u05D4\u05E0\u05D1\u05D9\u05D0 \u2014 \u05E7\u05DC\u05E2 \u05D1\u05D5\u05DC \u05D1'+nm+' \u05DB\u05E9\u05E8\u05E7 '+pcs+'% \u05DE\u05D4\u05E7\u05D1\u05D5\u05E6\u05D4 \u05E6\u05D3\u05E7\u05D5 \u05D1\u05DB\u05D9\u05D5\u05D5\u05DF'});
+    }
+  });
+
+  return out;
+}
+
+// ══════════════ TICKER ══════════════
+function renderTicker(){
+  var bar=document.getElementById('news-ticker');
+  if(!bar||!ME) return;
+  var myGroups=(USERS[ME.uid]&&USERS[ME.uid].groups)||[];
+  var isAdm=MEDATA&&MEDATA.isAdmin;
+  // group-scope: same-group members + bot + admins
+  var uids=Object.entries(USERS).filter(function(e){
+    var u=e[1];
+    if(!u.approved) return false;
+    if(u.isBot||u.isAdmin||isAdm) return true;
+    var uG=u.groups||[];
+    if(myGroups.length===0||uG.length===0) return true;
+    return myGroups.some(function(g){return uG.includes(g);});
+  }).map(function(e){return e[0];});
+
+  var items=[];
+  function nameOf(u){var x=USERS[u]||{};return x.nickname||x.name||'?';}
+
+  // 1) Rank overtakes since last matchday
+  var deltas=_rankDeltas(uids);
+  Object.entries(deltas).forEach(function(e){
+    if(e[1]>0) items.push('\uD83D\uDCC8 '+nameOf(e[0])+' \u05D8\u05D9\u05E4\u05E1 '+e[1]+' \u05DE\u05E7\u05D5\u05DE\u05D5\u05EA \u05D1\u05D8\u05D1\u05DC\u05D4!');
+  });
+
+  // 2) Hours until next lock
+  var now=Date.now(), next=null, nextM=null;
+  Object.values(MATCHES).forEach(function(m){
+    if(!m||!m.datetime) return;
+    var t=new Date(m.datetime).getTime();
+    if(t>now && (next===null||t<next)){ next=t; nextM=m; }
+  });
+  if(nextM){
+    var hrs=Math.max(1,Math.round((next-now)/3600000));
+    items.push('\u23F0 '+hrs+' \u05E9\u05E2\u05D5\u05EA \u05DC\u05E0\u05E2\u05D9\u05DC\u05EA \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD: '+displayName(nextM.team1)+' \u05E0\u05D2\u05D3 '+displayName(nextM.team2));
+  }
+
+  // 3) Yesterday's top points earner
+  var yest=new Date(now-86400000).toDateString();
+  var ydayPts={};
+  uids.forEach(function(u){
+    var ub=BETS[u]||{};
+    Object.entries(ub).forEach(function(e2){
+      var m=MATCHES[e2[0]];
+      if(!m||m.result===undefined||!m.datetime) return;
+      if(new Date(m.datetime).toDateString()!==yest) return;
+      ydayPts[u]=(ydayPts[u]||0)+calcPts(m,e2[1]).total;
+    });
+  });
+  var topY=null;
+  Object.entries(ydayPts).forEach(function(e){ if(e[1]>0&&(topY===null||e[1]>ydayPts[topY])) topY=e[0]; });
+  if(topY) items.push('\u2B50 \u05DE\u05E6\u05D8\u05D9\u05D9\u05DF \u05D4\u05D0\u05EA\u05DE\u05D5\u05DC: '+nameOf(topY)+' \u05E2\u05DD '+ydayPts[topY]+' \u05E0\u05E7\u05F3!');
+
+  // 4) New achievements
+  var ach=_achievements(uids);
+  Object.entries(ach).forEach(function(e){
+    e[1].forEach(function(a){
+      items.push(a.icon+' '+nameOf(e[0])+': '+a.label.split('\u2014')[0].trim());
+    });
+  });
+
+  // 5) First hit celebration (any user with exactly 1 hit on the latest matchday)
+  // covered by yesterday top — keep ticker compact
+
+  if(!items.length){ bar.style.display='none'; return; }
+  bar.style.display='block';
+  var track=items.join('  \u2022  ');
+  bar.innerHTML='<div class="ticker-track">'+track+'  \u2022  '+track+'</div>';
+}
+window.renderTicker=renderTicker;
+
+// ══════════════ PROGRESS CHART (player stats modal) ══════════════
+function _drawProgressChart(uid){
+  var cv=document.getElementById('ps-chart');
+  if(!cv) return;
+  var ctx=cv.getContext('2d');
+  var W=cv.width=cv.offsetWidth*2, H=cv.height=160*2;
+  ctx.clearRect(0,0,W,H);
+
+  // group scope for average
+  var myGroups=(USERS[uid]&&USERS[uid].groups)||[];
+  var uids=Object.entries(USERS).filter(function(e){
+    var u=e[1];
+    if(!u.approved) return false;
+    if(u.isBot||u.isAdmin) return true;
+    var uG=u.groups||[];
+    if(myGroups.length===0||uG.length===0) return true;
+    return myGroups.some(function(g){return uG.includes(g);});
+  }).map(function(e){return e[0];});
+
+  // collect finished match days sorted
+  var days={};
+  Object.values(MATCHES).forEach(function(m){
+    if(m&&m.result!==undefined&&m.datetime) days[new Date(m.datetime).toDateString()]=new Date(m.datetime).getTime();
+  });
+  var dayList=Object.keys(days).sort(function(a,b){return days[a]-days[b];});
+  if(dayList.length<1){ cv.style.display='none'; var lbl=document.getElementById('ps-chart-lbl'); if(lbl)lbl.style.display='none'; return; }
+  cv.style.display='block';
+  var lbl2=document.getElementById('ps-chart-lbl'); if(lbl2)lbl2.style.display='block';
+
+  function cumSeries(u){
+    var cum=0;
+    return dayList.map(function(d){
+      var ub=BETS[u]||{};
+      Object.entries(ub).forEach(function(e2){
+        var m=MATCHES[e2[0]];
+        if(!m||m.result===undefined||!m.datetime) return;
+        if(new Date(m.datetime).toDateString()!==d) return;
+        cum+=calcPts(m,e2[1]).total;
+      });
+      return cum;
+    });
+  }
+  var mine=cumSeries(uid);
+  var avg=dayList.map(function(_,i){
+    var s=0; uids.forEach(function(u){ s+=cumSeries(u)[i]; });
+    return uids.length?s/uids.length:0;
+  });
+
+  var maxV=Math.max(1, Math.max.apply(null,mine.concat(avg)));
+  var pad=30;
+  function px(i){ return pad + (W-2*pad)*(dayList.length===1?0.5:i/(dayList.length-1)); }
+  function py(v){ return H-pad - (H-2*pad)*(v/maxV); }
+
+  // grid
+  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1;
+  for(var g2=0;g2<=3;g2++){ var y=pad+(H-2*pad)*g2/3; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke(); }
+
+  // avg line (dashed gray)
+  ctx.strokeStyle='rgba(160,170,190,0.6)'; ctx.lineWidth=2; ctx.setLineDash([6,5]);
+  ctx.beginPath(); avg.forEach(function(v,i){ var x=px(i),y=py(v); if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y); }); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // my line (gold)
+  ctx.strokeStyle='#FFD700'; ctx.lineWidth=3.5;
+  ctx.beginPath(); mine.forEach(function(v,i){ var x=px(i),y=py(v); if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y); }); ctx.stroke();
+  // points
+  ctx.fillStyle='#FFD700';
+  mine.forEach(function(v,i){ ctx.beginPath(); ctx.arc(px(i),py(v),5,0,7); ctx.fill(); });
+}
+window._drawProgressChart=_drawProgressChart;
+
+
 function _allBetsSection(id, m, hasRes) {
   if(!ME) return '';
   var myGroups=(USERS[ME.uid]&&USERS[ME.uid].groups)||[];
@@ -2613,6 +2921,14 @@ function _allBetsSection(id, m, hasRes) {
     return {name:u.nickname||u.name||'?',bet:bet2,pts:hasRes?calcPts(m,bet2):null,isBot:u.isBot,isMe:uid2===ME.uid};
   }).filter(Boolean).sort(function(a,b){return(a.isBot&&!b.isBot)?1:(!a.isBot&&b.isBot)?-1:0;});
   if(!allB.length) return '';
+  // Crowd stats: % who got direction or better (only after result)
+  var crowdHtml='';
+  if(hasRes){
+    var okCnt=allB.filter(function(b){return b.pts&&(b.pts.hit||b.pts.dir);}).length;
+    var pct=Math.round((okCnt/allB.length)*100);
+    var txt=pct<=30?'\u05E8\u05E7 '+pct+'% \u05DE\u05D4\u05E7\u05D1\u05D5\u05E6\u05D4 \u05E6\u05D3\u05E7\u05D5 \u05D1\u05DB\u05D9\u05D5\u05D5\u05DF':pct+'% \u05DE\u05D4\u05E7\u05D1\u05D5\u05E6\u05D4 \u05E6\u05D3\u05E7\u05D5 \u05D1\u05DB\u05D9\u05D5\u05D5\u05DF';
+    crowdHtml='<div class="crowd-line"><span>'+txt+'</span><div class="crowd-bar"><div class="crowd-bar-fill" style="width:'+pct+'%;"></div></div></div>';
+  }
   var rows=allB.map(function(b){
     var cls=b.pts?(b.pts.hit?'badge-hit':b.pts.dir?'badge-dir':'badge-miss'):'badge-wait';
     var pts=b.pts?((b.pts.total>0?'+':'')+b.pts.total+' \u05E0\u05E7\u05F3'):'\u23F3';
@@ -2628,7 +2944,7 @@ function _allBetsSection(id, m, hasRes) {
   }).join('');
   return '<div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,0.06);">'+
     '<details><summary style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;">\u05D4\u05D9\u05DE\u05D5\u05E8\u05D9 \u05DB\u05D5\u05DC\u05DD ('+allB.length+')</summary>'+
-    '<div style="margin-top:8px;">'+rows+'</div></details></div>';
+    '<div style="margin-top:8px;">'+crowdHtml+rows+'</div></details></div>';
 }
 
 function _ldrRow(s,i,extraStyle){
@@ -2638,12 +2954,25 @@ function _ldrRow(s,i,extraStyle){
   var avatar=s.isBot?'<img src="'+BOT_AVATAR+'" style="width:26px;height:26px;border-radius:50%;margin-left:8px;">':'';
   var miss=0;
   if(BETS[s.uid]){Object.keys(BETS[s.uid]).forEach(function(mid){var m2=MATCHES[mid];if(m2&&m2.result!==undefined){var p=calcPts(m2,BETS[s.uid][mid]);if(!p.hit&&!p.dir)miss++;}});}
+  // rank delta arrow
+  var deltaHtml='';
+  if(typeof s.delta==='number'&&s.delta!==0){
+    if(s.delta>0) deltaHtml='<span class="rank-up" title="\u05E2\u05DC\u05D4 '+s.delta+' \u05DE\u05E7\u05D5\u05DE\u05D5\u05EA">\u25B2'+s.delta+'</span>';
+    else deltaHtml='<span class="rank-down" title="\u05D9\u05E8\u05D3 '+Math.abs(s.delta)+' \u05DE\u05E7\u05D5\u05DE\u05D5\u05EA">\u25BC'+Math.abs(s.delta)+'</span>';
+  }
+  // achievement badges with tooltip
+  var achHtml='';
+  if(s.badges&&s.badges.length){
+    achHtml=s.badges.map(function(a){
+      return '<span class="ach-badge" data-tip="'+a.label.replace(/"/g,'&quot;')+'">'+a.icon+'</span>';
+    }).join('');
+  }
   return '<div class="leader-row'+rankCls+'" style="'+(extraStyle||'')+'" data-uid="'+s.uid+'" onclick="openPlayerStats(this.dataset.uid)">'+
-    '<div class="leader-rank-col">'+rankInner+'</div>'+
-    '<div class="leader-name">'+avatar+s.name+'</div>'+
+    '<div class="leader-rank-col">'+rankInner+deltaHtml+'</div>'+
+    '<div class="leader-name">'+avatar+s.name+achHtml+'</div>'+
     '<div class="leader-col"><span class="leader-col-val lsb-hit">'+s.hits+'</span><span class="leader-col-lbl lsb-hit">\u05D1\u05D5\u05DC</span></div>'+
     '<div class="leader-col"><span class="leader-col-val lsb-dir">'+s.dirs+'</span><span class="leader-col-lbl lsb-dir">\u05DB\u05D9\u05D5\u05D5\u05DF</span></div>'+
-    '<div class="leader-col"><span class="leader-col-val lsb-miss">'+miss+'</span><span class="leader-col-lbl lsb-miss">\u05D4\u05D7\u05D8\u05D0</span></div>'+
+    '<div class="leader-col"><span class="leader-col-val lsb-miss">'+miss+'</span><span class="leader-col-lbl lsb-miss">\u05D4\u05D7\u05D8\u05D0\u05D5\u05EA</span></div>'+
     '<div class="leader-col"><span class="leader-pts">'+s.pts+'</span><span class="leader-pts-lbl">\u05E0\u05E7\u05F3</span></div>'+
   '</div>';
 }
@@ -2671,7 +3000,10 @@ function renderLeader() {
   if(!gkeys.length) {
     const sorted = Object.values(sc).sort((a,b)=>b.pts-a.pts);
     if(!sorted.length){ lst.innerHTML="<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>הטבלה תתעדכן לאחר המשחקים הראשונים</div>"; return; }
-    lst.innerHTML='<div class="leader-table-wrap"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטא</span><span>נק׳</span></div>'+
+    var _uidsAll = sorted.map(function(s){return s.uid;});
+    var _dAll = _rankDeltas(_uidsAll), _aAll = _achievements(_uidsAll);
+    sorted.forEach(function(s){ s.delta=_dAll[s.uid]||0; s.badges=_aAll[s.uid]||[]; });
+    lst.innerHTML='<div class="leader-table-wrap"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטאות</span><span>נק׳</span></div>'+
       sorted.map(function(s,i){return _ldrRow(s,i,'');}).join('')+'</div>';
     return;
   }
@@ -2698,6 +3030,10 @@ function renderLeader() {
 
     if(!groupScores.length) return;
 
+    var _uidsG = groupScores.map(function(s){return s.uid;});
+    var _dG = _rankDeltas(_uidsG), _aG = _achievements(_uidsG);
+    groupScores.forEach(function(s){ s.delta=_dG[s.uid]||0; s.badges=_aG[s.uid]||[]; });
+
     const groupColor = g.color||'#7c3aed';
 
     html += '<div class="group-leaderboard">';
@@ -2706,7 +3042,7 @@ function renderLeader() {
     html += '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:2px;color:'+groupColor+';">'+g.name+'</span>';
     html += '</div>';
 
-    html += '<div class="leader-table-wrap" style="border-radius:0 0 12px 12px;margin-bottom:0;"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטא</span><span>נק׳</span></div>'+groupScores.map(function(s,i){return _ldrRow(s,i,'border-right:3px solid '+groupColor+';');}).join('')+'</div>';
+    html += '<div class="leader-table-wrap" style="border-radius:0 0 12px 12px;margin-bottom:0;"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטאות</span><span>נק׳</span></div>'+groupScores.map(function(s,i){return _ldrRow(s,i,'border-right:3px solid '+groupColor+';');}).join('')+'</div>';
 
     html += '</div>';
   });
@@ -3141,7 +3477,7 @@ function initData(){
   onValue(ref(db,'scoring'),s=>{ if(s.exists()){ SCORING=s.val(); renderScoringTable(); if(MEDATA&&MEDATA.isAdmin) renderScoringEdit(); } });
 }
 function refreshAll(){
-  renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket();
+  renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket(); try{renderTicker();}catch(e){}
   checkBotRoundAlert();
   if(MEDATA?.isAdmin) renderKoEditor();
   renderSpecialBetsReveal(specialLocked());
@@ -4047,6 +4383,7 @@ function openPlayerStats(uid){
   document.getElementById('ps-miss').textContent = miss;
   document.getElementById('ps-pts').textContent = pts+" נק'";
   document.getElementById('player-stats-modal').classList.add('open');
+  setTimeout(function(){ try{_drawProgressChart(uid);}catch(e){} }, 50);
 }
 window.openPlayerStats = openPlayerStats;
 
