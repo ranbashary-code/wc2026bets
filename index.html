@@ -243,6 +243,8 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 /* News ticker */
 #news-ticker{display:none;overflow:hidden;background:linear-gradient(90deg,rgba(255,215,0,0.08),rgba(255,215,0,0.03));border-top:1px solid rgba(255,215,0,0.15);border-bottom:1px solid rgba(255,215,0,0.15);padding:7px 0;white-space:nowrap;position:relative;}
 .ticker-track{display:inline-block;font-size:12.5px;font-weight:700;color:var(--gold);animation:tickerMove 40s linear infinite;padding-right:100%;}
+.ticker-item{margin:0 32px 0 0;padding-left:32px;border-left:1px solid rgba(255,215,0,0.25);}
+.ticker-item:last-child{border-left:none;}
 @keyframes tickerMove{0%{transform:translateX(0);}100%{transform:translateX(50%);}}
 body.light-mode #news-ticker{background:linear-gradient(90deg,rgba(200,150,10,0.06),rgba(200,150,10,0.02));}
 body.light-mode .ticker-track{color:#c8960a;}
@@ -1885,6 +1887,8 @@ async function loadSpecialBets() {
   if(!ME) return;
   const snap = await get(ref(db,'specialBets/'+ME.uid));
   const data = snap.exists() ? snap.val() : {};
+  window._mySpecial = data; // exposed for ticker reminder
+  try{renderTicker();}catch(e){}
   const lk = specialLocked();
 
   // Champion display
@@ -3005,7 +3009,7 @@ function renderTicker(){
   if(!bar||!ME) return;
   var myGroups=(USERS[ME.uid]&&USERS[ME.uid].groups)||[];
   var isAdm=MEDATA&&MEDATA.isAdmin;
-  // group-scope: same-group members + bot + admins
+  // group-scope: same-group members + bot + admins (NEVER cross-group)
   var uids=Object.entries(USERS).filter(function(e){
     var u=e[1];
     if(!u.approved) return false;
@@ -3018,41 +3022,129 @@ function renderTicker(){
   var items=[];
   function nameOf(u){var x=USERS[u]||{};return x.nickname||x.name||'?';}
 
+  // ── points per user (finished matches only — never reveals open bets) ──
+  var pts={};
+  uids.forEach(function(u){
+    pts[u]=0;
+    var ub=BETS[u]||{};
+    Object.entries(ub).forEach(function(e2){
+      var m=MATCHES[e2[0]];
+      if(!m||m.result===undefined) return;
+      pts[u]+=calcPts(m,e2[1]).total;
+    });
+  });
+  var ranked=uids.slice().sort(function(a,b){return pts[b]-pts[a];});
+  var hasAnyPts=ranked.some(function(u){return pts[u]>0;});
+
   // 1) Rank overtakes since last matchday
   var deltas=_rankDeltas(uids);
   Object.entries(deltas).forEach(function(e){
     if(e[1]>0) items.push('\uD83D\uDCC8 '+nameOf(e[0])+' \u05D8\u05D9\u05E4\u05E1 '+e[1]+' \u05DE\u05E7\u05D5\u05DE\u05D5\u05EA \u05D1\u05D8\u05D1\u05DC\u05D4!');
   });
 
+  // 6) Leader (only when someone actually has points)
+  if(hasAnyPts&&ranked.length>=2){
+    items.push('\uD83D\uDC51 '+nameOf(ranked[0])+' \u05DE\u05D5\u05D1\u05D9\u05DC \u05D0\u05EA \u05D4\u05D8\u05D1\u05DC\u05D4!');
+    // 5) Close chase: 2nd within 3 pts of 1st
+    var gap=pts[ranked[0]]-pts[ranked[1]];
+    if(gap>0&&gap<=3){
+      items.push('\uD83D\uDD25 '+nameOf(ranked[1])+' \u05D1\u05E4\u05D9\u05D2\u05D5\u05E8 \u05E9\u05DC '+gap+' \u05E0\u05E7\u05F3 \u05D1\u05DC\u05D1\u05D3 \u05DE\u05D4\u05DE\u05E7\u05D5\u05DD \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF!');
+    }
+    // 7) Tied at the top
+    if(gap===0){
+      items.push('\u2694\uFE0F '+nameOf(ranked[0])+' \u05D5'+nameOf(ranked[1])+' \u05E9\u05D5\u05D5\u05D9\u05DD \u05D1\u05E0\u05E7\u05D5\u05D3\u05D5\u05EA \u2014 \u05DE\u05D9 \u05D9\u05D9\u05E9\u05D1\u05E8 \u05E7\u05D5\u05D3\u05DD?');
+    }
+  }
+
+  // 11) Humans beating the bot
+  var botPts=pts[BOT_UID];
+  if(botPts!==undefined&&hasAnyPts){
+    var beating=uids.filter(function(u){return u!==BOT_UID&&!(USERS[u]&&USERS[u].isBot)&&pts[u]>botPts;}).length;
+    if(beating>0) items.push('\uD83E\uDD16 '+beating+' \u05E9\u05D7\u05E7\u05E0\u05D9\u05DD \u05DE\u05E0\u05E6\u05D7\u05D9\u05DD \u05D0\u05EA Boti-Goal \u05D1\u05D8\u05D1\u05DC\u05D4');
+  }
+
+  // 8) Sole exact hit per finished match (yesterday + today only, keeps it fresh)
+  var now=Date.now();
+  Object.entries(MATCHES).forEach(function(me2){
+    var mid=me2[0], m=me2[1];
+    if(!m||m.result===undefined||!m.datetime) return;
+    var age=now-new Date(m.datetime).getTime();
+    if(age>2*86400000) return; // last 48h only
+    var hitters=uids.filter(function(u){
+      var b=BETS[u]&&BETS[u][mid];
+      return b!==undefined&&calcPts(m,b).hit;
+    });
+    if(hitters.length===1){
+      items.push('\uD83C\uDFAF \u05E8\u05E7 '+nameOf(hitters[0])+' \u05E7\u05DC\u05E2 \u05D1\u05D5\u05DC \u05D1\u05DE\u05E9\u05D7\u05E7 '+displayName(m.team1)+' \u05E0\u05D2\u05D3 '+displayName(m.team2)+'!');
+    }
+  });
+
+  // 9) Bad day: yesterday had results but nobody hit exact
+  var yest=new Date(now-86400000).toDateString();
+  var yMids=Object.entries(MATCHES).filter(function(me2){
+    var m=me2[1];
+    return m&&m.result!==undefined&&m.datetime&&new Date(m.datetime).toDateString()===yest;
+  });
+  if(yMids.length){
+    var anyHit=yMids.some(function(me2){
+      var mid=me2[0],m=me2[1];
+      return uids.some(function(u){
+        var b=BETS[u]&&BETS[u][mid];
+        return b!==undefined&&calcPts(m,b).hit;
+      });
+    });
+    if(!anyHit) items.push('\uD83D\uDE31 \u05D0\u05E3 \u05D0\u05D7\u05D3 \u05DC\u05D0 \u05E7\u05DC\u05E2 \u05D1\u05D5\u05DC \u05D0\u05EA\u05DE\u05D5\u05DC \u2014 \u05D9\u05D5\u05DD \u05E7\u05E9\u05D4 \u05DC\u05E7\u05D1\u05D5\u05E6\u05D4');
+    // 3) Yesterday's top points earner
+    var ydayPts={};
+    uids.forEach(function(u){
+      yMids.forEach(function(me2){
+        var b=BETS[u]&&BETS[u][me2[0]];
+        if(b===undefined) return;
+        ydayPts[u]=(ydayPts[u]||0)+calcPts(me2[1],b).total;
+      });
+    });
+    var topY=null;
+    Object.entries(ydayPts).forEach(function(e){ if(e[1]>0&&(topY===null||e[1]>ydayPts[topY])) topY=e[0]; });
+    if(topY) items.push('\u2B50 \u05DE\u05E6\u05D8\u05D9\u05D9\u05DF \u05D4\u05D0\u05EA\u05DE\u05D5\u05DC: '+nameOf(topY)+' \u05E2\u05DD '+ydayPts[topY]+' \u05E0\u05E7\u05F3!');
+  }
+
   // 2) Hours until next lock
-  var now=Date.now(), next=null, nextM=null;
+  var next=null, nextM=null;
   Object.values(MATCHES).forEach(function(m){
     if(!m||!m.datetime) return;
     var t=new Date(m.datetime).getTime();
-    if(t>now && (next===null||t<next)){ next=t; nextM=m; }
+    if(t>now&&(next===null||t<next)){ next=t; nextM=m; }
   });
   if(nextM){
     var hrs=Math.max(1,Math.round((next-now)/3600000));
     items.push('\u23F0 '+hrs+' \u05E9\u05E2\u05D5\u05EA \u05DC\u05E0\u05E2\u05D9\u05DC\u05EA \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD: '+displayName(nextM.team1)+' \u05E0\u05D2\u05D3 '+displayName(nextM.team2));
   }
 
-  // 3) Yesterday's top points earner
-  var yest=new Date(now-86400000).toDateString();
-  var ydayPts={};
-  uids.forEach(function(u){
-    var ub=BETS[u]||{};
-    Object.entries(ub).forEach(function(e2){
-      var m=MATCHES[e2[0]];
-      if(!m||m.result===undefined||!m.datetime) return;
-      if(new Date(m.datetime).toDateString()!==yest) return;
-      ydayPts[u]=(ydayPts[u]||0)+calcPts(m,e2[1]).total;
-    });
+  // 12) PERSONAL: my unbet matches locking within 24h
+  var myUb=BETS[ME.uid]||{};
+  var missingCnt=0;
+  Object.entries(MATCHES).forEach(function(me2){
+    var mid=me2[0], m=me2[1];
+    if(!m||!m.datetime||m.result!==undefined) return;
+    if(m.team1==='TBD'||m.team2==='TBD'||!m.team1||!m.team2) return;
+    var t=new Date(m.datetime).getTime();
+    if(t<=now||t>now+86400000) return;
+    if(myUb[mid]===undefined) missingCnt++;
   });
-  var topY=null;
-  Object.entries(ydayPts).forEach(function(e){ if(e[1]>0&&(topY===null||e[1]>ydayPts[topY])) topY=e[0]; });
-  if(topY) items.push('\u2B50 \u05DE\u05E6\u05D8\u05D9\u05D9\u05DF \u05D4\u05D0\u05EA\u05DE\u05D5\u05DC: '+nameOf(topY)+' \u05E2\u05DD '+ydayPts[topY]+' \u05E0\u05E7\u05F3!');
+  if(missingCnt>0){
+    items.push('\u26A0\uFE0F \u05D9\u05E9 \u05DC\u05DA '+missingCnt+' \u05DE\u05E9\u05D7\u05E7\u05D9\u05DD \u05DC\u05DC\u05D0 \u05D4\u05D9\u05DE\u05D5\u05E8 \u05E9\u05E0\u05E0\u05E2\u05DC\u05D9\u05DD \u05D1\u05D9\u05DE\u05DE\u05D4 \u05D4\u05E7\u05E8\u05D5\u05D1\u05D4!');
+  }
 
-  // 4) New achievements
+  // 13) PERSONAL: special bets not filled (only while still open)
+  if(typeof specialLocked==='function'&&!specialLocked()&&window._mySpecial!==undefined){
+    var sp=window._mySpecial||{};
+    if(!sp.champion||!sp.scorer){
+      var what=!sp.champion&&!sp.scorer?'\u05D0\u05DC\u05D5\u05E4\u05D4 \u05D5\u05DE\u05DC\u05DA \u05E9\u05E2\u05E8\u05D9\u05DD':!sp.champion?'\u05E0\u05D1\u05D7\u05E8\u05EA \u05D0\u05DC\u05D5\u05E4\u05D4':'\u05DE\u05DC\u05DA \u05E9\u05E2\u05E8\u05D9\u05DD';
+      items.push('\uD83D\uDCCB \u05E2\u05D5\u05D3 \u05DC\u05D0 \u05D1\u05D7\u05E8\u05EA '+what+' \u2014 \u05E0\u05E0\u05E2\u05DC \u05D1\u05EA\u05D7\u05D9\u05DC\u05EA \u05D4\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC!');
+    }
+  }
+
+  // 4) Achievements
   var ach=_achievements(uids);
   Object.entries(ach).forEach(function(e){
     e[1].forEach(function(a){
@@ -3060,13 +3152,10 @@ function renderTicker(){
     });
   });
 
-  // 5) First hit celebration (any user with exactly 1 hit on the latest matchday)
-  // covered by yesterday top — keep ticker compact
-
   if(!items.length){ bar.style.display='none'; return; }
   bar.style.display='block';
-  var track=items.join('  \u2022  ');
-  bar.innerHTML='<div class="ticker-track">'+track+'  \u2022  '+track+'</div>';
+  var track=items.map(function(it){return '<span class="ticker-item">'+it+'</span>';}).join('');
+  bar.innerHTML='<div class="ticker-track">'+track+track+'</div>';
 }
 window.renderTicker=renderTicker;
 
@@ -3795,7 +3884,11 @@ function renderToday(){
     const ctr=document.createElement('div'); ctr.className='tm-center';
     const vs=document.createElement('div'); vs.className='tm-vs'; vs.textContent='VS';
     const cd=document.createElement('div'); cd.className='tm-countdown'; cd.id='cd-'+id;
-    ctr.appendChild(vs); ctr.appendChild(cd);
+    const dt=document.createElement('div');
+    dt.style.cssText='font-size:10px;font-weight:700;color:var(--text2);margin-top:3px;direction:rtl;';
+    const mDate=new Date(m.datetime);
+    dt.textContent=mDate.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'})+' · '+mDate.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+    ctr.appendChild(vs); ctr.appendChild(cd); ctr.appendChild(dt);
     function tickM(){ const diff=new Date(m.datetime).getTime()-Date.now(); if(diff<=0){cd.textContent='🔴 נעול';return;} const hh=Math.floor(diff/3600000),mm=Math.floor(diff%3600000/60000),ss=Math.floor(diff%60000/1000); cd.textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0'); }
     tickM(); setInterval(tickM,1000);
 
