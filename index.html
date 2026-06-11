@@ -1026,7 +1026,7 @@ select.inp option{background:var(--card2);}
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref, set, get, push, onValue, update, remove }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
@@ -2358,13 +2358,14 @@ async function loadAnalytics() {
   });
 
   // Per-user activity table
-  const rows = approved.map(u=>{
+  const tableUsers = approved.concat(users.filter(u=>u.isBot&&u.approved));
+  const rows = tableUsers.map(u=>{
     const ub = betsObj[u.uid]||{};
     const cnt = Object.keys(ub).length;
     const sb = specObj[u.uid]||{};
     const isOn = onlineArr.some(p=>p.uid===u.uid);
     const pct = matches.length>0 ? Math.round(cnt/matches.length*100) : 0;
-    return {name:u.nickname||u.name, cnt, pct, champ:!!sb.champion, scorer:!!sb.scorer, isOn};
+    return {name:(u.isBot?'\uD83E\uDD16 ':'')+(u.nickname||u.name), cnt, pct, champ:!!sb.champion, scorer:!!sb.scorer, isOn};
   }).sort((a,b)=>b.cnt-a.cnt);
 
   activity.innerHTML =
@@ -2629,9 +2630,10 @@ async function checkAndSendReminders() {
     scheduledSendTime = sendAt17;
   }
 
-  // Only send if we're within a 5-minute window of the scheduled time
+  // Send any time AFTER the scheduled time (the emailSent flag below prevents
+  // duplicates) - so the first time the admin opens the app after 17:00, it sends
   const diffMins = (now.getTime() - scheduledSendTime.getTime()) / 60000;
-  if(diffMins < 0 || diffMins > 5) return;
+  if(diffMins < 0) return;
 
   // Check if already sent today (stored in Firebase)
   const sentSnap = await get(ref(db, 'emailSent/' + todayStr.replace(/ /g,'_')));
@@ -3342,108 +3344,137 @@ window.showTickerModal=showTickerModal;
 function renderTicker(){
   var bar=document.getElementById('news-ticker');
   if(!bar||!ME) return;
-  var myGroups=(USERS[ME.uid]&&USERS[ME.uid].groups)||[];
-  var isAdm=MEDATA&&MEDATA.isAdmin;
-  // group-scope: same-group members + bot + admins (NEVER cross-group)
-  var uids=Object.entries(USERS).filter(function(e){
-    var u=e[1];
-    if(!u.approved) return false;
-    if(u.isBot||u.isAdmin||isAdm) return true;
-    var uG=u.groups||[];
-    if(myGroups.length===0||uG.length===0) return true;
-    return myGroups.some(function(g){return uG.includes(g);});
-  }).map(function(e){return e[0];});
+  if(!Object.keys(USERS).length){ bar.style.display='none'; return; }
+  var me=USERS[ME.uid]||{};
+  var myGroups=me.groups||[];
+  var isAdm=(MEDATA&&MEDATA.isAdmin)||!!me.isAdmin;
+
+  // The groups whose updates this viewer may see (NEVER another group's)
+  var viewGroups = isAdm ? Object.keys(ALL_GROUPS||{}) : myGroups.slice();
+  var multi = viewGroups.length>1;
+
+  function nameOf(u){var x=USERS[u]||{};return x.nickname||x.name||'?';}
+  function gName(gid){ return (ALL_GROUPS&&ALL_GROUPS[gid]&&ALL_GROUPS[gid].name)||gid; }
+  function tag(gid){ return multi ? '['+gName(gid)+'] ' : ''; }
+
+  // Members of one group (+ the bot, which competes everywhere)
+  function groupUids(gid){
+    return Object.entries(USERS).filter(function(e){
+      var u=e[1];
+      if(!u.approved) return false;
+      if(u.isBot) return true;
+      var uG=u.groups||[];
+      return uG.indexOf(gid)!==-1;
+    }).map(function(e){return e[0];});
+  }
+  // No groups defined at all (small league): everyone approved
+  function allUids(){
+    return Object.entries(USERS).filter(function(e){return e[1].approved;}).map(function(e){return e[0];});
+  }
 
   var items=[];
-  function nameOf(u){var x=USERS[u]||{};return x.nickname||x.name||'?';}
-
-  // ── points per user (finished matches only — never reveals open bets) ──
-  var pts={};
-  uids.forEach(function(u){
-    pts[u]=0;
-    var ub=BETS[u]||{};
-    Object.entries(ub).forEach(function(e2){
-      var m=MATCHES[e2[0]];
-      if(!m||m.result===undefined) return;
-      pts[u]+=calcPts(m,e2[1]).total;
-    });
-  });
-  var ranked=uids.slice().sort(function(a,b){return pts[b]-pts[a];});
-  var hasAnyPts=ranked.some(function(u){return pts[u]>0;});
-
-  // 1) Rank overtakes since last matchday
-  var deltas=_rankDeltas(uids);
-  Object.entries(deltas).forEach(function(e){
-    if(e[1]>0) items.push('\uD83D\uDCC8 '+nameOf(e[0])+' \u05D8\u05D9\u05E4\u05E1 '+e[1]+' \u05DE\u05E7\u05D5\u05DE\u05D5\u05EA \u05D1\u05D8\u05D1\u05DC\u05D4!');
-  });
-
-  // 6) Leader (only when someone actually has points)
-  if(hasAnyPts&&ranked.length>=2){
-    items.push('\uD83D\uDC51 '+nameOf(ranked[0])+' \u05DE\u05D5\u05D1\u05D9\u05DC \u05D0\u05EA \u05D4\u05D8\u05D1\u05DC\u05D4!');
-    // 5) Close chase: 2nd within 3 pts of 1st
-    var gap=pts[ranked[0]]-pts[ranked[1]];
-    if(gap>0&&gap<=3){
-      items.push('\uD83D\uDD25 '+nameOf(ranked[1])+' \u05D1\u05E4\u05D9\u05D2\u05D5\u05E8 \u05E9\u05DC '+gap+' \u05E0\u05E7\u05F3 \u05D1\u05DC\u05D1\u05D3 \u05DE\u05D4\u05DE\u05E7\u05D5\u05DD \u05D4\u05E8\u05D0\u05E9\u05D5\u05DF!');
-    }
-    // 7) Tied at the top
-    if(gap===0){
-      items.push('\u2694\uFE0F '+nameOf(ranked[0])+' \u05D5'+nameOf(ranked[1])+' \u05E9\u05D5\u05D5\u05D9\u05DD \u05D1\u05E0\u05E7\u05D5\u05D3\u05D5\u05EA \u2014 \u05DE\u05D9 \u05D9\u05D9\u05E9\u05D1\u05E8 \u05E7\u05D5\u05D3\u05DD?');
-    }
-  }
-
-  // 11) Humans beating the bot
-  var botPts=pts[BOT_UID];
-  if(botPts!==undefined&&hasAnyPts){
-    var beating=uids.filter(function(u){return u!==BOT_UID&&!(USERS[u]&&USERS[u].isBot)&&pts[u]>botPts;}).length;
-    if(beating>0) items.push('\uD83E\uDD16 '+beating+' \u05E9\u05D7\u05E7\u05E0\u05D9\u05DD \u05DE\u05E0\u05E6\u05D7\u05D9\u05DD \u05D0\u05EA Boti-Goal \u05D1\u05D8\u05D1\u05DC\u05D4');
-  }
-
-  // 8) Sole exact hit per finished match (yesterday + today only, keeps it fresh)
   var now=Date.now();
-  Object.entries(MATCHES).forEach(function(me2){
-    var mid=me2[0], m=me2[1];
-    if(!m||m.result===undefined||!m.datetime) return;
-    var age=now-new Date(m.datetime).getTime();
-    if(age>2*86400000) return; // last 48h only
-    var hitters=uids.filter(function(u){
-      var b=BETS[u]&&BETS[u][mid];
-      return b!==undefined&&calcPts(m,b).hit;
-    });
-    if(hitters.length===1){
-      items.push('\uD83C\uDFAF \u05E8\u05E7 '+nameOf(hitters[0])+' \u05E7\u05DC\u05E2 \u05D1\u05D5\u05DC \u05D1\u05DE\u05E9\u05D7\u05E7 '+displayName(m.team1)+' \u05E0\u05D2\u05D3 '+displayName(m.team2)+'!');
-    }
-  });
 
-  // 9) Bad day: yesterday had results but nobody hit exact
-  var yest=new Date(now-86400000).toDateString();
-  var yMids=Object.entries(MATCHES).filter(function(me2){
-    var m=me2[1];
-    return m&&m.result!==undefined&&m.datetime&&new Date(m.datetime).toDateString()===yest;
-  });
-  if(yMids.length){
-    var anyHit=yMids.some(function(me2){
-      var mid=me2[0],m=me2[1];
-      return uids.some(function(u){
+  // ── Per-group competitive items: ALWAYS within a single group ──
+  function groupItems(gid, uids){
+    if(uids.length<2) return;
+    var pts={};
+    uids.forEach(function(u){
+      pts[u]=0;
+      var ub=BETS[u]||{};
+      Object.entries(ub).forEach(function(e2){
+        var m=MATCHES[e2[0]];
+        if(!m||m.result===undefined) return;
+        pts[u]+=calcPts(m,e2[1]).total;
+      });
+    });
+    var ranked=uids.slice().sort(function(a,b){return pts[b]-pts[a];});
+    var hasAnyPts=ranked.some(function(u){return pts[u]>0;});
+
+    // rank overtakes
+    var deltas=_rankDeltas(uids);
+    Object.entries(deltas).forEach(function(e){
+      if(e[1]>0) items.push('📈 '+tag(gid)+nameOf(e[0])+' טיפס '+e[1]+' מקומות בטבלה!');
+    });
+
+    if(hasAnyPts&&ranked.length>=2){
+      items.push('👑 '+tag(gid)+nameOf(ranked[0])+' מוביל את הטבלה!');
+      var gap=pts[ranked[0]]-pts[ranked[1]];
+      if(gap>0&&gap<=3){
+        items.push('🔥 '+tag(gid)+nameOf(ranked[1])+' בפיגור של '+gap+' נק׳ בלבד מהמקום הראשון!');
+      }
+      if(gap===0){
+        items.push('⚔️ '+tag(gid)+nameOf(ranked[0])+' ו'+nameOf(ranked[1])+' שווים בנקודות — מי יישבר קודם?');
+      }
+    }
+
+    // humans beating the bot
+    var botPts=pts[BOT_UID];
+    if(botPts!==undefined&&hasAnyPts){
+      var beating=uids.filter(function(u){return u!==BOT_UID&&!(USERS[u]&&USERS[u].isBot)&&pts[u]>botPts;}).length;
+      if(beating>0) items.push('🤖 '+tag(gid)+beating+' שחקנים מנצחים את Boti-Goal בטבלה');
+    }
+
+    // sole exact hit per finished match (last 48h)
+    Object.entries(MATCHES).forEach(function(me2){
+      var mid=me2[0], m=me2[1];
+      if(!m||m.result===undefined||!m.datetime) return;
+      var age=now-new Date(m.datetime).getTime();
+      if(age>2*86400000) return;
+      var hitters=uids.filter(function(u){
         var b=BETS[u]&&BETS[u][mid];
         return b!==undefined&&calcPts(m,b).hit;
       });
+      if(hitters.length===1){
+        items.push('🎯 '+tag(gid)+'רק '+nameOf(hitters[0])+' קלע בול במשחק '+displayName(m.team1)+' נגד '+displayName(m.team2)+'!');
+      }
     });
-    if(!anyHit) items.push('\uD83D\uDE31 \u05D0\u05E3 \u05D0\u05D7\u05D3 \u05DC\u05D0 \u05E7\u05DC\u05E2 \u05D1\u05D5\u05DC \u05D0\u05EA\u05DE\u05D5\u05DC \u2014 \u05D9\u05D5\u05DD \u05E7\u05E9\u05D4 \u05DC\u05E7\u05D1\u05D5\u05E6\u05D4');
-    // 3) Yesterday's top points earner
-    var ydayPts={};
-    uids.forEach(function(u){
-      yMids.forEach(function(me2){
-        var b=BETS[u]&&BETS[u][me2[0]];
-        if(b===undefined) return;
-        ydayPts[u]=(ydayPts[u]||0)+calcPts(me2[1],b).total;
+
+    // yesterday: bad day / top earner
+    var yest=new Date(now-86400000).toDateString();
+    var yMids=Object.entries(MATCHES).filter(function(me2){
+      var m=me2[1];
+      return m&&m.result!==undefined&&m.datetime&&new Date(m.datetime).toDateString()===yest;
+    });
+    if(yMids.length){
+      var anyHit=yMids.some(function(me2){
+        var mid=me2[0],m=me2[1];
+        return uids.some(function(u){
+          var b=BETS[u]&&BETS[u][mid];
+          return b!==undefined&&calcPts(m,b).hit;
+        });
+      });
+      if(!anyHit) items.push('😱 '+tag(gid)+'אף אחד לא קלע בול אתמול — יום קשה לקבוצה');
+      var ydayPts={};
+      uids.forEach(function(u){
+        yMids.forEach(function(me2){
+          var b=BETS[u]&&BETS[u][me2[0]];
+          if(b===undefined) return;
+          ydayPts[u]=(ydayPts[u]||0)+calcPts(me2[1],b).total;
+        });
+      });
+      var topY=null;
+      Object.entries(ydayPts).forEach(function(e){ if(e[1]>0&&(topY===null||e[1]>ydayPts[topY])) topY=e[0]; });
+      if(topY) items.push('⭐ '+tag(gid)+'מצטיין האתמול: '+nameOf(topY)+' עם '+ydayPts[topY]+' נק׳!');
+    }
+
+    // achievements (computed within this group only)
+    var ach=_achievements(uids);
+    Object.entries(ach).forEach(function(e){
+      e[1].forEach(function(a){
+        items.push(a.icon+' '+tag(gid)+nameOf(e[0])+': '+a.label.split('—')[0].trim());
       });
     });
-    var topY=null;
-    Object.entries(ydayPts).forEach(function(e){ if(e[1]>0&&(topY===null||e[1]>ydayPts[topY])) topY=e[0]; });
-    if(topY) items.push('\u2B50 \u05DE\u05E6\u05D8\u05D9\u05D9\u05DF \u05D4\u05D0\u05EA\u05DE\u05D5\u05DC: '+nameOf(topY)+' \u05E2\u05DD '+ydayPts[topY]+' \u05E0\u05E7\u05F3!');
   }
 
-  // 2) Hours until next lock
+  if(viewGroups.length){
+    viewGroups.forEach(function(gid){ groupItems(gid, groupUids(gid)); });
+  } else {
+    groupItems(null, allUids());
+  }
+
+  // ── Group-agnostic items ──
+  // next lock countdown
   var next=null, nextM=null;
   Object.values(MATCHES).forEach(function(m){
     if(!m||!m.datetime) return;
@@ -3452,10 +3483,10 @@ function renderTicker(){
   });
   if(nextM){
     var hrs=Math.max(1,Math.round((next-now)/3600000));
-    items.push('\u23F0 '+hrs+' \u05E9\u05E2\u05D5\u05EA \u05DC\u05E0\u05E2\u05D9\u05DC\u05EA \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD: '+displayName(nextM.team1)+' \u05E0\u05D2\u05D3 '+displayName(nextM.team2));
+    items.push('⏰ '+hrs+' שעות לנעילת ההימורים: '+displayName(nextM.team1)+' נגד '+displayName(nextM.team2));
   }
 
-  // 12) PERSONAL: my unbet matches locking within 24h
+  // PERSONAL: my unbet matches locking within 24h
   var myUb=BETS[ME.uid]||{};
   var missingCnt=0;
   Object.entries(MATCHES).forEach(function(me2){
@@ -3467,30 +3498,22 @@ function renderTicker(){
     if(myUb[mid]===undefined) missingCnt++;
   });
   if(missingCnt>0){
-    items.push('\u26A0\uFE0F \u05D9\u05E9 \u05DC\u05DA '+missingCnt+' \u05DE\u05E9\u05D7\u05E7\u05D9\u05DD \u05DC\u05DC\u05D0 \u05D4\u05D9\u05DE\u05D5\u05E8 \u05E9\u05E0\u05E0\u05E2\u05DC\u05D9\u05DD \u05D1\u05D9\u05DE\u05DE\u05D4 \u05D4\u05E7\u05E8\u05D5\u05D1\u05D4!');
+    items.push('⚠️ יש לך '+missingCnt+' משחקים ללא הימור שננעלים ביממה הקרובה!');
   }
 
-  // 13) PERSONAL: special bets not filled (only while still open)
+  // PERSONAL: special bets not filled (only while still open)
   if(typeof specialLocked==='function'&&!specialLocked()&&window._mySpecial!==undefined){
     var sp=window._mySpecial||{};
     if(!sp.champion||!sp.scorer){
-      var what=!sp.champion&&!sp.scorer?'\u05D0\u05DC\u05D5\u05E4\u05D4 \u05D5\u05DE\u05DC\u05DA \u05E9\u05E2\u05E8\u05D9\u05DD':!sp.champion?'\u05E0\u05D1\u05D7\u05E8\u05EA \u05D0\u05DC\u05D5\u05E4\u05D4':'\u05DE\u05DC\u05DA \u05E9\u05E2\u05E8\u05D9\u05DD';
-      items.push('\uD83D\uDCCB \u05E2\u05D5\u05D3 \u05DC\u05D0 \u05D1\u05D7\u05E8\u05EA '+what+' \u2014 \u05E0\u05E0\u05E2\u05DC \u05D1\u05EA\u05D7\u05D9\u05DC\u05EA \u05D4\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC!');
+      var what=!sp.champion&&!sp.scorer?'אלופה ומלך שערים':!sp.champion?'נבחרת אלופה':'מלך שערים';
+      items.push('📋 עוד לא בחרת '+what+' — ננעל בתחילת המונדיאל!');
     }
   }
 
-  // 4) Achievements
-  var ach=_achievements(uids);
-  Object.entries(ach).forEach(function(e){
-    e[1].forEach(function(a){
-      items.push(a.icon+' '+nameOf(e[0])+': '+a.label.split('\u2014')[0].trim());
-    });
-  });
-
   if(!items.length){ bar.style.display='none'; return; }
   var track=items.map(function(it){return '<span class="ticker-item">'+it+'</span>';}).join('');
-  _setTicker(bar, track, '\u26BD \u05E2\u05D3\u05DB\u05D5\u05E0\u05D9 \u05D4\u05DC\u05D9\u05D2\u05D4:', function(){
-    showTickerModal('\u26BD \u05E2\u05D3\u05DB\u05D5\u05E0\u05D9 \u05D4\u05DC\u05D9\u05D2\u05D4', items);
+  _setTicker(bar, track, '⚽ עדכוני הליגה:', function(){
+    showTickerModal('⚽ עדכוני הליגה', items);
   });
 }
 window.renderTicker=renderTicker;
@@ -3569,42 +3592,81 @@ window._drawProgressChart=_drawProgressChart;
 
 function _allBetsSection(id, m, hasRes) {
   if(!ME) return '';
-  var myGroups=(USERS[ME.uid]&&USERS[ME.uid].groups)||[];
-  var isAdminUser=MEDATA&&MEDATA.isAdmin;
-  var allB=Object.entries(BETS).map(function(e2){
-    var uid2=e2[0],ub=e2[1];
-    var bet2=ub&&ub[id]; if(bet2===undefined) return null;
-    var u=USERS[uid2]||{};
-    var uG=u.groups||[];
-    var ok=u.isBot||u.isAdmin||isAdminUser||myGroups.length===0||uG.length===0||myGroups.some(function(g){return uG.includes(g);});
-    if(!ok) return null;
-    return {name:u.nickname||u.name||'?',bet:bet2,pts:hasRes?calcPts(m,bet2):null,isBot:u.isBot,isMe:uid2===ME.uid};
-  }).filter(Boolean).sort(function(a,b){return(a.isBot&&!b.isBot)?1:(!a.isBot&&b.isBot)?-1:0;});
-  if(!allB.length) return '';
-  // Crowd stats: % who got direction or better (only after result)
-  var crowdHtml='';
-  if(hasRes){
-    var okCnt=allB.filter(function(b){return b.pts&&(b.pts.hit||b.pts.dir);}).length;
-    var pct=Math.round((okCnt/allB.length)*100);
-    var txt=pct<=30?'\u05E8\u05E7 '+pct+'% \u05DE\u05D4\u05E7\u05D1\u05D5\u05E6\u05D4 \u05E6\u05D3\u05E7\u05D5 \u05D1\u05DB\u05D9\u05D5\u05D5\u05DF':pct+'% \u05DE\u05D4\u05E7\u05D1\u05D5\u05E6\u05D4 \u05E6\u05D3\u05E7\u05D5 \u05D1\u05DB\u05D9\u05D5\u05D5\u05DF';
-    crowdHtml='<div class="crowd-line"><span>'+txt+'</span><div class="crowd-bar"><div class="crowd-bar-fill" style="width:'+pct+'%;"></div></div></div>';
-  }
-  var rows=allB.map(function(b){
+  if(!Object.keys(USERS).length) return ''; // users not loaded yet — re-rendered when they arrive
+  var me=USERS[ME.uid]||{};
+  var myGroups=me.groups||[];
+  var isAdminUser=(MEDATA&&MEDATA.isAdmin)||!!me.isAdmin;
+
+  // Collect every bettor on this match
+  var bettors=[];
+  Object.entries(BETS).forEach(function(e2){
+    var uid2=e2[0], ub=e2[1];
+    var bet2=ub&&ub[id]; if(bet2===undefined) return;
+    var u=USERS[uid2]; if(!u) return;
+    bettors.push({uid:uid2,u:u,bet:bet2,pts:hasRes?calcPts(m,bet2):null,isBot:!!u.isBot,isMe:uid2===ME.uid,groups:u.groups||[]});
+  });
+  if(!bettors.length) return '';
+
+  function rowHtml(b){
     var cls=b.pts?(b.pts.hit?'badge-hit':b.pts.dir?'badge-dir':'badge-miss'):'badge-wait';
-    var pts=b.pts?((b.pts.total>0?'+':'')+b.pts.total+' \u05E0\u05E7\u05F3'):'\u23F3';
+    var pts=b.pts?((b.pts.total>0?'+':'')+b.pts.total+' נק׳'):'⏳';
     var meStyle=b.isMe?'background:rgba(255,215,0,0.06);border-radius:6px;padding:5px 6px;':'';
     var nameColor=b.isBot?'color:#74b9e0;':b.isMe?'color:var(--gold);':'';
-    var prefix=b.isMe?'\u2B50 ':'';
+    var prefix=b.isMe?'⭐ ':'';
+    var nm=b.u.nickname||b.u.name||'?';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);'+meStyle+'">'+
-      '<span style="font-size:12px;font-weight:700;'+nameColor+'">'+prefix+b.name+'</span>'+
+      '<span style="font-size:12px;font-weight:700;'+nameColor+'">'+prefix+nm+'</span>'+
       '<div style="display:flex;align-items:center;gap:8px;">'+
       '<span style="font-size:13px;font-weight:900;">'+b.bet[0]+' : '+b.bet[1]+'</span>'+
       '<span class="'+cls+'">'+pts+'</span>'+
       '</div></div>';
-  }).join('');
+  }
+  function crowdHtml(list){
+    if(!hasRes||!list.length) return '';
+    var okCnt=list.filter(function(b){return b.pts&&(b.pts.hit||b.pts.dir);}).length;
+    var pct=Math.round((okCnt/list.length)*100);
+    var txt=pct<=30?('רק '+pct+'% צדקו בכיוון'):(pct+'% צדקו בכיוון');
+    return '<div class="crowd-line"><span>'+txt+'</span><div class="crowd-bar"><div class="crowd-bar-fill" style="width:'+pct+'%;"></div></div></div>';
+  }
+  function sortRows(list){
+    return list.slice().sort(function(a,b){return(a.isBot&&!b.isBot)?1:(!a.isBot&&b.isBot)?-1:0;});
+  }
+
+  // Bot / admins / group-less users are visible inside every section
+  var globals=bettors.filter(function(b){return b.isBot||b.u.isAdmin||!b.groups.length;});
+  function sectionList(grpId){
+    var members=bettors.filter(function(b){return globals.indexOf(b)===-1 && b.groups.indexOf(grpId)!==-1;});
+    return members.concat(globals);
+  }
+
+  // Which group sections does this viewer see?
+  var viewGroups = isAdminUser ? Object.keys(ALL_GROUPS||{}) : myGroups.slice();
+
+  var html='', shown={};
+  if(viewGroups.length>1){
+    // Viewer belongs to several groups (or admin): split by group with headers
+    viewGroups.forEach(function(g){
+      var list=sectionList(g);
+      var realMembers=list.length-globals.length;
+      if(realMembers<=0) return; // skip empty group sections
+      list=sortRows(list);
+      list.forEach(function(b){shown[b.uid]=1;});
+      var gName=(ALL_GROUPS&&ALL_GROUPS[g]&&ALL_GROUPS[g].name)||g;
+      html+='<div style="font-size:11px;font-weight:900;color:#74b9e0;letter-spacing:0.5px;margin:10px 0 4px;padding-bottom:3px;border-bottom:1px solid rgba(116,185,224,0.25);">'+gName+' ('+list.length+')</div>'+
+        crowdHtml(list)+list.map(rowHtml).join('');
+    });
+  } else {
+    // Single group (or no group at all): flat list
+    var list = viewGroups.length===1 ? sectionList(viewGroups[0]) : bettors;
+    list=sortRows(list);
+    list.forEach(function(b){shown[b.uid]=1;});
+    html=crowdHtml(list)+list.map(rowHtml).join('');
+  }
+  if(!html) return '';
+  var total=Object.keys(shown).length;
   return '<div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,0.06);">'+
-    '<details><summary style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;">\u05D4\u05D9\u05DE\u05D5\u05E8\u05D9 \u05DB\u05D5\u05DC\u05DD ('+allB.length+')</summary>'+
-    '<div style="margin-top:8px;">'+crowdHtml+rows+'</div></details></div>';
+    '<details><summary style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;">הימורי כולם ('+total+')</summary>'+
+    '<div style="margin-top:8px;">'+html+'</div></details></div>';
 }
 
 function _ldrRow(s,i,extraStyle){
@@ -4029,7 +4091,15 @@ function screen(s){
 // ── AUTH ── (DO NOT MODIFY)
 el('google-btn').addEventListener('click', async ()=>{
   try { await signInWithPopup(auth, gp); }
-  catch(e){ console.error(e); el('login-error').style.display='block'; }
+  catch(e){
+    console.error('popup sign-in failed:', e.code||e);
+    // Popup blocked / unsupported (in-app & some mobile browsers) -> full-page redirect
+    if(e&&(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'||e.code==='auth/operation-not-supported-in-this-environment'||e.code==='auth/cancelled-popup-request')){
+      try { await signInWithRedirect(auth, gp); return; }
+      catch(e2){ console.error('redirect sign-in failed:', e2); }
+    }
+    el('login-error').style.display='block';
+  }
 });
 el('logout-btn').addEventListener('click', ()=> signOut(auth));
 
@@ -4094,6 +4164,7 @@ onAuthStateChanged(auth, async user=>{
   // Check reminders every 5 minutes
   setTimeout(checkAndSendReminders, 5000);
   setInterval(checkAndSendReminders, 300000);
+  setTimeout(checkAndSendReminders, 8000); // also check shortly after load
 });
 
 // ── PENDING ──
@@ -4133,7 +4204,7 @@ async function rejectU(uid){ await remove(ref(db,'users/'+uid)); toast('🗑 נ�
 function initData(){
   onValue(ref(db,'matches'),s=>{ MATCHES=s.exists()?s.val():{};  refreshAll(); });
   onValue(ref(db,'bets'),   s=>{ BETS=s.exists()?s.val():{};     refreshAll(); });
-  onValue(ref(db,'users'),  s=>{ if(s.exists()) USERS=s.val();   renderLeader(); renderGroupsSummary(); loadUsers(); });
+  onValue(ref(db,'users'),  s=>{ if(s.exists()) USERS=s.val();   refreshAll(); renderGroupsSummary(); loadUsers(); });
   onValue(ref(db,'scoring'),s=>{ if(s.exists()){ SCORING=s.val(); renderScoringTable(); if(MEDATA&&MEDATA.isAdmin) renderScoringEdit(); } });
 }
 function refreshAll(){
@@ -4382,7 +4453,7 @@ function renderMatches(){
     }
 
     // Show everyone's bets once match is locked
-    if(lk) {
+    if(lk && Object.keys(USERS).length) {
       // Get current user's groups for filtering
       const myGroups = (ME && USERS[ME.uid] && USERS[ME.uid].groups) || [];
       const isAdminUser = MEDATA && MEDATA.isAdmin;
