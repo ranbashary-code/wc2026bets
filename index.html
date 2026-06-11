@@ -138,7 +138,7 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 /* ── HERO ── */
 .hero{margin-top:54px;background:linear-gradient(135deg,#0c1525,#150a1e,#081200);padding:20px 16px;position:relative;overflow:hidden;border-bottom:1px solid var(--border);}
 .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(255,215,0,0.05),transparent 70%);}
-.hero-inner{max-width:860px;margin:0 auto;position:relative;}
+.hero-inner{max-width:1080px;margin:0 auto;position:relative;}
 .hero-day-label{
   font-family:'Bebas Neue',sans-serif;
   font-size:1.6rem;letter-spacing:6px;
@@ -246,7 +246,7 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 .ticker-item{display:inline-block;margin:0 32px 0 0;padding-left:32px;border-left:1px solid rgba(255,215,0,0.25);}
 .ticker-item:last-child{border-left:none;}
 @keyframes tickerMove{0%{transform:translateX(0);}100%{transform:translateX(50%);}}
-@keyframes tickerOnce{0%{transform:translateX(-100vw);}100%{transform:translateX(calc(100% + 150px));}}
+@keyframes tickerOnce{0%{transform:translateX(calc(-100vw + 70px));}100%{transform:translateX(calc(100% + 30px));}}
 body.light-mode #news-ticker{background:linear-gradient(90deg,rgba(200,150,10,0.06),rgba(200,150,10,0.02));}
 body.light-mode .ticker-track{color:#c8960a;}
 
@@ -290,7 +290,7 @@ body.light-mode .tabs{background:linear-gradient(180deg,#f4f6fb 0%,#e8ecf5 100%)
 #news-ticker,#wc-news-ticker{position:relative;padding-right:96px;cursor:pointer;}
 #wc-news-ticker{display:none;overflow:hidden;background:linear-gradient(90deg,rgba(116,185,224,0.1),rgba(116,185,224,0.03));border-top:1px solid rgba(116,185,224,0.2);border-bottom:1px solid rgba(116,185,224,0.2);padding-top:7px;padding-bottom:7px;white-space:nowrap;}
 #wc-news-ticker .ticker-track{color:#ffffff;}
-#wc-news-ticker .ticker-item b{color:#ffffff;}
+#wc-news-ticker .ticker-item b{color:#74b9e0;}
 #wc-news-ticker .ticker-item{border-left-color:rgba(116,185,224,0.3);}
 #wc-news-ticker .ticker-item a,#wc-news-ticker a.ticker-item{color:#ffffff;text-decoration:none;}
 .ticker-label{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center;padding:0 14px 0 18px;font-size:11.5px;font-weight:900;letter-spacing:0.5px;z-index:2;background:linear-gradient(270deg,#0d1526 78%,transparent);}
@@ -315,6 +315,28 @@ body.light-mode .ticker-label{background:linear-gradient(270deg,#f7f8fb 78%,tran
 body.light-mode .ticker-modal-box{background:#fff;}
 body.light-mode .ticker-modal-item{background:rgba(0,0,0,0.04);}
 body.light-mode .ticker-modal-item a{color:#2a6496;}
+
+
+/* ── Hero: two-column today layout (open / locked) ── */
+.hero-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
+.hero-cols.single{grid-template-columns:1fr;max-width:560px;margin:0 auto;}
+.hero-col{display:flex;flex-direction:column;gap:10px;min-width:0;}
+.hero-col-title{font-size:12px;font-weight:900;letter-spacing:1px;padding:7px 12px;border-radius:10px;text-align:center;}
+.hct-open{background:rgba(16,185,129,0.12);color:#34d399;border:1px solid rgba(16,185,129,0.25);}
+.hct-locked{background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);}
+.tm-compact{padding:10px 12px;}
+.tm-compact .tm-flag{width:30px;height:30px;}
+.tm-compact .tm-team-name{font-size:0.85rem;letter-spacing:1px;}
+.tm-compact .tm-teams-row{margin-bottom:6px;gap:6px;}
+.tm-compact .tm-vs{font-size:10px;}
+.tm-compact .tm-countdown{font-size:13px;}
+.tm-compact .stn-btn{width:26px;height:26px;font-size:13px;}
+.tm-compact .stn-val{font-size:15px;}
+.tm-compact .btn-place-bet{padding:6px 10px;font-size:11px;}
+.tm-compact .tm-bet-row{gap:5px;margin-top:8px;}
+@media(max-width:680px){.hero-cols{grid-template-columns:1fr;}}
+body.light-mode .hct-open{background:rgba(4,120,87,0.08);color:#047857;}
+body.light-mode .hct-locked{background:rgba(185,28,28,0.07);color:#b91c1c;}
 
 /* Inputs & Buttons */
 .inp{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'Rubik',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;direction:rtl;}
@@ -1595,6 +1617,30 @@ window.runBotiGoalBot = async function runBotiGoalBot() {
   }
 
   console.log(`✅ Boti-Goal: ${saved} saved, ${failed} failed`);
+  // ── SPECIAL BETS: bot picks champion & top scorer (once, while still open) ──
+  try{
+    if(typeof specialLocked==='function' && !specialLocked()){
+      const spSnap=await get(ref(db,'specialBets/'+BOT_UID));
+      const sp=spSnap.exists()?(spSnap.val()||{}):{};
+      if(!sp.champion||!sp.scorer){
+        const SCORERS={'ארגנטינה':'ליונל מסי','צרפת':'קיליאן אמבפה','אנגליה':'הארי קיין','ספרד':'למין ימאל','ברזיל':'ויניסיוס ז׳וניור','פורטוגל':'כריסטיאנו רונאלדו','גרמניה':'ג׳מאל מוסיאלה','נורווגיה':'ארלינג הולנד'};
+        // pick the strongest team in the tournament by the bot's tier table
+        let bestT=null,bestV=-1;
+        Object.values(MATCHES).forEach(mm=>{
+          [mm.team1,mm.team2].forEach(tn=>{
+            if(!tn||tn==='TBD') return;
+            const v=getTier(tn);
+            if(v>bestV||(v===bestV&&bestT&&tn<bestT)){bestV=v;bestT=tn;}
+          });
+        });
+        const champion=sp.champion||bestT||'צרפת';
+        const scorer=sp.scorer||SCORERS[champion]||'קיליאן אמבפה';
+        await set(ref(db,'specialBets/'+BOT_UID),{champion:champion,scorer:scorer});
+        console.log('🤖 Bot special bets:', champion, '/', scorer);
+      }
+    }
+  }catch(e){ console.warn('bot special bets failed:', e); }
+
   if(saved > 0){
     const srcInfo = oddsUsed > 0 ? ` (🌐 ${oddsUsed} לפי odds חיים${fallbackUsed?`, ${fallbackUsed} מנוע מקומי`:''})` : ' (מנוע מקומי)';
     toast(`🤖 Boti-Goal הימר על ${saved} משחקים — ${currentRound.label}!`);
@@ -2558,8 +2604,12 @@ async function checkAndSendReminders() {
   const todayStr = now.toDateString();
 
   // Get today's matches sorted by time
+  // Window: today 00:00 -> tomorrow 10:00, so night matches are included
+  // and people can bet on them before going to sleep
+  const _ws=new Date(); _ws.setHours(0,0,0,0);
+  const _we=new Date(_ws.getTime()+86400000); _we.setHours(10,0,0,0);
   const todayMatches = Object.entries(MATCHES)
-    .filter(([,m]) => m.datetime && new Date(m.datetime).toDateString() === todayStr)
+    .filter(([,m]) => { if(!m.datetime) return false; const t=new Date(m.datetime).getTime(); return t>=_ws.getTime() && t<=_we.getTime(); })
     .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
 
   if(!todayMatches.length) return;
@@ -2626,8 +2676,12 @@ async function sendManualReminders() {
 
   const now = new Date();
   const todayStr = now.toDateString();
+  // Window: today 00:00 -> tomorrow 10:00, so night matches are included
+  // and people can bet on them before going to sleep
+  const _ws=new Date(); _ws.setHours(0,0,0,0);
+  const _we=new Date(_ws.getTime()+86400000); _we.setHours(10,0,0,0);
   const todayMatches = Object.entries(MATCHES)
-    .filter(([,m]) => m.datetime && new Date(m.datetime).toDateString() === todayStr)
+    .filter(([,m]) => { if(!m.datetime) return false; const t=new Date(m.datetime).getTime(); return t>=_ws.getTime() && t<=_we.getTime(); })
     .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
 
   if(!todayMatches.length) {
@@ -3187,8 +3241,14 @@ function _setTicker(bar, itemsHtml, labelHtml, onClick){
   bar.innerHTML='<div class="ticker-track">'+itemsHtml+'</div>'+
     '<div class="ticker-label">'+labelHtml+'</div>';
   var tr=bar.querySelector('.ticker-track');
-  requestAnimationFrame(function(){
-    var cw=bar.clientWidth||800, tw=tr.scrollWidth||cw;
+  // Don't animate until the element is actually measurable (visible & laid out).
+  // Rendering while hidden gives width 0 -> wrong duration -> way-too-fast ticker.
+  function _measure(attempt){
+    var cw=bar.clientWidth, tw=tr.scrollWidth;
+    if((!cw||!tw)){
+      if(attempt<60){ setTimeout(function(){_measure(attempt+1);},250); }
+      return;
+    }
     var SPEED=75; // px per second - same for both banners
     var name, dur;
     if(tw>cw){
@@ -3198,14 +3258,15 @@ function _setTicker(bar, itemsHtml, labelHtml, onClick){
       name='tickerMove'; dur=Math.max(8,Math.round((full/2)/SPEED));
     }else{
       // short content: run the single copy across, enter left, exit right
-      name='tickerOnce'; dur=Math.max(8,Math.round((cw+2*tw+150)/SPEED));
+      name='tickerOnce'; dur=Math.max(8,Math.round((cw+tw+100)/SPEED));
     }
     // longhand (not shorthand) so the CSS :hover play-state rule can pause it
     tr.style.animationName=name;
     tr.style.animationDuration=dur+'s';
     tr.style.animationTimingFunction='linear';
     tr.style.animationIterationCount='infinite';
-  });
+  }
+  requestAnimationFrame(function(){_measure(0);});
   bar.onclick=onClick;
 }
 window._setTicker=_setTicker;
@@ -4124,32 +4185,34 @@ function startClock(){
 
 // ── TODAY'S MATCHES ──
 function renderToday(){
-  // "Today" window: from today 00:00 until tomorrow 10:00 AM
-  // (late-night matches up to 10:00 next morning are shown as today's)
+  // A match appears from its calendar window until 12h AFTER kickoff, then removed.
+  // Night matches (until 10:00 next morning) are included in advance.
+  const nowMs=Date.now();
   const winStart=new Date(); winStart.setHours(0,0,0,0);
   const winEnd=new Date(winStart.getTime()+86400000); winEnd.setHours(10,0,0,0);
-  const todayMs=Object.entries(MATCHES)
+  const allMs=Object.entries(MATCHES)
     .filter(([,m])=>{
       if(!m.datetime) return false;
       const t=new Date(m.datetime).getTime();
-      return t>=winStart.getTime() && t<=winEnd.getTime();
+      return (t+12*3600000)>nowMs && t<=winEnd.getTime();
     })
     .sort(([,a],[,b])=>a.datetime>b.datetime?1:-1);
   const container=el('today-matches');
-  if(!todayMs.length){ container.innerHTML='<div class="hero-empty">אין משחקים היום</div>'; return; }
+  (window._todayTimers||[]).forEach(clearInterval); window._todayTimers=[];
+  if(!allMs.length){ container.innerHTML='<div class="hero-empty">אין משחקים היום</div>'; return; }
   container.innerHTML='';
-  todayMs.forEach(([id,m])=>{
-    const isLocked=locked(m);
+
+  const openMs=allMs.filter(([,m])=>!locked(m));
+  const lockedMs=allMs.filter(([,m])=>locked(m));
+
+  function buildCard(id,m,isLocked){
     const myBet=BETS[ME&&ME.uid]&&BETS[ME.uid][id];
-    // Seed (or re-seed) from saved bet: if the user hasn't touched the controls
-    // this session, always reflect the bet stored in Firebase
     if(!todayBetScores[id] || (!todayBetScores[id].touched && myBet && (todayBetScores[id][0]!==myBet[0]||todayBetScores[id][1]!==myBet[1]))){
       todayBetScores[id]=myBet?[myBet[0],myBet[1]]:[0,0];
     }
     const s=todayBetScores[id];
-    const card=document.createElement('div'); card.className='today-match';
+    const card=document.createElement('div'); card.className='today-match tm-compact';
 
-    // Teams row with flags
     const teamsRow=document.createElement('div'); teamsRow.className='tm-teams-row';
     const t1=document.createElement('div'); t1.className='tm-team';
     const f1=document.createElement('div'); f1.className='tm-flag'; f1.innerHTML=getFlagHtml(m.team1);
@@ -4160,12 +4223,17 @@ function renderToday(){
     const vs=document.createElement('div'); vs.className='tm-vs'; vs.textContent='VS';
     const cd=document.createElement('div'); cd.className='tm-countdown'; cd.id='cd-'+id;
     const dt=document.createElement('div');
-    dt.style.cssText='font-size:10px;font-weight:700;color:var(--text2);margin-top:3px;direction:rtl;';
+    dt.style.cssText='font-size:9px;font-weight:700;color:var(--text2);margin-top:2px;direction:rtl;';
     const mDate=new Date(m.datetime);
     dt.textContent=mDate.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'})+' · '+mDate.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
     ctr.appendChild(vs); ctr.appendChild(cd); ctr.appendChild(dt);
-    function tickM(){ const diff=new Date(m.datetime).getTime()-Date.now(); if(diff<=0){cd.textContent='🔴 נעול';return;} const hh=Math.floor(diff/3600000),mm=Math.floor(diff%3600000/60000),ss=Math.floor(diff%60000/1000); cd.textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0'); }
-    tickM(); setInterval(tickM,1000);
+    if(isLocked){
+      cd.textContent='🔴 נעול';
+    } else {
+      function tickM(){ const diff=new Date(m.datetime).getTime()-Date.now(); if(diff<=0){cd.textContent='🔴 נעול';return;} const hh=Math.floor(diff/3600000),mm=Math.floor(diff%3600000/60000),ss=Math.floor(diff%60000/1000); cd.textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0'); }
+      tickM();
+      window._todayTimers.push(setInterval(tickM,1000));
+    }
 
     const t2=document.createElement('div'); t2.className='tm-team';
     const f2=document.createElement('div'); f2.className='tm-flag'; f2.innerHTML=getFlagHtml(m.team2);
@@ -4177,21 +4245,25 @@ function renderToday(){
 
     if(isLocked){
       const lb=document.createElement('div');
-      lb.style.cssText='margin-top:10px;';
+      lb.style.cssText='margin-top:6px;';
       if(myBet){
-        lb.innerHTML=`
-          <div style="text-align:center;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:10px;">
-            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">ההימור שלי</div>
-            <div style="font-size:26px;font-weight:900;color:var(--gold);letter-spacing:4px;">${myBet[0]} : ${myBet[1]}</div>
-          </div>`;
+        lb.innerHTML='<div style="text-align:center;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:5px;"><span style="font-size:10px;color:var(--text2);">ההימור שלי: </span><span style="font-size:15px;font-weight:900;color:var(--gold);letter-spacing:2px;">'+myBet[0]+' : '+myBet[1]+'</span></div>';
       } else {
-        lb.innerHTML=`<div style="text-align:center;padding:8px;font-size:12px;color:var(--text2);">🔴 הימורים נעולים</div>`;
+        lb.innerHTML='<div style="text-align:center;padding:4px;font-size:11px;color:var(--text2);">לא הימרת על משחק זה</div>';
       }
       card.appendChild(lb);
+      // Everyone's bets — open by default so today's bets are visible at a glance
+      const hasRes=m.result!==undefined;
+      const abHtml=(_allBetsSection(id,m,hasRes)||'').replace('<details>','<details open>');
+      if(abHtml){
+        const ab=document.createElement('div');
+        ab.innerHTML=abHtml;
+        card.appendChild(ab);
+      }
     } else {
       if(myBet){
         const ind=document.createElement('div');
-        ind.style.cssText='text-align:center;font-size:11px;font-weight:700;color:var(--gold);margin-top:8px;';
+        ind.style.cssText='text-align:center;font-size:10px;font-weight:700;color:var(--gold);margin-top:6px;';
         ind.textContent='✓ הימרת: '+myBet[0]+' : '+myBet[1]+' — ניתן לעדכן עד שעת תחילת המשחק';
         card.appendChild(ind);
       }
@@ -4205,8 +4277,7 @@ function renderToday(){
       const v2=document.createElement('div'); v2.className='stn-val'; v2.id='ts2-'+id; v2.textContent=s[1];
       const p2=document.createElement('button'); p2.className='stn-btn'; p2.textContent='+';
       const saveBtn=document.createElement('button'); saveBtn.className='btn-place-bet';
-      const btnLbl=myBet?'עדכן הימור':'בצע הימור';
-      saveBtn.textContent=btnLbl;
+      saveBtn.textContent=myBet?'עדכן הימור':'בצע הימור';
       m1.addEventListener('click',()=>{ s[0]=Math.max(0,s[0]-1); s.touched=true; v1.textContent=s[0]; });
       p1.addEventListener('click',()=>{ s[0]++; s.touched=true; v1.textContent=s[0]; });
       m2.addEventListener('click',()=>{ s[1]=Math.max(0,s[1]-1); s.touched=true; v2.textContent=s[1]; });
@@ -4222,8 +4293,24 @@ function renderToday(){
       betRow.appendChild(sep); betRow.appendChild(m2); betRow.appendChild(v2); betRow.appendChild(p2);
       betRow.appendChild(saveBtn); card.appendChild(betRow);
     }
-    container.appendChild(card);
-  });
+    return card;
+  }
+
+  const cols=document.createElement('div'); cols.className='hero-cols';
+  if(openMs.length){
+    const colO=document.createElement('div'); colO.className='hero-col';
+    colO.innerHTML='<div class="hero-col-title hct-open">⏳ פתוחים להימור</div>';
+    openMs.forEach(([id,m])=>colO.appendChild(buildCard(id,m,false)));
+    cols.appendChild(colO);
+  }
+  if(lockedMs.length){
+    const colL=document.createElement('div'); colL.className='hero-col';
+    colL.innerHTML='<div class="hero-col-title hct-locked">🔒 נעולים — הימורי כולם</div>';
+    lockedMs.forEach(([id,m])=>colL.appendChild(buildCard(id,m,true)));
+    cols.appendChild(colL);
+  }
+  if(cols.children.length===1) cols.classList.add('single');
+  container.appendChild(cols);
 }
 
 // ── MATCH FILTERS ──
