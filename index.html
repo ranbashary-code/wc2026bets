@@ -262,6 +262,55 @@ body.light-mode .skel::after{background:linear-gradient(90deg,transparent,rgba(0
 .crowd-bar{flex:1;height:6px;border-radius:3px;background:rgba(239,68,68,0.25);overflow:hidden;}
 .crowd-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#34d399,#10b981);}
 
+
+/* ── Mobile: leaderboard horizontal scroll with frozen name column ── */
+.leader-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.leader-table-head,.leader-row{min-width:560px;}
+.leader-rank-col{position:sticky;right:0;z-index:3;background:var(--card);}
+.leader-name{position:sticky;right:54px;z-index:3;background:var(--card);}
+.leader-table-head span:nth-child(1){position:sticky;right:0;z-index:3;background:var(--card);}
+.leader-table-head span:nth-child(2){position:sticky;right:54px;z-index:3;background:var(--card);display:flex;align-items:center;justify-content:flex-end;padding-left:8px;}
+body.light-mode .leader-rank-col,body.light-mode .leader-name,body.light-mode .leader-table-head span:nth-child(1),body.light-mode .leader-table-head span:nth-child(2){background:#fff;}
+
+/* ── Mobile: admin users table scroll with frozen name column ── */
+#users-list{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+#users-list .adm-tbl{min-width:640px;}
+#users-list .adm-tbl th:first-child,#users-list .adm-tbl td:first-child{position:sticky;right:0;z-index:2;background:var(--card);}
+body.light-mode #users-list .adm-tbl th:first-child,body.light-mode #users-list .adm-tbl td:first-child{background:#fff;}
+
+/* ── Tabs: prominent + scrollable-safe centering ── */
+.tabs{justify-content:flex-start;background:linear-gradient(180deg,#1c2c4f 0%,#13203a 100%);border-bottom:2px solid rgba(255,215,0,0.4);box-shadow:0 6px 20px rgba(0,0,0,0.4);}
+.tab:first-child{margin-inline-start:auto;}
+.tab:last-child{margin-inline-end:auto;}
+.tab{color:#b8c4dc;}
+body.light-mode .tabs{background:linear-gradient(180deg,#f4f6fb 0%,#e8ecf5 100%);border-bottom:2px solid rgba(200,150,10,0.45);box-shadow:0 4px 14px rgba(0,0,0,0.08);}
+
+/* ── Ticker: label, pause on hover, two banners ── */
+#news-ticker,#wc-news-ticker{position:relative;padding-right:96px;cursor:pointer;}
+#wc-news-ticker{display:none;overflow:hidden;background:linear-gradient(90deg,rgba(116,185,224,0.1),rgba(116,185,224,0.03));border-top:1px solid rgba(116,185,224,0.2);border-bottom:1px solid rgba(116,185,224,0.2);padding-top:7px;padding-bottom:7px;white-space:nowrap;}
+#wc-news-ticker .ticker-track{color:#9fc6ff;}
+#wc-news-ticker .ticker-item{border-left-color:rgba(116,185,224,0.3);}
+#wc-news-ticker .ticker-item a,#wc-news-ticker a.ticker-item{color:#9fc6ff;text-decoration:none;}
+.ticker-label{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center;padding:0 14px 0 18px;font-size:11.5px;font-weight:900;letter-spacing:0.5px;z-index:2;background:linear-gradient(270deg,#0d1526 78%,transparent);}
+#news-ticker .ticker-label{color:var(--gold);}
+#wc-news-ticker .ticker-label{color:#74b9e0;}
+#news-ticker:hover .ticker-track,#wc-news-ticker:hover .ticker-track{animation-play-state:paused;}
+body.light-mode #wc-news-ticker{background:linear-gradient(90deg,rgba(50,110,160,0.07),rgba(50,110,160,0.02));}
+body.light-mode #wc-news-ticker .ticker-track,body.light-mode #wc-news-ticker .ticker-item a{color:#2a6496;}
+body.light-mode .ticker-label{background:linear-gradient(270deg,#f7f8fb 78%,transparent);}
+
+/* ── Ticker modal (floating list of all messages) ── */
+.ticker-modal{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:80px 16px 20px;}
+.ticker-modal.open{display:flex;}
+.ticker-modal-box{background:var(--card);border:1px solid var(--border);border-radius:16px;max-width:560px;width:100%;max-height:72vh;overflow-y:auto;padding:18px;direction:rtl;}
+.ticker-modal-title{font-size:15px;font-weight:900;color:var(--gold);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+.ticker-modal-item{padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.04);margin-bottom:7px;font-size:13px;font-weight:600;line-height:1.5;}
+.ticker-modal-item a{color:#9fc6ff;text-decoration:none;font-weight:700;}
+.ticker-modal-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1;}
+body.light-mode .ticker-modal-box{background:#fff;}
+body.light-mode .ticker-modal-item{background:rgba(0,0,0,0.04);}
+body.light-mode .ticker-modal-item a{color:#2a6496;}
+
 /* Inputs & Buttons */
 .inp{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'Rubik',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;direction:rtl;}
 .inp:focus{border-color:var(--gold);}
@@ -684,6 +733,7 @@ select.inp option{background:var(--card2);}
   </div>
 
   <div id="news-ticker"></div>
+  <div id="wc-news-ticker"></div>
 
   <div class="tabs">
     <div class="tab active" data-page="main" id="tab-main">🏆 ראשי</div>
@@ -3004,6 +3054,99 @@ function _achievements(uids){
 }
 
 // ══════════════ TICKER ══════════════
+// ══════════════ WC NEWS TICKER (Israeli sports sites) ══════════════
+var NEWS_FEEDS=[
+  {src:'ONE', url:'https://www.one.co.il/cat/coop/xml/rss/newsfeed.aspx'},
+  {src:'\u05D5\u05D5\u05D0\u05DC\u05D4 \u05E1\u05E4\u05D5\u05E8\u05D8', url:'https://rss.walla.co.il/feed/3'},
+  {src:'ynet \u05E1\u05E4\u05D5\u05E8\u05D8', url:'https://www.ynet.co.il/Integration/StoryRss3.xml'},
+  {src:'\u05E1\u05E4\u05D5\u05E8\u05D8 5', url:'https://www.sport5.co.il/rss.aspx?FolderID=64'},
+  {src:'\u05D9\u05E9\u05E8\u05D0\u05DC \u05D4\u05D9\u05D5\u05DD', url:'https://www.israelhayom.co.il/rss.xml'}
+];
+var _newsItems=[];
+var _newsFetched=0;
+
+async function fetchWcNews(){
+  // refresh at most every 30 min
+  if(Date.now()-_newsFetched<30*60000 && _newsItems.length) return _newsItems;
+  _newsFetched=Date.now();
+  var keywords=['\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC','\u05D2\u05D1\u05D9\u05E2 \u05D4\u05E2\u05D5\u05DC\u05DD'];
+  var cutoff=Date.now()-2*86400000; // last 48h
+  var all=[];
+  await Promise.all(NEWS_FEEDS.map(async function(feed){
+    try{
+      var prox='https://api.allorigins.win/raw?url='+encodeURIComponent(feed.url);
+      var res=await fetch(prox);
+      if(!res.ok) return;
+      var xml=await res.text();
+      var doc=new DOMParser().parseFromString(xml,'text/xml');
+      var items=doc.querySelectorAll('item');
+      items.forEach(function(it){
+        var title=(it.querySelector('title')||{}).textContent||'';
+        var link=(it.querySelector('link')||{}).textContent||'';
+        var pd=(it.querySelector('pubDate')||{}).textContent||'';
+        var t=pd?new Date(pd).getTime():0;
+        if(t&&t<cutoff) return;
+        var hit=keywords.some(function(k){return title.indexOf(k)!==-1;});
+        if(!hit) return;
+        all.push({src:feed.src, title:title.trim(), link:link.trim(), t:t||Date.now()});
+      });
+    }catch(e){ console.warn('news feed failed:', feed.src, e); }
+  }));
+  // dedupe by title, sort newest first, cap 12
+  var seen={};
+  _newsItems=all.filter(function(a){
+    var k=a.title.slice(0,60);
+    if(seen[k]) return false;
+    seen[k]=1; return true;
+  }).sort(function(a,b){return b.t-a.t;}).slice(0,12);
+  return _newsItems;
+}
+
+function renderNewsTicker(){
+  var bar=document.getElementById('wc-news-ticker');
+  if(!bar) return;
+  if(!_newsItems.length){ bar.style.display='none'; return; }
+  bar.style.display='block';
+  var track=_newsItems.map(function(n){
+    return '<a class="ticker-item" href="'+n.link.replace(/"/g,'&quot;')+'" target="_blank" rel="noopener" onclick="event.stopPropagation()"><b>['+n.src+']</b> '+n.title.replace(/</g,'&lt;')+'</a>';
+  }).join('');
+  var dur=Math.max(10,_newsItems.length*2.2);
+  bar.innerHTML='<div class="ticker-track" style="animation-duration:'+dur+'s;">'+track+track+'</div>'+
+    '<div class="ticker-label">\uD83D\uDCF0 \u05D7\u05D3\u05E9\u05D5\u05EA:</div>';
+  bar.onclick=function(){
+    showTickerModal('\uD83D\uDCF0 \u05D7\u05D3\u05E9\u05D5\u05EA \u05D4\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC',
+      _newsItems.map(function(n){
+        return '<a href="'+n.link.replace(/"/g,'&quot;')+'" target="_blank" rel="noopener"><b>['+n.src+']</b> '+n.title.replace(/</g,'&lt;')+'</a>';
+      }));
+  };
+}
+
+async function initWcNews(){
+  try{ await fetchWcNews(); renderNewsTicker(); }catch(e){ console.warn('initWcNews:', e); }
+}
+window.initWcNews=initWcNews;
+setInterval(initWcNews, 30*60000);
+
+// ══════════════ TICKER MODAL ══════════════
+function showTickerModal(title, htmlItems){
+  var modal=document.getElementById('ticker-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='ticker-modal';
+    modal.className='ticker-modal';
+    modal.addEventListener('click', function(ev){ if(ev.target===modal) modal.classList.remove('open'); });
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML='<div class="ticker-modal-box">'+
+    '<div class="ticker-modal-title"><span>'+title+'</span>'+
+    '<button class="ticker-modal-close" onclick="document.getElementById(\'ticker-modal\').classList.remove(\'open\')">\u2715</button></div>'+
+    htmlItems.map(function(h){return '<div class="ticker-modal-item">'+h+'</div>';}).join('')+
+    '</div>';
+  modal.classList.add('open');
+}
+window.showTickerModal=showTickerModal;
+
+
 function renderTicker(){
   var bar=document.getElementById('news-ticker');
   if(!bar||!ME) return;
@@ -3155,7 +3298,12 @@ function renderTicker(){
   if(!items.length){ bar.style.display='none'; return; }
   bar.style.display='block';
   var track=items.map(function(it){return '<span class="ticker-item">'+it+'</span>';}).join('');
-  bar.innerHTML='<div class="ticker-track">'+track+track+'</div>';
+  var dur=Math.max(10,items.length*2.2);
+  bar.innerHTML='<div class="ticker-track" style="animation-duration:'+dur+'s;">'+track+track+'</div>'+
+    '<div class="ticker-label">\u26BD \u05E2\u05D3\u05DB\u05D5\u05E0\u05D9 \u05D4\u05DC\u05D9\u05D2\u05D4:</div>';
+  bar.onclick=function(){
+    showTickerModal('\u26BD \u05E2\u05D3\u05DB\u05D5\u05E0\u05D9 \u05D4\u05DC\u05D9\u05D2\u05D4', items.map(function(it){return it.replace(/</g,'&lt;').replace(/&lt;b&gt;/g,'<b>').replace(/&lt;\/b&gt;/g,'</b>');}));
+  };
 }
 window.renderTicker=renderTicker;
 
@@ -3801,7 +3949,7 @@ function initData(){
   onValue(ref(db,'scoring'),s=>{ if(s.exists()){ SCORING=s.val(); renderScoringTable(); if(MEDATA&&MEDATA.isAdmin) renderScoringEdit(); } });
 }
 function refreshAll(){
-  renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket(); try{renderTicker();}catch(e){}
+  renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket(); try{renderTicker();}catch(e){} try{if(!window._newsInit){window._newsInit=1;initWcNews();}}catch(e){}
   checkBotRoundAlert();
   if(MEDATA?.isAdmin) renderKoEditor();
   renderSpecialBetsReveal(specialLocked());
