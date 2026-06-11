@@ -270,7 +270,7 @@ body.light-mode .skel::after{background:linear-gradient(90deg,transparent,rgba(0
 .leader-rank-col{position:sticky;right:0;z-index:3;background:var(--card);}
 .leader-name{position:sticky;right:54px;z-index:3;background:var(--card);}
 .leader-table-head span:nth-child(1){position:sticky;right:0;z-index:3;background:var(--card);}
-.leader-table-head span:nth-child(2){position:sticky;right:54px;z-index:3;background:var(--card);display:flex;align-items:center;justify-content:flex-end;padding-left:8px;}
+.leader-table-head span:nth-child(2){position:sticky;right:54px;z-index:3;background:var(--card);display:flex;align-items:center;justify-content:flex-start;padding-right:12px;}
 body.light-mode .leader-rank-col,body.light-mode .leader-name,body.light-mode .leader-table-head span:nth-child(1),body.light-mode .leader-table-head span:nth-child(2){background:#fff;}
 
 /* ── Mobile: admin users table scroll with frozen name column ── */
@@ -3119,6 +3119,9 @@ async function fetchWcNews(){
     seen[k]=1; return true;
   }).sort(function(a,b){return b.t-a.t;}).slice(0,12);
   console.log('\uD83D\uDCF0 total news items:', _newsItems.length);
+  if(_newsItems.length){
+    try{ localStorage.setItem('wcNewsCache', JSON.stringify({t:Date.now(), items:_newsItems})); }catch(e){}
+  }
   return _newsItems;
 }
 
@@ -3132,15 +3135,21 @@ function _setTicker(bar, itemsHtml, labelHtml, onClick){
   var tr=bar.querySelector('.ticker-track');
   requestAnimationFrame(function(){
     var cw=bar.clientWidth||800, tw=tr.scrollWidth||cw;
-    var SPEED=150; // px per second
+    var SPEED=90; // px per second
+    var name, dur;
     if(tw>cw){
       // long content: duplicate for a seamless loop
       tr.innerHTML=tr.innerHTML+tr.innerHTML;
-      tr.style.animation='tickerMove '+Math.max(6,Math.round(tw/SPEED))+'s linear infinite';
+      name='tickerMove'; dur=Math.max(8,Math.round(tw/SPEED));
     }else{
       // short content: run the single copy across, enter left, exit right
-      tr.style.animation='tickerOnce '+Math.max(6,Math.round((cw+2*tw+150)/SPEED))+'s linear infinite';
+      name='tickerOnce'; dur=Math.max(8,Math.round((cw+2*tw+150)/SPEED));
     }
+    // longhand (not shorthand) so the CSS :hover play-state rule can pause it
+    tr.style.animationName=name;
+    tr.style.animationDuration=dur+'s';
+    tr.style.animationTimingFunction='linear';
+    tr.style.animationIterationCount='infinite';
   });
   bar.onclick=onClick;
 }
@@ -3176,6 +3185,23 @@ async function initWcNews(){
 }
 window.initWcNews=initWcNews;
 setInterval(initWcNews, 30*60000);
+
+// Show cached news instantly (no wait), then refresh in background
+function _loadNewsCache(){
+  try{
+    var raw=localStorage.getItem('wcNewsCache');
+    if(!raw) return;
+    var o=JSON.parse(raw);
+    if(!o||!o.items||!o.items.length) return;
+    var cutoff=Date.now()-2*86400000;
+    var fresh=o.items.filter(function(n){return !n.t||n.t>=cutoff;});
+    if(fresh.length){ _newsItems=fresh; renderNewsTicker(); }
+  }catch(e){}
+}
+// kick off immediately on page load - don't wait for Firebase data
+window._newsInit=1;
+try{ _loadNewsCache(); }catch(e){}
+try{ initWcNews(); }catch(e){}
 
 // ══════════════ TICKER MODAL ══════════════
 function showTickerModal(title, htmlItems){
