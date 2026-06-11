@@ -3760,9 +3760,16 @@ function startClock(){
 
 // ── TODAY'S MATCHES ──
 function renderToday(){
-  const now=new Date(), todayStr=now.toDateString();
+  // "Today" window: from today 00:00 until tomorrow 10:00 AM
+  // (late-night matches up to 10:00 next morning are shown as today's)
+  const winStart=new Date(); winStart.setHours(0,0,0,0);
+  const winEnd=new Date(winStart.getTime()+86400000); winEnd.setHours(10,0,0,0);
   const todayMs=Object.entries(MATCHES)
-    .filter(([,m])=>m.datetime && new Date(m.datetime).toDateString()===todayStr)
+    .filter(([,m])=>{
+      if(!m.datetime) return false;
+      const t=new Date(m.datetime).getTime();
+      return t>=winStart.getTime() && t<=winEnd.getTime();
+    })
     .sort(([,a],[,b])=>a.datetime>b.datetime?1:-1);
   const container=el('today-matches');
   if(!todayMs.length){ container.innerHTML='<div class="hero-empty">אין משחקים היום</div>'; return; }
@@ -3770,7 +3777,11 @@ function renderToday(){
   todayMs.forEach(([id,m])=>{
     const isLocked=locked(m);
     const myBet=BETS[ME&&ME.uid]&&BETS[ME.uid][id];
-    if(!todayBetScores[id]) todayBetScores[id]=myBet?[myBet[0],myBet[1]]:[0,0];
+    // Seed (or re-seed) from saved bet: if the user hasn't touched the controls
+    // this session, always reflect the bet stored in Firebase
+    if(!todayBetScores[id] || (!todayBetScores[id].touched && myBet && (todayBetScores[id][0]!==myBet[0]||todayBetScores[id][1]!==myBet[1]))){
+      todayBetScores[id]=myBet?[myBet[0],myBet[1]]:[0,0];
+    }
     const s=todayBetScores[id];
     const card=document.createElement('div'); card.className='today-match';
 
@@ -3810,6 +3821,12 @@ function renderToday(){
       }
       card.appendChild(lb);
     } else {
+      if(myBet){
+        const ind=document.createElement('div');
+        ind.style.cssText='text-align:center;font-size:11px;font-weight:700;color:var(--gold);margin-top:8px;';
+        ind.textContent='✓ הימרת: '+myBet[0]+' : '+myBet[1]+' — ניתן לעדכן עד הנעילה';
+        card.appendChild(ind);
+      }
       const betRow=document.createElement('div'); betRow.className='tm-bet-row';
       const lbl=document.createElement('span'); lbl.className='tm-bet-label'; lbl.textContent='הימור:';
       const m1=document.createElement('button'); m1.className='stn-btn'; m1.textContent='-';
@@ -3819,16 +3836,19 @@ function renderToday(){
       const m2=document.createElement('button'); m2.className='stn-btn'; m2.textContent='-';
       const v2=document.createElement('div'); v2.className='stn-val'; v2.id='ts2-'+id; v2.textContent=s[1];
       const p2=document.createElement('button'); p2.className='stn-btn'; p2.textContent='+';
-      const saveBtn=document.createElement('button'); saveBtn.className='btn-place-bet'; saveBtn.textContent='בצע הימור';
-      m1.addEventListener('click',()=>{ s[0]=Math.max(0,s[0]-1); v1.textContent=s[0]; });
-      p1.addEventListener('click',()=>{ s[0]++; v1.textContent=s[0]; });
-      m2.addEventListener('click',()=>{ s[1]=Math.max(0,s[1]-1); v2.textContent=s[1]; });
-      p2.addEventListener('click',()=>{ s[1]++; v2.textContent=s[1]; });
+      const saveBtn=document.createElement('button'); saveBtn.className='btn-place-bet';
+      const btnLbl=myBet?'עדכן הימור':'בצע הימור';
+      saveBtn.textContent=btnLbl;
+      m1.addEventListener('click',()=>{ s[0]=Math.max(0,s[0]-1); s.touched=true; v1.textContent=s[0]; });
+      p1.addEventListener('click',()=>{ s[0]++; s.touched=true; v1.textContent=s[0]; });
+      m2.addEventListener('click',()=>{ s[1]=Math.max(0,s[1]-1); s.touched=true; v2.textContent=s[1]; });
+      p2.addEventListener('click',()=>{ s[1]++; s.touched=true; v2.textContent=s[1]; });
       saveBtn.addEventListener('click', async()=>{
         if(!ME) return;
         if(locked(m)){ toast('🔴 המשחק כבר התחיל!'); renderToday(); return; }
         await set(ref(db,'bets/'+ME.uid+'/'+id),[s[0],s[1]]);
-        toast('✅ הימור נשמר!'); saveBtn.textContent='✅ נשמר!'; setTimeout(()=>saveBtn.textContent='בצע הימור',2000);
+        s.touched=false;
+        toast('✅ הימור נשמר!'); saveBtn.textContent='✅ נשמר!'; setTimeout(()=>saveBtn.textContent='עדכן הימור',2000);
       });
       betRow.appendChild(lbl); betRow.appendChild(m1); betRow.appendChild(v1); betRow.appendChild(p1);
       betRow.appendChild(sep); betRow.appendChild(m2); betRow.appendChild(v2); betRow.appendChild(p2);
