@@ -289,10 +289,10 @@ body.light-mode .tabs{background:linear-gradient(180deg,#f4f6fb 0%,#e8ecf5 100%)
 /* ── Ticker: label, pause on hover, two banners ── */
 #news-ticker,#wc-news-ticker{position:relative;padding-right:96px;cursor:pointer;}
 #wc-news-ticker{display:none;overflow:hidden;background:linear-gradient(90deg,rgba(116,185,224,0.1),rgba(116,185,224,0.03));border-top:1px solid rgba(116,185,224,0.2);border-bottom:1px solid rgba(116,185,224,0.2);padding-top:7px;padding-bottom:7px;white-space:nowrap;}
-#wc-news-ticker .ticker-track{color:#e8f1ff;}
-#wc-news-ticker .ticker-item b{color:#74b9e0;}
+#wc-news-ticker .ticker-track{color:#ffffff;}
+#wc-news-ticker .ticker-item b{color:#ffffff;}
 #wc-news-ticker .ticker-item{border-left-color:rgba(116,185,224,0.3);}
-#wc-news-ticker .ticker-item a,#wc-news-ticker a.ticker-item{color:#e8f1ff;text-decoration:none;}
+#wc-news-ticker .ticker-item a,#wc-news-ticker a.ticker-item{color:#ffffff;text-decoration:none;}
 .ticker-label{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center;padding:0 14px 0 18px;font-size:11.5px;font-weight:900;letter-spacing:0.5px;z-index:2;background:linear-gradient(270deg,#0d1526 78%,transparent);}
 #news-ticker .ticker-label{color:var(--gold);}
 #wc-news-ticker .ticker-label{color:#74b9e0;}
@@ -3090,33 +3090,65 @@ async function _fetchViaProxy(url){
   return null;
 }
 
+// Google News aggregates ALL Israeli outlets (ONE, Sport5, walla, ynet...) in one stable feed
+var GNEWS_URL='https://news.google.com/rss/search?q='+encodeURIComponent('\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC when:2d')+'&hl=he&gl=IL&ceid=IL:he';
+
 async function fetchWcNews(){
   if(Date.now()-_newsFetched<30*60000 && _newsItems.length) return _newsItems;
   _newsFetched=Date.now();
-  var keywords=['\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC','\u05D2\u05D1\u05D9\u05E2 \u05D4\u05E2\u05D5\u05DC\u05DD'];
+  var keywords=['\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC','\u05D2\u05D1\u05D9\u05E2 \u05D4\u05E2\u05D5\u05DC\u05DD','\u05E0\u05D1\u05D7\u05E8\u05EA'];
   var cutoff=Date.now()-2*86400000;
   var all=[];
-  await Promise.all(NEWS_FEEDS.map(async function(feed){
-    try{
-      var xml=await _fetchViaProxy(feed.url);
-      if(!xml){ console.warn('\uD83D\uDCF0 feed unreachable:', feed.src); return; }
-      var doc=new DOMParser().parseFromString(xml,'text/xml');
-      var items=doc.querySelectorAll('item');
-      var matched=0;
-      items.forEach(function(it){
+
+  // ── PRIMARY: Google News (multi-source, includes source name per item) ──
+  try{
+    var gxml=await _fetchViaProxy(GNEWS_URL);
+    if(gxml){
+      var gdoc=new DOMParser().parseFromString(gxml,'text/xml');
+      gdoc.querySelectorAll('item').forEach(function(it){
         var title=(it.querySelector('title')||{}).textContent||'';
         var link=(it.querySelector('link')||{}).textContent||'';
         var pd=(it.querySelector('pubDate')||{}).textContent||'';
+        var srcEl=it.querySelector('source');
+        var src=srcEl&&srcEl.textContent?srcEl.textContent.trim():'\u05D7\u05D3\u05E9\u05D5\u05EA';
         var t=pd?new Date(pd).getTime():0;
         if(t&&t<cutoff) return;
-        var hit=keywords.some(function(k){return title.indexOf(k)!==-1;});
-        if(!hit) return;
-        matched++;
-        all.push({src:feed.src, title:title.trim(), link:link.trim(), t:t||Date.now()});
+        // Google News titles end with " - Source" - strip it
+        var cut=title.lastIndexOf(' - ');
+        if(cut>10) title=title.slice(0,cut);
+        all.push({src:src, title:title.trim(), link:link.trim(), t:t||Date.now()});
       });
-      console.log('\uD83D\uDCF0', feed.src, ':', items.length, 'items,', matched, 'matched');
-    }catch(e){ console.warn('\uD83D\uDCF0 feed failed:', feed.src, e); }
-  }));
+      console.log('\uD83D\uDCF0 Google News:', all.length, 'items');
+    } else {
+      console.warn('\uD83D\uDCF0 Google News unreachable');
+    }
+  }catch(e){ console.warn('\uD83D\uDCF0 Google News failed:', e); }
+
+  // ── FALLBACK: direct site feeds (only if Google News returned nothing) ──
+  if(!all.length){
+    await Promise.all(NEWS_FEEDS.map(async function(feed){
+      try{
+        var xml=await _fetchViaProxy(feed.url);
+        if(!xml){ console.warn('\uD83D\uDCF0 feed unreachable:', feed.src); return; }
+        var doc=new DOMParser().parseFromString(xml,'text/xml');
+        var items=doc.querySelectorAll('item');
+        var matched=0;
+        items.forEach(function(it){
+          var title=(it.querySelector('title')||{}).textContent||'';
+          var link=(it.querySelector('link')||{}).textContent||'';
+          var pd=(it.querySelector('pubDate')||{}).textContent||'';
+          var t=pd?new Date(pd).getTime():0;
+          if(t&&t<cutoff) return;
+          var hit=keywords.some(function(k){return title.indexOf(k)!==-1;});
+          if(!hit) return;
+          matched++;
+          all.push({src:feed.src, title:title.trim(), link:link.trim(), t:t||Date.now()});
+        });
+        console.log('\uD83D\uDCF0', feed.src, ':', items.length, 'items,', matched, 'matched');
+      }catch(e){ console.warn('\uD83D\uDCF0 feed failed:', feed.src, e); }
+    }));
+  }
+
   var seen={};
   var deduped=all.filter(function(a){
     var k=a.title.slice(0,60);
@@ -3135,7 +3167,11 @@ async function fetchWcNews(){
       if(bySrc[s].length&&mixed.length<12){ mixed.push(bySrc[s].shift()); more=true; }
     });
   }
-  _newsItems=mixed;
+  if(mixed.length){
+    _newsItems=mixed;
+  } else {
+    console.log('\uD83D\uDCF0 refresh returned 0 items - keeping previous', _newsItems.length);
+  }
   console.log('\uD83D\uDCF0 total news items:', _newsItems.length, 'from', srcOrder.length, 'sources');
   if(_newsItems.length){
     try{ localStorage.setItem('wcNewsCache', JSON.stringify({t:Date.now(), items:_newsItems})); }catch(e){}
@@ -3153,12 +3189,13 @@ function _setTicker(bar, itemsHtml, labelHtml, onClick){
   var tr=bar.querySelector('.ticker-track');
   requestAnimationFrame(function(){
     var cw=bar.clientWidth||800, tw=tr.scrollWidth||cw;
-    var SPEED=90; // px per second
+    var SPEED=75; // px per second - same for both banners
     var name, dur;
     if(tw>cw){
       // long content: duplicate for a seamless loop
       tr.innerHTML=tr.innerHTML+tr.innerHTML;
-      name='tickerMove'; dur=Math.max(8,Math.round(tw/SPEED));
+      var full=tr.scrollWidth||tw*2;
+      name='tickerMove'; dur=Math.max(8,Math.round((full/2)/SPEED));
     }else{
       // short content: run the single copy across, enter left, exit right
       name='tickerOnce'; dur=Math.max(8,Math.round((cw+2*tw+150)/SPEED));
