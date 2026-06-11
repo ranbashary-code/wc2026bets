@@ -226,7 +226,7 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 .leader-table-head{display:grid;grid-template-columns:54px minmax(90px,1fr) 90px 90px 90px 90px;padding:7px 0;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);}
 .leader-table-head span{font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;text-align:center;}
 .leader-table-head span:nth-child(2){text-align:right;padding-right:12px;}
-.leader-table-wrap .leader-row{border-radius:0;border:none;border-bottom:1px solid var(--border);margin-bottom:0;}
+.leader-table-wrap .leader-row{border-radius:0;border:none;border-bottom:1px solid var(--border);margin-bottom:0;overflow:visible;}
 .leader-table-wrap .leader-row:last-child{border-bottom:none;}
 .leader-table-wrap .leader-row.rank-1,.leader-table-wrap .leader-row.rank-2,.leader-table-wrap .leader-row.rank-3{border:none;border-bottom:1px solid var(--border);}
 
@@ -242,10 +242,11 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 
 /* News ticker */
 #news-ticker{display:none;overflow:hidden;background:linear-gradient(90deg,rgba(255,215,0,0.08),rgba(255,215,0,0.03));border-top:1px solid rgba(255,215,0,0.15);border-bottom:1px solid rgba(255,215,0,0.15);padding:7px 0;white-space:nowrap;position:relative;}
-.ticker-track{display:inline-block;font-size:12.5px;font-weight:700;color:var(--gold);animation:tickerMove 40s linear infinite;padding-right:100%;}
-.ticker-item{margin:0 32px 0 0;padding-left:32px;border-left:1px solid rgba(255,215,0,0.25);}
+.ticker-track{display:inline-block;font-size:12.5px;font-weight:700;color:var(--gold);will-change:transform;}
+.ticker-item{display:inline-block;margin:0 32px 0 0;padding-left:32px;border-left:1px solid rgba(255,215,0,0.25);}
 .ticker-item:last-child{border-left:none;}
 @keyframes tickerMove{0%{transform:translateX(0);}100%{transform:translateX(50%);}}
+@keyframes tickerOnce{0%{transform:translateX(-100vw);}100%{transform:translateX(calc(100% + 150px));}}
 body.light-mode #news-ticker{background:linear-gradient(90deg,rgba(200,150,10,0.06),rgba(200,150,10,0.02));}
 body.light-mode .ticker-track{color:#c8960a;}
 
@@ -3064,22 +3065,39 @@ var NEWS_FEEDS=[
 ];
 var _newsItems=[];
 var _newsFetched=0;
+var _newsRetried=false;
+
+// Try multiple CORS proxies until one works
+async function _fetchViaProxy(url){
+  var proxies=[
+    function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);},
+    function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u);}
+  ];
+  for(var i=0;i<proxies.length;i++){
+    try{
+      var r=await fetch(proxies[i](url));
+      if(r.ok){
+        var t=await r.text();
+        if(t&&t.length>200) return t;
+      }
+    }catch(e){}
+  }
+  return null;
+}
 
 async function fetchWcNews(){
-  // refresh at most every 30 min
   if(Date.now()-_newsFetched<30*60000 && _newsItems.length) return _newsItems;
   _newsFetched=Date.now();
   var keywords=['\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC','\u05D2\u05D1\u05D9\u05E2 \u05D4\u05E2\u05D5\u05DC\u05DD'];
-  var cutoff=Date.now()-2*86400000; // last 48h
+  var cutoff=Date.now()-2*86400000;
   var all=[];
   await Promise.all(NEWS_FEEDS.map(async function(feed){
     try{
-      var prox='https://api.allorigins.win/raw?url='+encodeURIComponent(feed.url);
-      var res=await fetch(prox);
-      if(!res.ok) return;
-      var xml=await res.text();
+      var xml=await _fetchViaProxy(feed.url);
+      if(!xml){ console.warn('\uD83D\uDCF0 feed unreachable:', feed.src); return; }
       var doc=new DOMParser().parseFromString(xml,'text/xml');
       var items=doc.querySelectorAll('item');
+      var matched=0;
       items.forEach(function(it){
         var title=(it.querySelector('title')||{}).textContent||'';
         var link=(it.querySelector('link')||{}).textContent||'';
@@ -3088,41 +3106,73 @@ async function fetchWcNews(){
         if(t&&t<cutoff) return;
         var hit=keywords.some(function(k){return title.indexOf(k)!==-1;});
         if(!hit) return;
+        matched++;
         all.push({src:feed.src, title:title.trim(), link:link.trim(), t:t||Date.now()});
       });
-    }catch(e){ console.warn('news feed failed:', feed.src, e); }
+      console.log('\uD83D\uDCF0', feed.src, ':', items.length, 'items,', matched, 'matched');
+    }catch(e){ console.warn('\uD83D\uDCF0 feed failed:', feed.src, e); }
   }));
-  // dedupe by title, sort newest first, cap 12
   var seen={};
   _newsItems=all.filter(function(a){
     var k=a.title.slice(0,60);
     if(seen[k]) return false;
     seen[k]=1; return true;
   }).sort(function(a,b){return b.t-a.t;}).slice(0,12);
+  console.log('\uD83D\uDCF0 total news items:', _newsItems.length);
   return _newsItems;
 }
+
+// ══════════════ SHARED TICKER ENGINE ══════════════
+// Renders a ticker bar: items flow left->right up to the label, wrap from the left.
+// Single short message runs alone (no duplication); long content loops seamlessly.
+function _setTicker(bar, itemsHtml, labelHtml, onClick){
+  bar.style.display='block';
+  bar.innerHTML='<div class="ticker-track">'+itemsHtml+'</div>'+
+    '<div class="ticker-label">'+labelHtml+'</div>';
+  var tr=bar.querySelector('.ticker-track');
+  requestAnimationFrame(function(){
+    var cw=bar.clientWidth||800, tw=tr.scrollWidth||cw;
+    var SPEED=150; // px per second
+    if(tw>cw){
+      // long content: duplicate for a seamless loop
+      tr.innerHTML=tr.innerHTML+tr.innerHTML;
+      tr.style.animation='tickerMove '+Math.max(6,Math.round(tw/SPEED))+'s linear infinite';
+    }else{
+      // short content: run the single copy across, enter left, exit right
+      tr.style.animation='tickerOnce '+Math.max(6,Math.round((cw+2*tw+150)/SPEED))+'s linear infinite';
+    }
+  });
+  bar.onclick=onClick;
+}
+window._setTicker=_setTicker;
 
 function renderNewsTicker(){
   var bar=document.getElementById('wc-news-ticker');
   if(!bar) return;
   if(!_newsItems.length){ bar.style.display='none'; return; }
-  bar.style.display='block';
   var track=_newsItems.map(function(n){
     return '<a class="ticker-item" href="'+n.link.replace(/"/g,'&quot;')+'" target="_blank" rel="noopener" onclick="event.stopPropagation()"><b>['+n.src+']</b> '+n.title.replace(/</g,'&lt;')+'</a>';
   }).join('');
-  var dur=Math.max(10,_newsItems.length*2.2);
-  bar.innerHTML='<div class="ticker-track" style="animation-duration:'+dur+'s;">'+track+track+'</div>'+
-    '<div class="ticker-label">\uD83D\uDCF0 \u05D7\u05D3\u05E9\u05D5\u05EA:</div>';
-  bar.onclick=function(){
+  _setTicker(bar, track, '\uD83D\uDCF0 \u05D7\u05D3\u05E9\u05D5\u05EA:', function(){
     showTickerModal('\uD83D\uDCF0 \u05D7\u05D3\u05E9\u05D5\u05EA \u05D4\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC',
       _newsItems.map(function(n){
         return '<a href="'+n.link.replace(/"/g,'&quot;')+'" target="_blank" rel="noopener"><b>['+n.src+']</b> '+n.title.replace(/</g,'&lt;')+'</a>';
       }));
-  };
+  });
 }
 
 async function initWcNews(){
-  try{ await fetchWcNews(); renderNewsTicker(); }catch(e){ console.warn('initWcNews:', e); }
+  try{
+    await fetchWcNews();
+    renderNewsTicker();
+    if(!_newsItems.length && !_newsRetried){
+      _newsRetried=true;
+      setTimeout(async function(){
+        _newsFetched=0;
+        try{ await fetchWcNews(); renderNewsTicker(); }catch(e){}
+      }, 15000);
+    }
+  }catch(e){ console.warn('initWcNews:', e); }
 }
 window.initWcNews=initWcNews;
 setInterval(initWcNews, 30*60000);
@@ -3296,14 +3346,10 @@ function renderTicker(){
   });
 
   if(!items.length){ bar.style.display='none'; return; }
-  bar.style.display='block';
   var track=items.map(function(it){return '<span class="ticker-item">'+it+'</span>';}).join('');
-  var dur=Math.max(10,items.length*2.2);
-  bar.innerHTML='<div class="ticker-track" style="animation-duration:'+dur+'s;">'+track+track+'</div>'+
-    '<div class="ticker-label">\u26BD \u05E2\u05D3\u05DB\u05D5\u05E0\u05D9 \u05D4\u05DC\u05D9\u05D2\u05D4:</div>';
-  bar.onclick=function(){
-    showTickerModal('\u26BD \u05E2\u05D3\u05DB\u05D5\u05E0\u05D9 \u05D4\u05DC\u05D9\u05D2\u05D4', items.map(function(it){return it.replace(/</g,'&lt;').replace(/&lt;b&gt;/g,'<b>').replace(/&lt;\/b&gt;/g,'</b>');}));
-  };
+  _setTicker(bar, track, '\u26BD \u05E2\u05D3\u05DB\u05D5\u05E0\u05D9 \u05D4\u05DC\u05D9\u05D2\u05D4:', function(){
+    showTickerModal('\u26BD \u05E2\u05D3\u05DB\u05D5\u05E0\u05D9 \u05D4\u05DC\u05D9\u05D2\u05D4', items);
+  });
 }
 window.renderTicker=renderTicker;
 
