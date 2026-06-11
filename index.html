@@ -930,7 +930,8 @@ select.inp option{background:var(--card2);}
               <input class="inp" id="odds-api-key-input" type="password" placeholder="הדבק מפתח API..." style="flex:1;font-size:12px;direction:ltr;">
               <button class="btn btn-ghost btn-xs" id="save-odds-key-btn" style="flex-shrink:0;">💾 שמור</button>
             </div>
-            <p style="font-size:10px;color:var(--text2);margin-top:6px;">עם מפתח — הבוט מהמר לפי יחסי הימורים חיים. בלעדיו — מנוע מקומי.</p>
+            <div id="odds-key-status" style="font-size:11px;font-weight:700;margin-top:6px;min-height:14px;"></div>
+            <p style="font-size:10px;color:var(--text2);margin-top:4px;">עם מפתח — הבוט מהמר לפי יחסי הימורים חיים. בלעדיו — מנוע מקומי.</p>
           </div>
 
           <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על הסיבוב הקרוב</button>
@@ -1279,9 +1280,25 @@ window.deleteBotOpenBets = async function(){
 // Save/load odds API key
 window.saveOddsApiKey = async function(){
   var inp=el('odds-api-key-input');
-  if(!inp||!inp.value.trim()){ toast('\u05D4\u05D6\u05DF \u05DE\u05E4\u05EA\u05D7 API'); return; }
-  await set(ref(db,'admin/bot_config/oddsApiKey'), inp.value.trim());
-  toast('\u2705 \u05DE\u05E4\u05EA\u05D7 \u05E0\u05E9\u05DE\u05E8!');
+  var st=el('odds-key-status');
+  if(!inp||!inp.value.trim()){
+    toast('\u05D4\u05D6\u05DF \u05DE\u05E4\u05EA\u05D7 API');
+    if(st){ st.textContent='\u26A0\uFE0F \u05D4\u05E9\u05D3\u05D4 \u05E8\u05D9\u05E7'; st.style.color='#fbbf24'; }
+    return;
+  }
+  var btn=el('save-odds-key-btn');
+  if(btn){ btn.disabled=true; btn.textContent='\u23F3'; }
+  if(st){ st.textContent='\u05E9\u05D5\u05DE\u05E8...'; st.style.color='var(--text2)'; }
+  try{
+    await set(ref(db,'admin/bot_config/oddsApiKey'), inp.value.trim());
+    toast('\u2705 \u05DE\u05E4\u05EA\u05D7 \u05E0\u05E9\u05DE\u05E8!');
+    if(st){ st.textContent='\u2705 \u05D4\u05DE\u05E4\u05EA\u05D7 \u05E0\u05E9\u05DE\u05E8 \u05D1\u05D4\u05E6\u05DC\u05D7\u05D4'; st.style.color='#34d399'; }
+  }catch(e2){
+    console.error('saveOddsApiKey failed:', e2);
+    toast('\u274C \u05E9\u05D2\u05D9\u05D0\u05D4: '+(e2.code||e2.message));
+    if(st){ st.textContent='\u274C \u05E9\u05D2\u05D9\u05D0\u05D4: '+(e2.code||e2.message); st.style.color='#f87171'; }
+  }
+  if(btn){ btn.disabled=false; btn.textContent='\uD83D\uDCBE \u05E9\u05DE\u05D5\u05E8'; }
 };
 
 
