@@ -922,7 +922,19 @@ select.inp option{background:var(--card2);}
             </div>
           </div>
           <div id="bot-rounds-status" style="margin-bottom:12px;display:flex;flex-direction:column;gap:4px;"></div>
+
+          <!-- Real odds API key -->
+          <div style="margin-bottom:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);">
+            <p style="font-size:11px;font-weight:700;color:#74b9e0;margin-bottom:8px;">🌐 נתוני אמת — The Odds API</p>
+            <div style="display:flex;gap:6px;">
+              <input class="inp" id="odds-api-key-input" type="password" placeholder="הדבק מפתח API..." style="flex:1;font-size:12px;direction:ltr;">
+              <button class="btn btn-ghost btn-xs" id="save-odds-key-btn" style="flex-shrink:0;">💾 שמור</button>
+            </div>
+            <p style="font-size:10px;color:var(--text2);margin-top:6px;">עם מפתח — הבוט מהמר לפי יחסי הימורים חיים. בלעדיו — מנוע מקומי.</p>
+          </div>
+
           <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על הסיבוב הקרוב</button>
+          <button class="btn btn-red btn-xs" id="delete-bot-bets-btn" style="width:100%;margin-bottom:8px;">🗑 מחק הימורי בוט (משחקים שטרם ננעלו)</button>
           <div id="bot-run-status" style="font-size:12px;text-align:center;color:var(--text2);min-height:16px;"></div>
         </div>
       </div>
@@ -1092,6 +1104,185 @@ async function checkBotRoundAlert() {
   updateCountdown();
   window._botBannerTimer = setInterval(updateCountdown, 1000);
 }
+
+
+// ══════════════ REAL ODDS ENGINE (The Odds API) ══════════════
+// Hebrew -> English team name mapping for odds matching
+const TEAM_EN = {
+  '\u05D0\u05E8\u05D2\u05E0\u05D8\u05D9\u05E0\u05D4':['argentina'],
+  '\u05E6\u05E8\u05E4\u05EA':['france'],
+  '\u05E1\u05E4\u05E8\u05D3':['spain'],
+  '\u05D0\u05E0\u05D2\u05DC\u05D9\u05D4':['england'],
+  '\u05D1\u05E8\u05D6\u05D9\u05DC':['brazil'],
+  '\u05E4\u05D5\u05E8\u05D8\u05D5\u05D2\u05DC':['portugal'],
+  '\u05D2\u05E8\u05DE\u05E0\u05D9\u05D4':['germany'],
+  '\u05D4\u05D5\u05DC\u05E0\u05D3':['netherlands','holland'],
+  '\u05D1\u05DC\u05D2\u05D9\u05D4':['belgium'],
+  '\u05D0\u05D5\u05E8\u05D5\u05D2\u05D5\u05D5\u05D0\u05D9':['uruguay'],
+  '\u05E7\u05D5\u05DC\u05D5\u05DE\u05D1\u05D9\u05D4':['colombia'],
+  '\u05DE\u05E8\u05D5\u05E7\u05D5':['morocco'],
+  '\u05D9\u05E4\u05DF':['japan'],
+  '\u05D0\u05E8\u05D4\u05D1':['usa','united states'],
+  '\u05D0\u05E8\u05D4"\u05D1':['usa','united states'],
+  '\u05DE\u05E7\u05E1\u05D9\u05E7\u05D5':['mexico'],
+  '\u05E7\u05E0\u05D3\u05D4':['canada'],
+  '\u05D3\u05E0\u05DE\u05E8\u05E7':['denmark'],
+  '\u05E9\u05D5\u05D5\u05D9\u05D9\u05E5':['switzerland'],
+  '\u05E7\u05E8\u05D5\u05D0\u05D8\u05D9\u05D4':['croatia'],
+  '\u05E1\u05E0\u05D2\u05DC':['senegal'],
+  '\u05D0\u05D5\u05E1\u05D8\u05E8\u05DC\u05D9\u05D4':['australia'],
+  '\u05D3\u05E8\u05D5\u05DD \u05E7\u05D5\u05E8\u05D9\u05D0\u05D4':['south korea','korea republic'],
+  '\u05E0\u05D5\u05E8\u05D5\u05D5\u05D2\u05D9\u05D4':['norway'],
+  '\u05D0\u05D5\u05E7\u05E8\u05D0\u05D9\u05E0\u05D4':['ukraine'],
+  '\u05E4\u05D5\u05DC\u05D9\u05DF':['poland'],
+  '\u05D8\u05D5\u05E8\u05E7\u05D9\u05D4':['turkey','turkiye'],
+  '\u05D0\u05D5\u05E1\u05D8\u05E8\u05D9\u05D4':['austria'],
+  '\u05E1\u05E8\u05D1\u05D9\u05D4':['serbia'],
+  '\u05DE\u05E6\u05E8\u05D9\u05DD':['egypt'],
+  '\u05E0\u05D9\u05D2\u05E8\u05D9\u05D4':['nigeria'],
+  '\u05D7\u05D5\u05E3 \u05D4\u05E9\u05E0\u05D4\u05D1':['ivory coast','cote d'],
+  '\u05D2\u05D0\u05E0\u05D4':['ghana'],
+  '\u05E7\u05DE\u05E8\u05D5\u05DF':['cameroon'],
+  '\u05D0\u05E7\u05D5\u05D5\u05D3\u05D5\u05E8':['ecuador'],
+  '\u05E4\u05E8\u05D5':['peru'],
+  '\u05E6\u05F3\u05D9\u05DC\u05D4':['chile'],
+  '\u05D5\u05E0\u05E6\u05D5\u05D0\u05DC\u05D4':['venezuela'],
+  '\u05D1\u05D5\u05DC\u05D9\u05D1\u05D9\u05D4':['bolivia'],
+  '\u05E4\u05E8\u05D2\u05D5\u05D5\u05D0\u05D9':['paraguay'],
+  '\u05E2\u05E8\u05D1 \u05D4\u05E1\u05E2\u05D5\u05D3\u05D9\u05EA':['saudi arabia'],
+  '\u05D0\u05D9\u05E8\u05D0\u05DF':['iran'],
+  '\u05E2\u05D9\u05E8\u05D0\u05E7':['iraq'],
+  '\u05E7\u05D8\u05D0\u05E8':['qatar'],
+  '\u05D0\u05D5\u05D6\u05D1\u05E7\u05D9\u05E1\u05D8\u05DF':['uzbekistan'],
+  '\u05E1\u05DC\u05D5\u05D1\u05E7\u05D9\u05D4':['slovakia'],
+  '\u05E6\u05F3\u05DB\u05D9\u05D4':['czech republic','czechia'],
+  '\u05E8\u05D5\u05DE\u05E0\u05D9\u05D4':['romania'],
+  '\u05D4\u05D5\u05E0\u05D2\u05E8\u05D9\u05D4':['hungary'],
+  '\u05E1\u05E7\u05D5\u05D8\u05DC\u05E0\u05D3':['scotland'],
+  '\u05D5\u05D5\u05DC\u05E1':['wales'],
+  '\u05D3\u05E8\u05D5\u05DD \u05D0\u05E4\u05E8\u05D9\u05E7\u05D4':['south africa'],
+  '\u05E7\u05E0\u05D9\u05D4':['kenya'],
+  '\u05EA\u05D5\u05E0\u05D9\u05E1\u05D9\u05D4':['tunisia'],
+  '\u05D0\u05DC\u05D2\u05F3\u05D9\u05E8\u05D9\u05D4':['algeria'],
+  '\u05E0\u05D9\u05D5 \u05D6\u05D9\u05DC\u05E0\u05D3':['new zealand'],
+  '\u05E4\u05E0\u05DE\u05D4':['panama'],
+  '\u05D4\u05D5\u05E0\u05D3\u05D5\u05E8\u05E1':['honduras'],
+  '\u05D2\u05D5\u05D0\u05D8\u05DE\u05DC\u05D4':['guatemala'],
+  '\u05E7\u05D5\u05E1\u05D8\u05D4 \u05E8\u05D9\u05E7\u05D4':['costa rica'],
+  '\u05D9\u05E8\u05D3\u05DF':['jordan'],
+  '\u05DB\u05E3 \u05D5\u05E8\u05D3\u05D4':['cape verde','cabo verde'],
+  '\u05D4\u05D0\u05D9\u05D8\u05D9':['haiti'],
+  '\u05E7\u05D5\u05E8\u05D0\u05E1\u05D0\u05D5':['curacao']
+};
+
+function _teamToEn(hebName){
+  if(!hebName) return [];
+  if(TEAM_EN[hebName]) return TEAM_EN[hebName];
+  for(var k in TEAM_EN){
+    if(hebName.indexOf(k)!==-1 || k.indexOf(hebName)!==-1) return TEAM_EN[k];
+  }
+  return [];
+}
+
+// Fetch live odds for the World Cup from The Odds API
+async function fetchWcOdds(apiKey){
+  var url='https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup/odds/?apiKey='
+    +encodeURIComponent(apiKey)+'&regions=eu&markets=h2h&oddsFormat=decimal';
+  var res=await fetch(url);
+  if(!res.ok) throw new Error('odds api '+res.status);
+  return await res.json();
+}
+
+// Convert a match's bookmaker odds to averaged implied probabilities
+function _eventProbs(ev){
+  var sums={home:0,draw:0,away:0}, n=0;
+  (ev.bookmakers||[]).forEach(function(bk){
+    (bk.markets||[]).forEach(function(mk){
+      if(mk.key!=='h2h') return;
+      var o={};
+      (mk.outcomes||[]).forEach(function(oc){
+        var nm=(oc.name||'').toLowerCase();
+        if(nm==='draw') o.draw=1/oc.price;
+        else if(nm===(ev.home_team||'').toLowerCase()) o.home=1/oc.price;
+        else if(nm===(ev.away_team||'').toLowerCase()) o.away=1/oc.price;
+      });
+      if(o.home&&o.away){
+        var tot=(o.home||0)+(o.draw||0)+(o.away||0);
+        sums.home+=o.home/tot; sums.draw+=(o.draw||0)/tot; sums.away+=o.away/tot;
+        n++;
+      }
+    });
+  });
+  if(!n) return null;
+  return {home:sums.home/n, draw:sums.draw/n, away:sums.away/n};
+}
+
+// Find odds event matching a Hebrew-named match
+function findOddsEvent(events, team1Heb, team2Heb){
+  var en1=_teamToEn(team1Heb), en2=_teamToEn(team2Heb);
+  if(!en1.length||!en2.length) return null;
+  for(var i=0;i<events.length;i++){
+    var ev=events[i];
+    var h=(ev.home_team||'').toLowerCase(), a=(ev.away_team||'').toLowerCase();
+    var m1h=en1.some(function(e){return h.indexOf(e)!==-1;});
+    var m1a=en1.some(function(e){return a.indexOf(e)!==-1;});
+    var m2h=en2.some(function(e){return h.indexOf(e)!==-1;});
+    var m2a=en2.some(function(e){return a.indexOf(e)!==-1;});
+    if((m1h&&m2a)||(m1a&&m2h)){
+      var p=_eventProbs(ev);
+      if(!p) return null;
+      // orient: probs for team1/draw/team2
+      if(m1h&&m2a) return {p1:p.home, pd:p.draw, p2:p.away};
+      return {p1:p.away, pd:p.draw, p2:p.home};
+    }
+  }
+  return null;
+}
+
+// Generate a realistic score from win/draw probabilities
+function predictFromOdds(probs, stage, team1, team2){
+  var p1=probs.p1, pd=probs.pd, p2=probs.p2;
+  // deterministic per-match variation
+  var seed=((team1||'').charCodeAt(0)+(team2||' ').charCodeAt(0))%3;
+  // Draw is the most likely outcome
+  if(pd>=p1&&pd>=p2){
+    return seed===0?[0,0]:[1,1];
+  }
+  var fav=p1>p2?1:2;
+  var gap=Math.abs(p1-p2);
+  var s_fav, s_und;
+  if(gap>=0.5){ s_fav=3; s_und=0; }
+  else if(gap>=0.35){ s_fav=2; s_und=0; }
+  else if(gap>=0.18){ s_fav=2; s_und=1; }
+  else { s_fav=seed===1?2:1; s_und=seed===1?1:0; }
+  return fav===1?[s_fav,s_und]:[s_und,s_fav];
+}
+
+// Delete bot bets on matches that have not locked yet
+window.deleteBotOpenBets = async function(){
+  if(!confirm('\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA \u05DB\u05DC \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9 \u05D4\u05D1\u05D5\u05D8 \u05E2\u05DC \u05DE\u05E9\u05D7\u05E7\u05D9\u05DD \u05E9\u05D8\u05E8\u05DD \u05E0\u05E0\u05E2\u05DC\u05D5?')) return;
+  var st=el('bot-run-status');
+  var snap=await get(ref(db,'bets/'+BOT_UID));
+  if(!snap.exists()){ if(st)st.textContent='\u05D0\u05D9\u05DF \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD \u05DC\u05DE\u05D7\u05D9\u05E7\u05D4'; return; }
+  var bb=snap.val(), removed=0;
+  for(var mid in bb){
+    var m=MATCHES[mid];
+    if(m&&!locked(m)){
+      await remove(ref(db,'bets/'+BOT_UID+'/'+mid));
+      removed++;
+    }
+  }
+  if(st){ st.textContent='\uD83D\uDDD1 \u05E0\u05DE\u05D7\u05E7\u05D5 '+removed+' \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD \u05E4\u05EA\u05D5\u05D7\u05D9\u05DD \u05E9\u05DC \u05D4\u05D1\u05D5\u05D8'; st.style.color='#f87171'; }
+  checkBotRoundAlert();
+};
+
+// Save/load odds API key
+window.saveOddsApiKey = async function(){
+  var inp=el('odds-api-key-input');
+  if(!inp||!inp.value.trim()){ toast('\u05D4\u05D6\u05DF \u05DE\u05E4\u05EA\u05D7 API'); return; }
+  await set(ref(db,'admin/bot_config/oddsApiKey'), inp.value.trim());
+  toast('\u2705 \u05DE\u05E4\u05EA\u05D7 \u05E0\u05E9\u05DE\u05E8!');
+};
 
 
 window.runBotiGoalBot = async function runBotiGoalBot() {
@@ -1281,11 +1472,37 @@ window.runBotiGoalBot = async function runBotiGoalBot() {
   // ── Save predictions one by one with clear error reporting ──
   if(statusEl){ statusEl.textContent=`💾 שומר ${pending.length} הימורים...`; }
 
+  // ── Fetch real odds (with fallback to local engine) ──
+  let oddsEvents = null;
+  let oddsUsed = 0, fallbackUsed = 0;
+  try {
+    const keySnap = await get(ref(db, 'admin/bot_config/oddsApiKey'));
+    const apiKey = keySnap.exists() ? keySnap.val() : null;
+    if(apiKey){
+      if(statusEl){ statusEl.textContent = '🌐 מושך יחסי הימורים חיים...'; }
+      oddsEvents = await fetchWcOdds(apiKey);
+      console.log('🌐 Odds events:', oddsEvents.length);
+    } else {
+      console.log('🌐 No odds API key configured — using local engine');
+    }
+  } catch(err) {
+    console.warn('🌐 Odds fetch failed, falling back to local engine:', err);
+    oddsEvents = null;
+  }
+
   let saved = 0;
   let failed = 0;
   for(const [id, m] of pending){
     if(locked(m)) continue;
-    const [s1, s2] = predictScore(m.team1, m.team2, m.stage||'group', completedCtx);
+    let s1, s2;
+    const probs = oddsEvents ? findOddsEvent(oddsEvents, m.team1, m.team2) : null;
+    if(probs){
+      [s1, s2] = predictFromOdds(probs, m.stage||'group', m.team1, m.team2);
+      oddsUsed++;
+    } else {
+      [s1, s2] = predictScore(m.team1, m.team2, m.stage||'group', completedCtx);
+      fallbackUsed++;
+    }
     try {
       await set(ref(db, 'bets/' + BOT_UID + '/' + id), [s1, s2]);
       saved++;
@@ -1305,8 +1522,9 @@ window.runBotiGoalBot = async function runBotiGoalBot() {
 
   console.log(`✅ Boti-Goal: ${saved} saved, ${failed} failed`);
   if(saved > 0){
+    const srcInfo = oddsUsed > 0 ? ` (🌐 ${oddsUsed} לפי odds חיים${fallbackUsed?`, ${fallbackUsed} מנוע מקומי`:''})` : ' (מנוע מקומי)';
     toast(`🤖 Boti-Goal הימר על ${saved} משחקים — ${currentRound.label}!`);
-    if(statusEl){ statusEl.textContent=`✅ הימר על ${saved} משחקים — ${currentRound.label}!`; statusEl.style.color='#34d399'; }
+    if(statusEl){ statusEl.textContent=`✅ הימר על ${saved} משחקים${srcInfo}`; statusEl.style.color='#34d399'; }
     const bb = el('bot-round-banner'); if(bb) bb.style.display='none';
     // Reload BETS so leaderboard updates immediately
     const freshBets = await get(ref(db, 'bets'));
@@ -3912,8 +4130,17 @@ el('run-bot-btn')&&el('run-bot-btn').addEventListener('click', async()=>{
   const btn=el('run-bot-btn');
   btn.disabled=true; btn.textContent='⏳ מריץ...';
   await runBotiGoalBot();
-  btn.disabled=false; btn.textContent='⚡ הפעל Boti-Goal — המר על כל המשחקים';
+  btn.disabled=false; btn.textContent='⚡ הפעל Boti-Goal — המר על הסיבוב הקרוב';
 });
+el('save-odds-key-btn')&&el('save-odds-key-btn').addEventListener('click', ()=>window.saveOddsApiKey());
+el('delete-bot-bets-btn')&&el('delete-bot-bets-btn').addEventListener('click', ()=>window.deleteBotOpenBets());
+// Load saved odds key into the field (masked)
+(async()=>{
+  try{
+    const ks=await get(ref(db,'admin/bot_config/oddsApiKey'));
+    if(ks.exists()&&el('odds-api-key-input')) el('odds-api-key-input').value=ks.val();
+  }catch(e){}
+})();
 async function loadUsers(){
   const lst=el('users-list'); if(!lst) return;
   const s=await get(ref(db,'users'));
