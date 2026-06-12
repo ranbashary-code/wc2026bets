@@ -2738,7 +2738,7 @@ function initGroups() {
   onValue(ref(db,'groups'), snap=>{
     ALL_GROUPS = snap.exists() ? snap.val() : {};
     renderGroupsSummary();
-    renderLeader(); // re-render leaderboard with groups
+    try{ refreshAll(); }catch(e){ renderLeader(); } // re-render EVERYTHING with groups
   });
 }
 
@@ -3361,7 +3361,16 @@ function renderTicker(){
   var isAdm=(MEDATA&&MEDATA.isAdmin)||!!me.isAdmin;
 
   // The groups whose updates this viewer may see (NEVER another group's)
-  var viewGroups = isAdm ? Object.keys(ALL_GROUPS||{}) : myGroups.slice();
+  var viewGroups;
+  if(isAdm){
+    var gset={};
+    Object.keys(ALL_GROUPS||{}).forEach(function(g){gset[g]=1;});
+    // also pick up any group referenced in user data (covers late/empty ALL_GROUPS)
+    Object.values(USERS).forEach(function(u){ (u.groups||[]).forEach(function(g){gset[g]=1;}); });
+    viewGroups=Object.keys(gset);
+  } else {
+    viewGroups=myGroups.slice();
+  }
   var multi = viewGroups.length>1;
 
   function nameOf(u){var x=USERS[u]||{};return x.nickname||x.name||'?';}
@@ -3645,33 +3654,50 @@ function _allBetsSection(id, m, hasRes) {
 
   // Bot / admins / group-less users are visible inside every section
   var globals=bettors.filter(function(b){return b.isBot||b.u.isAdmin||!b.groups.length;});
+  var realBettors=bettors.filter(function(b){return globals.indexOf(b)===-1;});
+
+  function groupNameOf(gid){ return (ALL_GROUPS&&ALL_GROUPS[gid]&&ALL_GROUPS[gid].name)||gid; }
   function sectionList(grpId){
-    var members=bettors.filter(function(b){return globals.indexOf(b)===-1 && b.groups.indexOf(grpId)!==-1;});
+    var members=realBettors.filter(function(b){return b.groups.indexOf(grpId)!==-1;});
     return members.concat(globals);
   }
 
   // Which group sections does this viewer see?
-  var viewGroups = isAdminUser ? Object.keys(ALL_GROUPS||{}) : myGroups.slice();
+  // Admin sees ALL groups that actually appear in the data; member sees own groups.
+  var viewGroups;
+  if(isAdminUser){
+    var gset={};
+    // groups defined in ALL_GROUPS
+    Object.keys(ALL_GROUPS||{}).forEach(function(g){gset[g]=1;});
+    // plus any group referenced by an actual bettor (covers missing ALL_GROUPS)
+    realBettors.forEach(function(b){ b.groups.forEach(function(g){gset[g]=1;}); });
+    viewGroups=Object.keys(gset);
+  } else {
+    viewGroups=myGroups.slice();
+  }
+  // keep only groups that have at least one real bettor on THIS match
+  viewGroups=viewGroups.filter(function(g){
+    return realBettors.some(function(b){return b.groups.indexOf(g)!==-1;});
+  });
 
   var html='', shown={};
-  if(viewGroups.length>1){
-    // Viewer belongs to several groups (or admin): split by group with headers
+  if(viewGroups.length>=2){
+    // Split by group, each under its own header
     viewGroups.forEach(function(g){
-      var list=sectionList(g);
-      var realMembers=list.length-globals.length;
-      if(realMembers<=0) return; // skip empty group sections
-      list=sortRows(list);
+      var list=sortRows(sectionList(g));
       list.forEach(function(b){shown[b.uid]=1;});
-      var gName=(ALL_GROUPS&&ALL_GROUPS[g]&&ALL_GROUPS[g].name)||g;
-      html+='<div style="font-size:11px;font-weight:900;color:#74b9e0;letter-spacing:0.5px;margin:10px 0 4px;padding-bottom:3px;border-bottom:1px solid rgba(116,185,224,0.25);">'+gName+' ('+list.length+')</div>'+
+      html+='<div style="font-size:11px;font-weight:900;color:#74b9e0;letter-spacing:0.5px;margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(116,185,224,0.25);">'+groupNameOf(g)+' ('+list.length+')</div>'+
         crowdHtml(list)+list.map(rowHtml).join('');
     });
+  } else if(viewGroups.length===1){
+    var list1=sortRows(sectionList(viewGroups[0]));
+    list1.forEach(function(b){shown[b.uid]=1;});
+    html=crowdHtml(list1)+list1.map(rowHtml).join('');
   } else {
-    // Single group (or no group at all): flat list
-    var list = viewGroups.length===1 ? sectionList(viewGroups[0]) : bettors;
-    list=sortRows(list);
-    list.forEach(function(b){shown[b.uid]=1;});
-    html=crowdHtml(list)+list.map(rowHtml).join('');
+    // viewer has no group context: show only globals (bot/admin) — never other groups' bets
+    var list0=sortRows(globals);
+    list0.forEach(function(b){shown[b.uid]=1;});
+    html=crowdHtml(list0)+list0.map(rowHtml).join('');
   }
   if(!html) return '';
   var total=Object.keys(shown).length;
