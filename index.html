@@ -4219,10 +4219,10 @@ onAuthStateChanged(auth, async user=>{
   checkNotificationPrompt();
   initGroups();
   renderNotiHeaderBtn();
-  // Check reminders every 5 minutes
-  setTimeout(checkAndSendReminders, 5000);
-  setInterval(checkAndSendReminders, 300000);
-  setTimeout(checkAndSendReminders, 8000); // also check shortly after load
+  // Daily reminder emails are now sent automatically by the Cloudflare Worker
+  // (cron 16:00 Israel time) — no longer triggered from the browser.
+  // The manual "send reminders" admin button still calls checkAndSendReminders().
+  // (auto-triggers intentionally removed)
 });
 
 // ── PENDING ──
@@ -4381,8 +4381,24 @@ function renderToday(){
         lb.innerHTML='<div style="text-align:center;padding:4px;font-size:11px;color:var(--text2);">לא הימרת על משחק זה</div>';
       }
       card.appendChild(lb);
-      // Everyone's bets — open by default so today's bets are visible at a glance
       const hasRes=m.result!==undefined;
+      // Actual result (visible to everyone once entered)
+      if(hasRes){
+        const rb=document.createElement('div');
+        rb.style.cssText='text-align:center;margin-top:8px;padding:7px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:8px;';
+        rb.innerHTML='<span style="font-size:10px;color:var(--text2);">תוצאת אמת: </span><span style="font-size:17px;font-weight:900;color:#34d399;letter-spacing:2px;">'+m.result[0]+' : '+m.result[1]+'</span>';
+        card.appendChild(rb);
+      }
+      // Admin-only: enter / edit the real result right here (no scrolling)
+      if(MEDATA&&MEDATA.isAdmin){
+        const rbtn=document.createElement('button');
+        rbtn.className='btn btn-ghost btn-xs';
+        rbtn.style.cssText='width:100%;margin-top:8px;';
+        rbtn.textContent=hasRes?'✏️ ערוך תוצאת אמת':'🎯 הזן תוצאת אמת';
+        rbtn.addEventListener('click',()=>openResModal(id));
+        card.appendChild(rbtn);
+      }
+      // Everyone's bets — collapsible button
       const abHtml=_allBetsSection(id,m,hasRes)||'';
       if(abHtml){
         const ab=document.createElement('div');
@@ -4650,6 +4666,7 @@ el('confirm-res').addEventListener('click', async()=>{
   if(!resId) return;
   await update(ref(db,'matches/'+resId),{result:resS});
   el('res-modal').classList.remove('open'); toast('✅ תוצאה עודכנה!'); confetti();
+  try{ renderToday(); }catch(e){}
 });
 async function delMatch(id){ if(!confirm('למחוק?')) return; await remove(ref(db,'matches/'+id)); toast('🗑 נמחק'); }
 
