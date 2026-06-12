@@ -4728,6 +4728,7 @@ async function loadUsers(){
     const ap=!u.approved?"<button class='btn btn-green btn-xs' data-ap='"+uid+"'>✅</button>":"";
     const ed=!u.isAdmin?"<button class='btn btn-ghost btn-xs' data-ed='"+uid+"' data-dn='"+encodeURIComponent(u.nickname||u.name)+"'>✏️</button>":"";
     const ga="<button class='btn btn-grad btn-xs' data-ga='"+uid+"' data-gn='"+encodeURIComponent(u.nickname||u.name)+"'>🏆</button>";
+    const sb="<button class='btn btn-ghost btn-xs' data-sb='"+uid+"' data-sn='"+encodeURIComponent(u.nickname||u.name)+"'>🎯</button>";
     const rm=!u.isAdmin?"<button class='btn btn-red btn-xs' data-rm='"+uid+"'>🗑</button>":"";
     const userGroups=(u.groups||[]).filter(gid=>ALL_GROUPS[gid]).map(gid=>"<span style='display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,0.06);border-radius:6px;padding:2px 6px;font-size:11px;margin:1px;'>"+renderIcon(ALL_GROUPS[gid].icon||"🏆","14px")+" "+ALL_GROUPS[gid].name+"</span>").join("");
     const groupCell = userGroups || "<span style='color:var(--text2);font-size:11px;'>—</span>";
