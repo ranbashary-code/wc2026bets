@@ -642,7 +642,24 @@ select.inp option{background:var(--card2);}
 </div>
 
 <!-- PLAYER STATS MODAL -->
-<div class="modal" id="player-stats-modal">
+<div class="modal" id="admin-special-modal">
+    <div class="modal-box" style="max-width:420px;">
+      <div class="modal-head">
+        <span id="admin-special-title">🎯 הימורים מיוחדים לשחקן</span>
+        <button class="modal-x" id="close-admin-special">✕</button>
+      </div>
+      <div style="padding:18px;direction:rtl;">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">כאדמין, אתה יכול להזין הימורים מיוחדים עבור שחקן זה גם אחרי נעילת המונדיאל (לשחקנים שהצטרפו מאוחר).</p>
+        <label style="font-size:12px;font-weight:700;color:var(--gold);display:block;margin-bottom:6px;">🏆 נבחרת מנצחת</label>
+        <select id="admin-champ-select" class="inp" style="margin-bottom:14px;font-size:13px;"><option value="">— בחר נבחרת —</option></select>
+        <label style="font-size:12px;font-weight:700;color:var(--gold);display:block;margin-bottom:6px;">⚽ מלך שערים</label>
+        <input id="admin-scorer-input" class="inp" type="text" placeholder="שם השחקן..." style="margin-bottom:16px;font-size:13px;">
+        <button class="btn btn-grad" id="admin-save-special" style="width:100%;">💾 שמור הימורים עבור השחקן</button>
+        <div id="admin-special-status" style="font-size:12px;text-align:center;margin-top:10px;min-height:16px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="player-stats-modal">
   <div class="modal-box" style="max-width:360px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div class="modal-title" id="ps-name">סטטיסטיקות שחקן</div>
