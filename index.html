@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -338,6 +337,17 @@ body.light-mode .ticker-modal-item a{color:#2a6496;}
 @media(max-width:680px){.hero-cols{grid-template-columns:1fr;}}
 body.light-mode .hct-open{background:rgba(4,120,87,0.08);color:#047857;}
 body.light-mode .hct-locked{background:rgba(185,28,28,0.07);color:#b91c1c;}
+
+
+/* ── "Everyone's bets" collapsible button ── */
+.allbets-details{border:none;}
+.allbets-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,rgba(116,185,224,0.16),rgba(116,185,224,0.06));border:1px solid rgba(116,185,224,0.3);font-size:13px;font-weight:800;color:#9fc6ff;letter-spacing:0.3px;transition:background .15s,border-color .15s;}
+.allbets-summary::-webkit-details-marker{display:none;}
+.allbets-summary:hover{background:linear-gradient(135deg,rgba(116,185,224,0.24),rgba(116,185,224,0.1));border-color:rgba(116,185,224,0.5);}
+.allbets-chevron{font-size:12px;transition:transform .2s;}
+.allbets-details[open] .allbets-chevron{transform:rotate(180deg);}
+.allbets-details[open] .allbets-summary{border-bottom-left-radius:0;border-bottom-right-radius:0;}
+body.light-mode .allbets-summary{color:#2a6496;background:linear-gradient(135deg,rgba(50,110,160,0.12),rgba(50,110,160,0.04));border-color:rgba(50,110,160,0.25);}
 
 /* Inputs & Buttons */
 .inp{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'Rubik',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;direction:rtl;}
@@ -3666,8 +3676,10 @@ function _allBetsSection(id, m, hasRes) {
   if(!html) return '';
   var total=Object.keys(shown).length;
   return '<div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,0.06);">'+
-    '<details><summary style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;">הימורי כולם ('+total+')</summary>'+
-    '<div style="margin-top:8px;">'+html+'</div></details></div>';
+    '<details class="allbets-details"><summary class="allbets-summary">'+
+    '<span>👥 הימורי כולם ('+total+')</span><span class="allbets-chevron">▾</span>'+
+    '</summary>'+
+    '<div style="margin-top:10px;">'+html+'</div></details></div>';
 }
 
 function _ldrRow(s,i,extraStyle){
@@ -4326,7 +4338,7 @@ function renderToday(){
       card.appendChild(lb);
       // Everyone's bets — open by default so today's bets are visible at a glance
       const hasRes=m.result!==undefined;
-      const abHtml=(_allBetsSection(id,m,hasRes)||'').replace('<details>','<details open>');
+      const abHtml=_allBetsSection(id,m,hasRes)||'';
       if(abHtml){
         const ab=document.createElement('div');
         ab.innerHTML=abHtml;
@@ -4453,40 +4465,13 @@ function renderMatches(){
       ar.appendChild(rb); ar.appendChild(eb); ar.appendChild(db2); card.appendChild(ar);
     }
 
-    // Show everyone's bets once match is locked
+    // Show everyone's bets once match is locked (unified, group-split)
     if(lk && Object.keys(USERS).length) {
-      // Get current user's groups for filtering
-      const myGroups = (ME && USERS[ME.uid] && USERS[ME.uid].groups) || [];
-      const isAdminUser = MEDATA && MEDATA.isAdmin;
-      const allBetsForMatch = Object.entries(BETS)
-        .map(([uid,ub])=>{
-          const bet=ub&&ub[id]; if(bet===undefined) return null;
-          const u=USERS[uid]||{};
-          // Show: bot, admin, and users in same group as current user
-          const uGroups = u.groups||[];
-          const sameGroup = u.isBot || u.isAdmin || isAdminUser ||
-            myGroups.length===0 || uGroups.length===0 ||
-            myGroups.some(g=>uGroups.includes(g));
-          if(!sameGroup) return null;
-          return {name:u.nickname||u.name||'?', bet, pts:hasRes?calcPts(m,bet):null, isBot:u.isBot};
-        })
-        .filter(Boolean)
-        .sort((a,b)=>{ if(a.isBot && !b.isBot) return 1; if(!a.isBot && b.isBot) return -1; return 0; });
-      if(allBetsForMatch.length) {
-        const betsDiv=document.createElement('div');
-        betsDiv.style.cssText='margin-top:10px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;';
-        betsDiv.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;">הימורי הקבוצה</div>'+
-          allBetsForMatch.map(b=>{
-            const cls=b.pts?(b.pts.hit?'badge-hit':b.pts.dir?'badge-dir':'badge-miss'):'badge-wait';
-            const pts=b.pts?((b.pts.total>0?'+':'')+b.pts.total+" נק'"):'⏳';
-            return "<div style='display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);'>" +
-              "<span style='font-size:12px;font-weight:700;"+(b.isBot?'color:#74b9e0;':'')+"'>"+b.name+"</span>" +
-              "<div style='display:flex;align-items:center;gap:8px;'>" +
-              "<span style='font-size:13px;font-weight:900;'>"+b.bet[0]+" : "+b.bet[1]+"</span>" +
-              "<span class='"+cls+"'>"+pts+"</span>" +
-              "</div></div>";
-          }).join('');
-        card.appendChild(betsDiv);
+      const abHtml=_allBetsSection(id,m,hasRes);
+      if(abHtml){
+        const ab=document.createElement('div');
+        ab.innerHTML=abHtml;
+        card.appendChild(ab);
       }
     }
 
