@@ -3365,7 +3365,11 @@ function _loadNewsCache(){
     var o=JSON.parse(raw);
     if(!o||!o.items||!o.items.length) return;
     var cutoff=Date.now()-2*86400000;
-    var fresh=o.items.filter(function(n){return !n.t||n.t>=cutoff;});
+    var BLOCKED_SRCS=['ישראל היום','Israel Hayom','israelhayom'];
+    var fresh=o.items.filter(function(n){
+      if(n.t&&n.t<cutoff) return false;
+      return !BLOCKED_SRCS.some(function(b){return (n.src||'').indexOf(b)!==-1;});
+    });
     if(fresh.length){ _newsItems=fresh; renderNewsTicker(); }
   }catch(e){}
 }
