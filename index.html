@@ -3163,12 +3163,13 @@ function _achievements(uids){
 // ══════════════ TICKER ══════════════
 // ══════════════ WC NEWS TICKER (Israeli sports sites) ══════════════
 var NEWS_FEEDS=[
+  {src:'וואלה ספורט', url:'https://rss.walla.co.il/feed/3'},
+  {src:'ynet ספורט', url:'https://www.ynet.co.il/Integration/StoryRss3.xml'},
+  {src:'ספורט 5', url:'https://www.sport5.co.il/rss.aspx?FolderID=64'},
+  {src:'ספורט 1', url:'https://sport1.maariv.co.il/feed/'},
   {src:'ONE', url:'https://www.one.co.il/cat/coop/xml/rss/newsfeed.aspx'},
-  {src:'\u05D5\u05D5\u05D0\u05DC\u05D4 \u05E1\u05E4\u05D5\u05E8\u05D8', url:'https://rss.walla.co.il/feed/3'},
-  {src:'ynet \u05E1\u05E4\u05D5\u05E8\u05D8', url:'https://www.ynet.co.il/Integration/StoryRss3.xml'},
-  {src:'\u05E1\u05E4\u05D5\u05E8\u05D8 5', url:'https://www.sport5.co.il/rss.aspx?FolderID=64'},
-  {src:'\u05D9\u05E9\u05E8\u05D0\u05DC \u05D4\u05D9\u05D5\u05DD', url:'https://www.israelhayom.co.il/rss.xml'},
-  {src:'\u05E1\u05E4\u05D5\u05E8\u05D8 1', url:'https://sport1.maariv.co.il/feed/'}
+  {src:'מאקו ספורט', url:'https://rss.mako.co.il/rss/sport.xml'},
+  {src:'ידיעות ספורט', url:'https://www.yediot.co.il/home/0,7340,L-8,00.xml'}
 ];
 var _newsItems=[];
 var _newsFetched=0;
@@ -3226,8 +3227,8 @@ async function fetchWcNews(){
     }
   }catch(e){ console.warn('\uD83D\uDCF0 Google News failed:', e); }
 
-  // ── FALLBACK: direct site feeds (only if Google News returned nothing) ──
-  if(!all.length){
+  // ── DIRECT FEEDS: always run all feeds alongside Google News ──
+  {
     await Promise.all(NEWS_FEEDS.map(async function(feed){
       try{
         var xml=await _fetchViaProxy(feed.url);
@@ -3268,12 +3269,12 @@ async function fetchWcNews(){
   Object.keys(bySrc).forEach(function(s){ bySrc[s].sort(function(a,b){return b.t-a.t;}); });
   var srcOrder=Object.keys(bySrc).sort(function(a,b){return bySrc[b][0].t-bySrc[a][0].t;});
   var mixed=[], more=true;
-  // Cap: max 2 items per source for diversity
-  Object.keys(bySrc).forEach(function(s){ bySrc[s]=bySrc[s].slice(0,2); });
-  while(mixed.length<12&&more){
+  // Cap: max 3 items per source for diversity
+  Object.keys(bySrc).forEach(function(s){ bySrc[s]=bySrc[s].slice(0,3); });
+  while(mixed.length<20&&more){
     more=false;
     srcOrder.forEach(function(s){
-      if(bySrc[s].length&&mixed.length<12){ mixed.push(bySrc[s].shift()); more=true; }
+      if(bySrc[s].length&&mixed.length<20){ mixed.push(bySrc[s].shift()); more=true; }
     });
   }
   if(mixed.length){
