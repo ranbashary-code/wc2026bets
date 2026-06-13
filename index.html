@@ -3178,11 +3178,10 @@ var _newsRetried=false;
 // Try multiple CORS proxies until one works
 async function _fetchViaProxy(url){
   var proxies=[
-    function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u);},
-    function(u){return 'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u);},
     function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);},
-    function(u){return 'https://thingproxy.freeboard.io/fetch/'+u;},
-    function(u){return 'https://proxy.cors.sh/'+u;}
+    function(u){return 'https://api.codetabs.com/v1/proxy/?quest='+u;},
+    function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u);},
+    function(u){return 'https://thingproxy.freeboard.io/fetch/'+u;}
   ];
   for(var i=0;i<proxies.length;i++){
     try{
@@ -3205,45 +3204,32 @@ async function fetchWcNews(){
   var cutoff=Date.now()-2*86400000;
   var all=[];
 
-  // Per-source Google News RSS queries: forces diversity by querying each site separately
-  var SOURCES=[
-    {name:'וואלה ספורט', site:'walla.co.il'},
-    {name:'ynet ספורט', site:'ynet.co.il'},
-    {name:'ספורט 5', site:'sport5.co.il'},
-    {name:'מאקו ספורט', site:'mako.co.il'},
-    {name:'ONE', site:'one.co.il'},
-    {name:'ספורט 1', site:'sport1.maariv.co.il'},
-    {name:'ידיעות ספורט', site:'yediot.co.il'}
-  ];
-
-  // Query Google News RSS once per source - returns recent items per site
-  await Promise.all(SOURCES.map(async function(s){
-    try{
-      var q='מונדיאל site:'+s.site+' when:3d';
-      var gurl='https://news.google.com/rss/search?q='+encodeURIComponent(q)+'&hl=he&gl=IL&ceid=IL:he';
-      var xml=await _fetchViaProxy(gurl);
-      if(!xml) return;
+  // Single Google News RSS query (one proxy hit = reliable). Diversity enforced by per-source cap below.
+  var GNEWS='https://news.google.com/rss/search?q='+encodeURIComponent('מונדיאל when:3d')+'&hl=he&gl=IL&ceid=IL:he';
+  try{
+    var xml=await _fetchViaProxy(GNEWS);
+    if(xml){
       var doc=new DOMParser().parseFromString(xml,'text/xml');
-      var cnt=0;
       doc.querySelectorAll('item').forEach(function(it){
-        if(cnt>=3) return; // max 3 per source
         var title=(it.querySelector('title')||{}).textContent||'';
         var link=(it.querySelector('link')||{}).textContent||'';
         var pd=(it.querySelector('pubDate')||{}).textContent||'';
+        var srcEl=it.querySelector('source');
+        var src=srcEl&&srcEl.textContent?srcEl.textContent.trim():'חדשות';
         var t=pd?new Date(pd).getTime():Date.now();
         if(t<cutoff) return;
-        // strip trailing " - Source"
         var cut=title.lastIndexOf(' - ');
         if(cut>10) title=title.slice(0,cut);
-        all.push({src:s.name, title:title.trim(), link:link.trim(), t:t});
-        cnt++;
+        all.push({src:src, title:title.trim(), link:link.trim(), t:t});
       });
-      console.log('������ '+s.name+': '+cnt+' items');
-    }catch(e){ console.warn('������ '+s.name+' failed', e); }
-  }));
+      console.log('������ Google News: '+all.length+' items');
+    } else {
+      console.warn('������ all proxies failed');
+    }
+  }catch(e){ console.warn('������ news error', e); }
 
   // Filter blocked + dedup
-  var BLOCKED=['ישראל היום','israelhayom'];
+  var BLOCKED=['ישראל היום','israelhayom','Israel Hayom'];
   all=all.filter(function(a){
     return !BLOCKED.some(function(b){ return (a.src||'').indexOf(b)!==-1||(a.link||'').indexOf('israelhayom')!==-1; });
   });
@@ -3254,11 +3240,11 @@ async function fetchWcNews(){
     seen[k]=1; return true;
   });
 
-  // Round-robin mix across sources (diversity), newest first within source
+  // Round-robin across sources, max 3 per source, 20 total
   var bySrc={};
   deduped.forEach(function(a){ (bySrc[a.src]=bySrc[a.src]||[]).push(a); });
-  Object.keys(bySrc).forEach(function(s){ bySrc[s].sort(function(a,b){return b.t-a.t;}); });
-  var srcOrder=Object.keys(bySrc);
+  Object.keys(bySrc).forEach(function(s){ bySrc[s].sort(function(a,b){return b.t-a.t;}); bySrc[s]=bySrc[s].slice(0,3); });
+  var srcOrder=Object.keys(bySrc).sort(function(a,b){return (bySrc[b][0]?bySrc[b][0].t:0)-(bySrc[a][0]?bySrc[a][0].t:0);});
   var mixed=[],more=true;
   while(mixed.length<20&&more){
     more=false;
@@ -3270,7 +3256,7 @@ async function fetchWcNews(){
   if(mixed.length){
     _newsItems=mixed;
   } else {
-    _newsFetched=Date.now()-28*60000; // retry in 2 min
+    _newsFetched=Date.now()-28*60000;
   }
   console.log('������ total news: '+_newsItems.length+' from '+srcOrder.length+' sources');
   if(_newsItems.length){
