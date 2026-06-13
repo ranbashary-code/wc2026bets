@@ -3070,16 +3070,17 @@ function openUserGroupAssign(uid, name) {
 // ══════════════ RANK DELTA + ACHIEVEMENTS + TICKER ══════════════
 
 // Compute scores for a set of users, optionally excluding matches from the latest result date
-function _scoreMap(excludeLatestDay){
-  var latestDay = null;
-  if(excludeLatestDay){
-    Object.values(MATCHES).forEach(function(m){
-      if(m && m.result!==undefined && m.datetime){
-        var d = new Date(m.datetime).toDateString();
-        if(!latestDay || new Date(d) > new Date(latestDay)) latestDay = d;
-      }
-    });
-  }
+function _scoreMap(excludeLatest){
+  // Find the single most-recent finished match (by datetime). "excludeLatest" omits its result
+  // so we can compare standings immediately before vs. after that last match.
+  var latestMid = null, latestTime = -1;
+  Object.entries(MATCHES).forEach(function(e){
+    var mid=e[0], m=e[1];
+    if(m && m.result!==undefined && m.datetime){
+      var t = new Date(m.datetime).getTime();
+      if(t > latestTime){ latestTime = t; latestMid = mid; }
+    }
+  });
   var sc = {};
   Object.entries(USERS).filter(function(e){return e[1].approved;}).forEach(function(e){
     sc[e[0]] = {uid:e[0], pts:0};
@@ -3090,14 +3091,14 @@ function _scoreMap(excludeLatestDay){
     Object.entries(ub).forEach(function(e2){
       var mid=e2[0], bet=e2[1];
       var m=MATCHES[mid]; if(!m||m.result===undefined) return;
-      if(excludeLatestDay && latestDay && m.datetime && new Date(m.datetime).toDateString()===latestDay) return;
+      if(excludeLatest && latestMid && mid===latestMid) return;
       sc[uid].pts += calcPts(m,bet).total;
     });
   });
-  return {sc:sc, latestDay:latestDay};
+  return {sc:sc, latestDay:latestMid};
 }
 
-// Returns map uid -> delta (+n = climbed n places since before latest matchday, -n = dropped)
+// Returns map uid -> delta (+n = climbed n places since before the LAST finished match, -n = dropped)
 function _rankDeltas(uids){
   var prev = _scoreMap(true);
   if(!prev.latestDay) return {}; // no results yet
