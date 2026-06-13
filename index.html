@@ -3280,6 +3280,7 @@ async function fetchWcNews(){
     _newsItems=mixed;
   } else {
     console.log('\uD83D\uDCF0 refresh returned 0 items - keeping previous', _newsItems.length);
+    _newsFetched=Date.now()-28*60000; // retry in 2 min if nothing found
   }
   console.log('\uD83D\uDCF0 total news items:', _newsItems.length, 'from', srcOrder.length, 'sources');
   if(_newsItems.length){
@@ -3377,6 +3378,8 @@ function _loadNewsCache(){
 window._newsInit=1;
 try{ _loadNewsCache(); }catch(e){}
 try{ initWcNews(); }catch(e){}
+// If still no news after 3s, retry once more
+setTimeout(function(){ if(!_newsItems.length){ _newsFetched=0; try{initWcNews();}catch(e){} } }, 3000);
 
 // ══════════════ TICKER MODAL ══════════════
 function showTickerModal(title, htmlItems){
