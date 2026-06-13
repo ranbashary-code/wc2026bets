@@ -3209,29 +3209,29 @@ async function fetchWcNews(){
   var cutoff=Date.now()-2*86400000;
   var all=[];
 
-  // Single Google News RSS query (one proxy hit = reliable). Diversity enforced by per-source cap below.
-  var GNEWS='https://news.google.com/rss/search?q='+encodeURIComponent('מונדיאל when:3d')+'&hl=he&gl=IL&ceid=IL:he';
+  // PRIMARY: our own Cloudflare Worker (no CORS, reliable, no third-party proxies)
   try{
-    var xml=await _fetchViaProxy(GNEWS);
-    if(xml){
-      var doc=new DOMParser().parseFromString(xml,'text/xml');
-      doc.querySelectorAll('item').forEach(function(it){
-        var title=(it.querySelector('title')||{}).textContent||'';
-        var link=(it.querySelector('link')||{}).textContent||'';
-        var pd=(it.querySelector('pubDate')||{}).textContent||'';
-        var srcEl=it.querySelector('source');
-        var src=srcEl&&srcEl.textContent?srcEl.textContent.trim():'חדשות';
-        var t=pd?new Date(pd).getTime():Date.now();
-        if(t<cutoff) return;
-        var cut=title.lastIndexOf(' - ');
-        if(cut>10) title=title.slice(0,cut);
-        all.push({src:src, title:title.trim(), link:link.trim(), t:t});
-      });
-      console.log('������ Google News: '+all.length+' items');
-    } else {
-      console.warn('������ all proxies failed');
+    var r=await fetch('https://wc-reminders.ranbashary.workers.dev/?news=1');
+    if(r.ok){
+      var xml=await r.text();
+      if(xml&&xml.length>200){
+        var doc=new DOMParser().parseFromString(xml,'text/xml');
+        doc.querySelectorAll('item').forEach(function(it){
+          var title=(it.querySelector('title')||{}).textContent||'';
+          var link=(it.querySelector('link')||{}).textContent||'';
+          var pd=(it.querySelector('pubDate')||{}).textContent||'';
+          var srcEl=it.querySelector('source');
+          var src=srcEl&&srcEl.textContent?srcEl.textContent.trim():'חדשות';
+          var t=pd?new Date(pd).getTime():Date.now();
+          if(t<cutoff) return;
+          var cut=title.lastIndexOf(' - ');
+          if(cut>10) title=title.slice(0,cut);
+          all.push({src:src, title:title.trim(), link:link.trim(), t:t});
+        });
+        console.log('������ Worker news: '+all.length+' items');
+      }
     }
-  }catch(e){ console.warn('������ news error', e); }
+  }catch(e){ console.warn('������ worker news failed', e); }
 
   // Filter blocked + dedup
   var BLOCKED=['ישראל היום','israelhayom','Israel Hayom'];
