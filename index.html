@@ -2300,6 +2300,23 @@ async function loadAnalytics() {
   const presObj = presSnap.exists()  ? presSnap.val() : {};
   const specObj = specSnap.exists()  ? specSnap.val() : {};
 
+  // ── DIAGNOSTIC: bot bet breakdown ──
+  try{
+    const matchesRaw = matchSnap.exists() ? matchSnap.val() : {};
+    const botB = betsObj[BOT_UID] || {};
+    const botIds = Object.keys(botB);
+    const validIds = botIds.filter(id => matchesRaw[id]);
+    const orphanIds = botIds.filter(id => !matchesRaw[id]);
+    const byStage = {};
+    validIds.forEach(id => { const st=matchesRaw[id].stage||'?'; byStage[st]=(byStage[st]||0)+1; });
+    console.log('🤖 BOT DIAGNOSTIC:');
+    console.log('   Total bot bets in Firebase:', botIds.length);
+    console.log('   Valid (match exists):', validIds.length);
+    console.log('   Orphaned (match deleted/changed):', orphanIds.length, orphanIds);
+    console.log('   By stage:', byStage);
+    console.log('   Total matches in DB:', Object.keys(matchesRaw).length);
+  }catch(e){ console.warn('diagnostic failed', e); }
+
   const approved  = users.filter(u=>u.approved && !u.isBot);
   const pending   = users.filter(u=>!u.approved);
   const now       = Date.now();
