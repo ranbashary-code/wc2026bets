@@ -1057,6 +1057,7 @@ select.inp option{background:var(--card2);}
 
           <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על הסיבוב הקרוב</button>
           <button class="btn btn-red btn-xs" id="delete-bot-bets-btn" style="width:100%;margin-bottom:8px;">🗑 מחק הימורי בוט (משחקים שטרם ננעלו)</button>
+          <button class="btn btn-red btn-xs" id="clean-orphan-bets-btn" style="width:100%;margin-bottom:8px;">🧹 נקה הימורי בוט יתומים (משחקים שנמחקו)</button>
           <div id="bot-run-status" style="font-size:12px;text-align:center;color:var(--text2);min-height:16px;"></div>
         </div>
       </div>
@@ -1395,6 +1396,26 @@ window.deleteBotOpenBets = async function(){
     }
   }
   if(st){ st.textContent='\uD83D\uDDD1 \u05E0\u05DE\u05D7\u05E7\u05D5 '+removed+' \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD \u05E4\u05EA\u05D5\u05D7\u05D9\u05DD \u05E9\u05DC \u05D4\u05D1\u05D5\u05D8'; st.style.color='#f87171'; }
+  checkBotRoundAlert();
+};
+
+// Clean orphaned bot bets — bets pointing to matches that no longer exist in the DB
+window.cleanBotOrphanBets = async function(){
+  var st=el('bot-run-status');
+  var betSnap=await get(ref(db,'bets/'+BOT_UID));
+  var matchSnap=await get(ref(db,'matches'));
+  if(!betSnap.exists()){ if(st)st.textContent='\u05D0\u05D9\u05DF \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD \u05DC\u05DE\u05D7\u05D9\u05E7\u05D4'; return; }
+  var bb=betSnap.val();
+  var matches=matchSnap.exists()?matchSnap.val():{};
+  var orphans=Object.keys(bb).filter(function(mid){ return !matches[mid]; });
+  if(!orphans.length){ if(st){st.textContent='\u2705 \u05D0\u05D9\u05DF \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD \u05D9\u05EA\u05D5\u05DE\u05D9\u05DD'; st.style.color='#34d399';} return; }
+  if(!confirm('\u05DC\u05DE\u05D7\u05D5\u05E7 '+orphans.length+' \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD \u05D9\u05EA\u05D5\u05DE\u05D9\u05DD \u05E9\u05DC \u05D4\u05D1\u05D5\u05D8? (\u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD \u05E2\u05DC \u05DE\u05E9\u05D7\u05E7\u05D9\u05DD \u05E9\u05DB\u05D1\u05E8 \u05DC\u05D0 \u05E7\u05D9\u05D9\u05DE\u05D9\u05DD)')) return;
+  var removed=0;
+  for(var i=0;i<orphans.length;i++){
+    await remove(ref(db,'bets/'+BOT_UID+'/'+orphans[i]));
+    removed++;
+  }
+  if(st){ st.textContent='\uD83E\uDDF9 \u05E0\u05D5\u05E7\u05D5 '+removed+' \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD \u05D9\u05EA\u05D5\u05DE\u05D9\u05DD'; st.style.color='#34d399'; }
   checkBotRoundAlert();
 };
 
@@ -4850,6 +4871,7 @@ el('run-bot-btn')&&el('run-bot-btn').addEventListener('click', async()=>{
 });
 el('save-odds-key-btn')&&el('save-odds-key-btn').addEventListener('click', ()=>window.saveOddsApiKey());
 el('delete-bot-bets-btn')&&el('delete-bot-bets-btn').addEventListener('click', ()=>window.deleteBotOpenBets());
+el('clean-orphan-bets-btn')&&el('clean-orphan-bets-btn').addEventListener('click', ()=>window.cleanBotOrphanBets());
 // Load saved odds key into the field (masked)
 (async()=>{
   try{
