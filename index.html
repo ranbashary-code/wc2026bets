@@ -3206,7 +3206,7 @@ var GNEWS_URL='https://news.google.com/rss/search?q='+encodeURIComponent('\u05DE
 async function fetchWcNews(){
   if(Date.now()-_newsFetched<30*60000 && _newsItems.length) return _newsItems;
   _newsFetched=Date.now();
-  var cutoff=Date.now()-2*86400000;
+  var cutoff=Date.now()-86400000;
   var all=[];
 
   // PRIMARY: our own Cloudflare Worker (no CORS, reliable, no third-party proxies)
@@ -3233,10 +3233,15 @@ async function fetchWcNews(){
     }
   }catch(e){ console.warn('������ worker news failed', e); }
 
-  // Filter blocked + dedup
-  var BLOCKED=['ישראל היום','israelhayom','Israel Hayom'];
+  // Filter foreign / non-Hebrew sources + dedup (Israel Hayom is allowed again)
+  var BLOCKED_DOMAINS=['vietnam.vn','.com.vn','dailymail','espn','goal.com','fifa.com','bbc.','cnn.','reuters'];
+  var BLOCKED_SRCS=['Vietnam','vietnam'];
   all=all.filter(function(a){
-    return !BLOCKED.some(function(b){ return (a.src||'').indexOf(b)!==-1||(a.link||'').indexOf('israelhayom')!==-1; });
+    var link=(a.link||'').toLowerCase();
+    var src=(a.src||'');
+    if(BLOCKED_DOMAINS.some(function(d){return link.indexOf(d)!==-1;})) return false;
+    if(BLOCKED_SRCS.some(function(s){return src.indexOf(s)!==-1;})) return false;
+    return true;
   });
   var seen={};
   var deduped=all.filter(function(a){
@@ -3347,12 +3352,8 @@ function _loadNewsCache(){
     if(!raw) return;
     var o=JSON.parse(raw);
     if(!o||!o.items||!o.items.length) return;
-    var cutoff=Date.now()-2*86400000;
-    var BLOCKED_SRCS=['ישראל היום','Israel Hayom','israelhayom'];
-    var fresh=o.items.filter(function(n){
-      if(n.t&&n.t<cutoff) return false;
-      return !BLOCKED_SRCS.some(function(b){return (n.src||'').indexOf(b)!==-1;});
-    });
+    var cutoff=Date.now()-86400000;
+    var fresh=o.items.filter(function(n){ return !(n.t&&n.t<cutoff); });
     if(fresh.length){ _newsItems=fresh; renderNewsTicker(); }
   }catch(e){}
 }
