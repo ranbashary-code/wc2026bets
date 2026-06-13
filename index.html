@@ -3202,72 +3202,59 @@ async function fetchWcNews(){
   var cutoff=Date.now()-2*86400000;
   var all=[];
 
-  // ── PRIMARY: Google Custom Search API ──
-  var GAPI_KEY='AIzaSyDw6TX6BE2JuAs-2M2BH_HEfUM3l5TGC8o';
-  var GAPI_CX='36a7004f18aa84718';
-  var queries=['מונדיאל 2026','עולם site:walla.co.il OR site:ynet.co.il OR site:sport5.co.il OR site:mako.co.il OR site:sport1.maariv.co.il OR site:one.co.il'];
-  try{
-    var gurl='https://www.googleapis.com/customsearch/v1?key='+GAPI_KEY+'&cx='+GAPI_CX+'&q='+encodeURIComponent('מונדיאל 2026')+'&num=10&lr=lang_he&sort=date';
-    var gres=await fetch(gurl);
-    if(gres.ok){
-      var gdata=await gres.json();
-      if(gdata.items&&gdata.items.length){
-        gdata.items.forEach(function(it){
-          var src='';
-          try{ src=new URL(it.link).hostname.replace('www.',''); }catch(e){}
-          // Map domain to Hebrew name
-          var srcMap={'walla.co.il':'וואלה ספורט','ynet.co.il':'ynet ספורט','sport5.co.il':'ספורט 5','mako.co.il':'מאקו ספורט','sport1.maariv.co.il':'ספורט 1','one.co.il':'ONE','yediot.co.il':'ידיעות ספורט'};
-          src=srcMap[src]||src;
-          all.push({src:src, title:(it.title||'').trim(), link:it.link||'', t:Date.now()});
-        });
-        console.log('������ Google Custom Search: '+all.length+' items');
-      }
-    } else {
-      console.warn('������ Google Custom Search failed: '+gres.status);
-    }
-  }catch(e){ console.warn('������ Google Custom Search error:', e); }
+  // Per-source Google News RSS queries: forces diversity by querying each site separately
+  var SOURCES=[
+    {name:'וואלה ספורט', site:'walla.co.il'},
+    {name:'ynet ספורט', site:'ynet.co.il'},
+    {name:'ספורט 5', site:'sport5.co.il'},
+    {name:'מאקו ספורט', site:'mako.co.il'},
+    {name:'ONE', site:'one.co.il'},
+    {name:'ספורט 1', site:'sport1.maariv.co.il'},
+    {name:'ידיעות ספורט', site:'yediot.co.il'}
+  ];
 
-  // ── FALLBACK: RSS feeds via proxy if API returned nothing ──
-  if(!all.length){
-    var keywords=['מונדיאל','גביע העולם'];
-    await Promise.all(NEWS_FEEDS.map(async function(feed){
-      try{
-        var xml=await _fetchViaProxy(feed.url);
-        if(!xml) return;
-        var doc=new DOMParser().parseFromString(xml,'text/xml');
-        doc.querySelectorAll('item').forEach(function(it){
-          var title=(it.querySelector('title')||{}).textContent||'';
-          var link=(it.querySelector('link')||{}).textContent||'';
-          var pd=(it.querySelector('pubDate')||{}).textContent||'';
-          var t=pd?new Date(pd).getTime():0;
-          if(t&&t<cutoff) return;
-          var hit=keywords.some(function(k){return title.indexOf(k)!==-1;});
-          if(!hit) return;
-          all.push({src:feed.src, title:title.trim(), link:link.trim(), t:t||Date.now()});
-        });
-      }catch(e){}
-    }));
-    console.log('������ RSS fallback: '+all.length+' items');
-  }
+  // Query Google News RSS once per source - returns recent items per site
+  await Promise.all(SOURCES.map(async function(s){
+    try{
+      var q='מונדיאל site:'+s.site+' when:3d';
+      var gurl='https://news.google.com/rss/search?q='+encodeURIComponent(q)+'&hl=he&gl=IL&ceid=IL:he';
+      var xml=await _fetchViaProxy(gurl);
+      if(!xml) return;
+      var doc=new DOMParser().parseFromString(xml,'text/xml');
+      var cnt=0;
+      doc.querySelectorAll('item').forEach(function(it){
+        if(cnt>=3) return; // max 3 per source
+        var title=(it.querySelector('title')||{}).textContent||'';
+        var link=(it.querySelector('link')||{}).textContent||'';
+        var pd=(it.querySelector('pubDate')||{}).textContent||'';
+        var t=pd?new Date(pd).getTime():Date.now();
+        if(t<cutoff) return;
+        // strip trailing " - Source"
+        var cut=title.lastIndexOf(' - ');
+        if(cut>10) title=title.slice(0,cut);
+        all.push({src:s.name, title:title.trim(), link:link.trim(), t:t});
+        cnt++;
+      });
+      console.log('������ '+s.name+': '+cnt+' items');
+    }catch(e){ console.warn('������ '+s.name+' failed', e); }
+  }));
 
-  // Filter blocked sources
-  var BLOCKED_SRCS=['ישראל היום','Israel Hayom','israelhayom'];
+  // Filter blocked + dedup
+  var BLOCKED=['ישראל היום','israelhayom'];
   all=all.filter(function(a){
-    return !BLOCKED_SRCS.some(function(b){ return (a.src||'').indexOf(b)!==-1||(a.link||'').indexOf('israelhayom')!==-1; });
+    return !BLOCKED.some(function(b){ return (a.src||'').indexOf(b)!==-1||(a.link||'').indexOf('israelhayom')!==-1; });
   });
-
-  // Deduplicate
   var seen={};
   var deduped=all.filter(function(a){
-    var k=a.title.slice(0,60);
+    var k=a.title.slice(0,50);
     if(seen[k]) return false;
     seen[k]=1; return true;
   });
 
-  // Round-robin mix, max 3 per source, 20 total
+  // Round-robin mix across sources (diversity), newest first within source
   var bySrc={};
   deduped.forEach(function(a){ (bySrc[a.src]=bySrc[a.src]||[]).push(a); });
-  Object.keys(bySrc).forEach(function(s){ bySrc[s]=bySrc[s].slice(0,3); });
+  Object.keys(bySrc).forEach(function(s){ bySrc[s].sort(function(a,b){return b.t-a.t;}); });
   var srcOrder=Object.keys(bySrc);
   var mixed=[],more=true;
   while(mixed.length<20&&more){
@@ -3282,7 +3269,7 @@ async function fetchWcNews(){
   } else {
     _newsFetched=Date.now()-28*60000; // retry in 2 min
   }
-  console.log('������ total news items: '+_newsItems.length);
+  console.log('������ total news: '+_newsItems.length+' from '+srcOrder.length+' sources');
   if(_newsItems.length){
     try{ localStorage.setItem('wcNewsCache', JSON.stringify({t:Date.now(), items:_newsItems})); }catch(e){}
   }
