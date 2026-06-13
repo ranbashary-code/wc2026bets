@@ -3251,6 +3251,11 @@ async function fetchWcNews(){
     }));
   }
 
+  // Filter out unwanted sources
+  var BLOCKED_SRCS=['ישראל היום','Israel Hayom','israelhayom'];
+  all=all.filter(function(a){
+    return !BLOCKED_SRCS.some(function(b){ return a.src.indexOf(b)!==-1; });
+  });
   var seen={};
   var deduped=all.filter(function(a){
     var k=a.title.slice(0,60);
@@ -3263,6 +3268,8 @@ async function fetchWcNews(){
   Object.keys(bySrc).forEach(function(s){ bySrc[s].sort(function(a,b){return b.t-a.t;}); });
   var srcOrder=Object.keys(bySrc).sort(function(a,b){return bySrc[b][0].t-bySrc[a][0].t;});
   var mixed=[], more=true;
+  // Cap: max 2 items per source for diversity
+  Object.keys(bySrc).forEach(function(s){ bySrc[s]=bySrc[s].slice(0,2); });
   while(mixed.length<12&&more){
     more=false;
     srcOrder.forEach(function(s){
