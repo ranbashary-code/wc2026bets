@@ -3178,8 +3178,11 @@ var _newsRetried=false;
 // Try multiple CORS proxies until one works
 async function _fetchViaProxy(url){
   var proxies=[
+    function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u);},
+    function(u){return 'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u);},
     function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);},
-    function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u);}
+    function(u){return 'https://thingproxy.freeboard.io/fetch/'+u;},
+    function(u){return 'https://proxy.cors.sh/'+u;}
   ];
   for(var i=0;i<proxies.length;i++){
     try{
@@ -3928,6 +3931,9 @@ const _flagCache = {};
 
 // Static known map for speed (common teams) - keys are lowercase
 const _knownCodes = {
+  // ── תוספות ──
+  'כורסאו':'cw','קורסאו':'cw','curacao':'cw',
+  'כף ורדה':'cv','cape verde':'cv',
   // ── אמריקה לטינית ──
   'ארגנטינה':'ar','argentina':'ar',
   'ברזיל':'br','brazil':'br',
@@ -4141,7 +4147,8 @@ async function resolveFlag(name) {
       _flagCache[key] = v; return v;
     }
   }
-  // Fallback: try REST Countries API by name
+  // Fallback: try REST Countries API by name (skip Hebrew names - they CORS-fail and aren't recognized anyway)
+  if(/[\u0590-\u05FF]/.test(name)){ _flagCache[key]=null; return null; }
   try {
     const resp = await fetch('https://restcountries.com/v3.1/name/' + encodeURIComponent(name) + '?fields=cca2');
     if(resp.ok){
