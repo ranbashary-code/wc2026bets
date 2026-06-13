@@ -3199,44 +3199,43 @@ var GNEWS_URL='https://news.google.com/rss/search?q='+encodeURIComponent('\u05DE
 async function fetchWcNews(){
   if(Date.now()-_newsFetched<30*60000 && _newsItems.length) return _newsItems;
   _newsFetched=Date.now();
-  var keywords=['\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC','\u05D2\u05D1\u05D9\u05E2 \u05D4\u05E2\u05D5\u05DC\u05DD','\u05E0\u05D1\u05D7\u05E8\u05EA'];
   var cutoff=Date.now()-2*86400000;
   var all=[];
 
-  // ── PRIMARY: Google News (multi-source, includes source name per item) ──
+  // ── PRIMARY: Google Custom Search API ──
+  var GAPI_KEY='AIzaSyDw6TX6BE2JuAs-2M2BH_HEfUM3l5TGC8o';
+  var GAPI_CX='36a7004f18aa84718';
+  var queries=['מונדיאל 2026','עולם site:walla.co.il OR site:ynet.co.il OR site:sport5.co.il OR site:mako.co.il OR site:sport1.maariv.co.il OR site:one.co.il'];
   try{
-    var gxml=await _fetchViaProxy(GNEWS_URL);
-    if(gxml){
-      var gdoc=new DOMParser().parseFromString(gxml,'text/xml');
-      gdoc.querySelectorAll('item').forEach(function(it){
-        var title=(it.querySelector('title')||{}).textContent||'';
-        var link=(it.querySelector('link')||{}).textContent||'';
-        var pd=(it.querySelector('pubDate')||{}).textContent||'';
-        var srcEl=it.querySelector('source');
-        var src=srcEl&&srcEl.textContent?srcEl.textContent.trim():'\u05D7\u05D3\u05E9\u05D5\u05EA';
-        var t=pd?new Date(pd).getTime():0;
-        if(t&&t<cutoff) return;
-        // Google News titles end with " - Source" - strip it
-        var cut=title.lastIndexOf(' - ');
-        if(cut>10) title=title.slice(0,cut);
-        all.push({src:src, title:title.trim(), link:link.trim(), t:t||Date.now()});
-      });
-      console.log('\uD83D\uDCF0 Google News:', all.length, 'items');
+    var gurl='https://www.googleapis.com/customsearch/v1?key='+GAPI_KEY+'&cx='+GAPI_CX+'&q='+encodeURIComponent('מונדיאל 2026')+'&num=10&lr=lang_he&sort=date';
+    var gres=await fetch(gurl);
+    if(gres.ok){
+      var gdata=await gres.json();
+      if(gdata.items&&gdata.items.length){
+        gdata.items.forEach(function(it){
+          var src='';
+          try{ src=new URL(it.link).hostname.replace('www.',''); }catch(e){}
+          // Map domain to Hebrew name
+          var srcMap={'walla.co.il':'וואלה ספורט','ynet.co.il':'ynet ספורט','sport5.co.il':'ספורט 5','mako.co.il':'מאקו ספורט','sport1.maariv.co.il':'ספורט 1','one.co.il':'ONE','yediot.co.il':'ידיעות ספורט'};
+          src=srcMap[src]||src;
+          all.push({src:src, title:(it.title||'').trim(), link:it.link||'', t:Date.now()});
+        });
+        console.log('������ Google Custom Search: '+all.length+' items');
+      }
     } else {
-      console.warn('\uD83D\uDCF0 Google News unreachable');
+      console.warn('������ Google Custom Search failed: '+gres.status);
     }
-  }catch(e){ console.warn('\uD83D\uDCF0 Google News failed:', e); }
+  }catch(e){ console.warn('������ Google Custom Search error:', e); }
 
-  // ── DIRECT FEEDS: always run all feeds alongside Google News ──
-  {
+  // ── FALLBACK: RSS feeds via proxy if API returned nothing ──
+  if(!all.length){
+    var keywords=['מונדיאל','גביע העולם'];
     await Promise.all(NEWS_FEEDS.map(async function(feed){
       try{
         var xml=await _fetchViaProxy(feed.url);
-        if(!xml){ console.warn('\uD83D\uDCF0 feed unreachable:', feed.src); return; }
+        if(!xml) return;
         var doc=new DOMParser().parseFromString(xml,'text/xml');
-        var items=doc.querySelectorAll('item');
-        var matched=0;
-        items.forEach(function(it){
+        doc.querySelectorAll('item').forEach(function(it){
           var title=(it.querySelector('title')||{}).textContent||'';
           var link=(it.querySelector('link')||{}).textContent||'';
           var pd=(it.querySelector('pubDate')||{}).textContent||'';
@@ -3244,51 +3243,52 @@ async function fetchWcNews(){
           if(t&&t<cutoff) return;
           var hit=keywords.some(function(k){return title.indexOf(k)!==-1;});
           if(!hit) return;
-          matched++;
           all.push({src:feed.src, title:title.trim(), link:link.trim(), t:t||Date.now()});
         });
-        console.log('\uD83D\uDCF0', feed.src, ':', items.length, 'items,', matched, 'matched');
-      }catch(e){ console.warn('\uD83D\uDCF0 feed failed:', feed.src, e); }
+      }catch(e){}
     }));
+    console.log('������ RSS fallback: '+all.length+' items');
   }
 
-  // Filter out unwanted sources
+  // Filter blocked sources
   var BLOCKED_SRCS=['ישראל היום','Israel Hayom','israelhayom'];
   all=all.filter(function(a){
-    return !BLOCKED_SRCS.some(function(b){ return a.src.indexOf(b)!==-1; });
+    return !BLOCKED_SRCS.some(function(b){ return (a.src||'').indexOf(b)!==-1||(a.link||'').indexOf('israelhayom')!==-1; });
   });
+
+  // Deduplicate
   var seen={};
   var deduped=all.filter(function(a){
     var k=a.title.slice(0,60);
     if(seen[k]) return false;
     seen[k]=1; return true;
   });
-  // Interleave sources round-robin: max diversity, no two consecutive from same source
+
+  // Round-robin mix, max 3 per source, 20 total
   var bySrc={};
   deduped.forEach(function(a){ (bySrc[a.src]=bySrc[a.src]||[]).push(a); });
-  Object.keys(bySrc).forEach(function(s){ bySrc[s].sort(function(a,b){return b.t-a.t;}); });
-  var srcOrder=Object.keys(bySrc).sort(function(a,b){return bySrc[b][0].t-bySrc[a][0].t;});
-  var mixed=[], more=true;
-  // Cap: max 3 items per source for diversity
   Object.keys(bySrc).forEach(function(s){ bySrc[s]=bySrc[s].slice(0,3); });
+  var srcOrder=Object.keys(bySrc);
+  var mixed=[],more=true;
   while(mixed.length<20&&more){
     more=false;
     srcOrder.forEach(function(s){
       if(bySrc[s].length&&mixed.length<20){ mixed.push(bySrc[s].shift()); more=true; }
     });
   }
+
   if(mixed.length){
     _newsItems=mixed;
   } else {
-    console.log('\uD83D\uDCF0 refresh returned 0 items - keeping previous', _newsItems.length);
-    _newsFetched=Date.now()-28*60000; // retry in 2 min if nothing found
+    _newsFetched=Date.now()-28*60000; // retry in 2 min
   }
-  console.log('\uD83D\uDCF0 total news items:', _newsItems.length, 'from', srcOrder.length, 'sources');
+  console.log('������ total news items: '+_newsItems.length);
   if(_newsItems.length){
     try{ localStorage.setItem('wcNewsCache', JSON.stringify({t:Date.now(), items:_newsItems})); }catch(e){}
   }
   return _newsItems;
 }
+
 
 // ══════════════ SHARED TICKER ENGINE ══════════════
 // Renders a ticker bar: items flow left->right up to the label, wrap from the left.
