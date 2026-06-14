@@ -3492,7 +3492,7 @@ function renderTicker(){
 
     if(hasAnyPts&&ranked.length>=2){
       var gap=pts[ranked[0]]-pts[ranked[1]];
-      if(gap>0) items.push('👑 '+tag(gid)+nameOf(ranked[0])+' מוביל את הטבלא!');
+      if(gap>0) items.push('👑 '+tag(gid)+nameOf(ranked[0])+' מוביל את הטבלה!');
       if(gap>0&&gap<=3){
         items.push('🔥 '+tag(gid)+nameOf(ranked[1])+' בפיגור של '+gap+' נק׳ בלבד מהמקום הראשון!');
       }
@@ -3549,7 +3549,7 @@ function renderTicker(){
       var topYPts=null;
       Object.entries(ydayPts).forEach(function(e){ if(e[1]>0&&(topYPts===null||e[1]>topYPts)) topYPts=e[1]; });
       var topYUids=topYPts!==null?Object.keys(ydayPts).filter(function(u){return ydayPts[u]===topYPts;}):[];
-      if(topYUids.length===1) items.push('⭐ '+tag(gid)+'מצטיין האתמול: '+nameOf(topYUids[0])+' עם '+topYPts+' נק׳!');
+      if(topYUids.length===1) items.push('⭐ '+tag(gid)+'מצטיין אתמול: '+nameOf(topYUids[0])+' עם '+topYPts+' נק׳!');
     }
     // achievements (computed within this group only)
     var ach=_achievements(uids);
