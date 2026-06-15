@@ -3248,40 +3248,24 @@ async function fetchWcNews(){
   var cutoff=Date.now()-2*86400000;
   var all=[];
 
-  // PRIMARY: our own Cloudflare Worker (no CORS, reliable, no third-party proxies)
+  // PRIMARY: our Cloudflare Worker pulls Israeli sports RSS directly (returns JSON)
   try{
     var r=await fetch('https://wc-reminders.ranbashary.workers.dev/?news=1');
     if(r.ok){
-      var xml=await r.text();
-      if(xml&&xml.length>200){
-        var doc=new DOMParser().parseFromString(xml,'text/xml');
-        doc.querySelectorAll('item').forEach(function(it){
-          var title=(it.querySelector('title')||{}).textContent||'';
-          var link=(it.querySelector('link')||{}).textContent||'';
-          var pd=(it.querySelector('pubDate')||{}).textContent||'';
-          var srcEl=it.querySelector('source');
-          var src=srcEl&&srcEl.textContent?srcEl.textContent.trim():'חדשות';
-          var t=pd?new Date(pd).getTime():Date.now();
-          if(t<cutoff) return;
-          var cut=title.lastIndexOf(' - ');
-          if(cut>10) title=title.slice(0,cut);
-          all.push({src:src, title:title.trim(), link:link.trim(), t:t});
+      var data=await r.json();
+      if(data&&data.items&&data.items.length){
+        data.items.forEach(function(it){
+          if(it.t&&it.t<cutoff) return;
+          all.push({src:it.src||'חדשות', title:(it.title||'').trim(), link:(it.link||'').trim(), t:it.t||Date.now()});
         });
         console.log('������ Worker news: '+all.length+' items');
+      } else {
+        console.warn('������ Worker returned 0 items');
       }
     }
   }catch(e){ console.warn('������ worker news failed', e); }
 
-  // Filter foreign / non-Hebrew sources + dedup (Israel Hayom is allowed again)
-  var BLOCKED_DOMAINS=['vietnam.vn','.com.vn','dailymail','espn','goal.com','fifa.com','bbc.','cnn.','reuters'];
-  var BLOCKED_SRCS=['Vietnam','vietnam'];
-  all=all.filter(function(a){
-    var link=(a.link||'').toLowerCase();
-    var src=(a.src||'');
-    if(BLOCKED_DOMAINS.some(function(d){return link.indexOf(d)!==-1;})) return false;
-    if(BLOCKED_SRCS.some(function(s){return src.indexOf(s)!==-1;})) return false;
-    return true;
-  });
+  // Dedup
   var seen={};
   var deduped=all.filter(function(a){
     var k=a.title.slice(0,50);
