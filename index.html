@@ -3245,7 +3245,7 @@ var GNEWS_URL='https://news.google.com/rss/search?q='+encodeURIComponent('\u05DE
 async function fetchWcNews(){
   if(Date.now()-_newsFetched<30*60000 && _newsItems.length) return _newsItems;
   _newsFetched=Date.now();
-  var cutoff=Date.now()-86400000;
+  var cutoff=Date.now()-2*86400000;
   var all=[];
 
   // PRIMARY: our own Cloudflare Worker (no CORS, reliable, no third-party proxies)
@@ -3391,7 +3391,7 @@ function _loadNewsCache(){
     if(!raw) return;
     var o=JSON.parse(raw);
     if(!o||!o.items||!o.items.length) return;
-    var cutoff=Date.now()-86400000;
+    var cutoff=Date.now()-2*86400000;
     var fresh=o.items.filter(function(n){ return !(n.t&&n.t<cutoff); });
     if(fresh.length){ _newsItems=fresh; renderNewsTicker(); }
   }catch(e){}
