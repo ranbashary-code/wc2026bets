@@ -186,6 +186,21 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 .sec-divider{height:1px;background:var(--border);margin:24px 0;}
 .card{background:var(--card);border:1px solid var(--border);border-radius:14px;}
 .match-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+.odds-box{margin-top:10px;padding:9px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;}
+.odds-title{font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.5px;margin-bottom:6px;text-align:center;}
+.odds-tbd{margin-top:10px;padding:9px 10px;background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.12);border-radius:10px;font-size:10px;font-weight:700;color:var(--text2);text-align:center;}
+.odds-nums{display:flex;justify-content:space-between;gap:6px;margin-bottom:6px;}
+.odds-seg{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;}
+.odds-seg .odds-pct{font-size:15px;font-weight:900;line-height:1;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;}
+.odds-seg .odds-lbl{font-size:9px;font-weight:700;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.odds-seg-1 .odds-pct{color:#34d399;}
+.odds-seg-x .odds-pct{color:#fbbf24;}
+.odds-seg-2 .odds-pct{color:#60a5fa;}
+.odds-bar{display:flex;height:7px;border-radius:5px;overflow:hidden;background:rgba(0,0,0,0.25);}
+.odds-fill{height:100%;transition:width 0.4s ease;}
+.odds-fill-1{background:linear-gradient(90deg,#34d399,#10b981);}
+.odds-fill-x{background:linear-gradient(90deg,#fbbf24,#f59e0b);}
+.odds-fill-2{background:linear-gradient(90deg,#60a5fa,#3b82f6);}
 .match-card:hover{border-color:rgba(255,215,0,0.15);}
 
 /* Pills */
@@ -1053,6 +1068,8 @@ select.inp option{background:var(--card2);}
             </div>
             <div id="odds-key-status" style="font-size:11px;font-weight:700;margin-top:6px;min-height:14px;"></div>
             <p style="font-size:10px;color:var(--text2);margin-top:4px;">עם מפתח — הבוט מהמר לפי יחסי הימורים חיים. בלעדיו — מנוע מקומי.</p>
+            <button class="btn btn-ghost btn-xs" id="refresh-odds-btn" style="width:100%;margin-top:8px;">📊 רענן יחסי הימורים לכרטיסיות</button>
+            <div id="refresh-odds-status" style="font-size:11px;font-weight:700;margin-top:6px;min-height:14px;text-align:center;"></div>
           </div>
 
           <button class="btn btn-grad" id="run-bot-btn" style="width:100%;margin-bottom:8px;">⚡ הפעל Boti-Goal — המר על הסיבוב הקרוב</button>
@@ -1381,6 +1398,64 @@ function predictFromOdds(probs, stage, team1, team2){
   return fav===1?[s_fav,s_und]:[s_und,s_fav];
 }
 
+// ══════════════ ODDS DISPLAY (Winner-style odds bar on match cards) ══════════════
+// Fetch live odds and store implied probabilities per match to Firebase (admin/bot run).
+async function refreshOddsCache(apiKey){
+  if(!apiKey){
+    var ks=await get(ref(db,'admin/bot_config/oddsApiKey'));
+    apiKey=ks.exists()?ks.val():null;
+  }
+  if(!apiKey) return {saved:0, reason:'no api key'};
+  var events;
+  try{ events=await fetchWcOdds(apiKey); }catch(e){ return {saved:0, reason:'fetch failed'}; }
+  var saved=0;
+  var updates={};
+  Object.entries(MATCHES).forEach(function(e){
+    var id=e[0], m=e[1];
+    if(m.result!==undefined) return; // finished — no need
+    var probs=findOddsEvent(events, m.team1, m.team2);
+    if(probs){
+      updates[id]={p1:probs.p1, pd:probs.pd, p2:probs.p2, t:Date.now()};
+      saved++;
+    }
+  });
+  if(saved){ await set(ref(db,'oddsCache'), Object.assign({}, ODDS_CACHE, updates)); }
+  return {saved:saved};
+}
+window.refreshOddsCache=refreshOddsCache;
+
+// Render an odds bar (numbers + visual bar) for a match. Returns HTML string.
+// teamPlaceholder/TBD matches show a "will update" note instead.
+function _oddsBar(id, m){
+  var isTBD = !m.team1 || !m.team2 || /TBD|\u05DE\u05E7\u05D5\u05DD|\//.test((m.team1||'')+(m.team2||''));
+  var o = ODDS_CACHE[id];
+  if(isTBD || !o){
+    if(isTBD){
+      return '<div class="odds-box odds-tbd">\uD83D\uDCCA \u05D9\u05D7\u05E1\u05D9\u05DD \u05D9\u05EA\u05E2\u05D3\u05DB\u05E0\u05D5 \u05DB\u05E9\u05D9\u05D9\u05E7\u05D1\u05E2\u05D5 \u05D4\u05E7\u05D1\u05D5\u05E6\u05D5\u05EA</div>';
+    }
+    return ''; // no odds available for a real match (not fetched yet) — show nothing
+  }
+  var p1=Math.round((o.p1||0)*100), pd=Math.round((o.pd||0)*100), p2=Math.round((o.p2||0)*100);
+  // normalize to 100
+  var tot=p1+pd+p2; if(tot>0){ p1=Math.round(p1/tot*100); pd=Math.round(pd/tot*100); p2=100-p1-pd; }
+  var n1=displayName(m.team1)||'1', n2=displayName(m.team2)||'2';
+  return ''+
+  '<div class="odds-box">'+
+    '<div class="odds-title">\uD83D\uDCCA \u05D9\u05D7\u05E1\u05D9 \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD</div>'+
+    '<div class="odds-nums">'+
+      '<div class="odds-seg odds-seg-1"><span class="odds-pct">'+p1+'%</span><span class="odds-lbl">'+n1+'</span></div>'+
+      '<div class="odds-seg odds-seg-x"><span class="odds-pct">'+pd+'%</span><span class="odds-lbl">\u05EA\u05D9\u05E7\u05D5</span></div>'+
+      '<div class="odds-seg odds-seg-2"><span class="odds-pct">'+p2+'%</span><span class="odds-lbl">'+n2+'</span></div>'+
+    '</div>'+
+    '<div class="odds-bar">'+
+      '<div class="odds-fill odds-fill-1" style="width:'+p1+'%;"></div>'+
+      '<div class="odds-fill odds-fill-x" style="width:'+pd+'%;"></div>'+
+      '<div class="odds-fill odds-fill-2" style="width:'+p2+'%;"></div>'+
+    '</div>'+
+  '</div>';
+}
+window._oddsBar=_oddsBar;
+
 // Delete bot bets on matches that have not locked yet
 window.deleteBotOpenBets = async function(){
   if(!confirm('\u05DC\u05DE\u05D7\u05D5\u05E7 \u05D0\u05EA \u05DB\u05DC \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9 \u05D4\u05D1\u05D5\u05D8 \u05E2\u05DC \u05DE\u05E9\u05D7\u05E7\u05D9\u05DD \u05E9\u05D8\u05E8\u05DD \u05E0\u05E0\u05E2\u05DC\u05D5?')) return;
@@ -1680,6 +1755,23 @@ window.runBotiGoalBot = async function runBotiGoalBot() {
   }
 
   console.log(`✅ Boti-Goal: ${saved} saved, ${failed} failed`);
+
+  // ── Save odds cache for display on match cards (reuse already-fetched odds) ──
+  if(oddsEvents){
+    try{
+      const oddsUpdates={};
+      for(const [id,m] of Object.entries(MATCHES)){
+        if(m.result!==undefined) continue;
+        const pr=findOddsEvent(oddsEvents, m.team1, m.team2);
+        if(pr){ oddsUpdates[id]={p1:pr.p1, pd:pr.pd, p2:pr.p2, t:Date.now()}; }
+      }
+      if(Object.keys(oddsUpdates).length){
+        await set(ref(db,'oddsCache'), Object.assign({}, ODDS_CACHE, oddsUpdates));
+        console.log('📊 odds cache saved:', Object.keys(oddsUpdates).length);
+      }
+    }catch(e){ console.warn('odds cache save failed', e); }
+  }
+
   // ── SPECIAL BETS: bot picks champion & top scorer (once, while still open) ──
   try{
     if(typeof specialLocked==='function' && !specialLocked()){
@@ -3248,19 +3340,26 @@ async function fetchWcNews(){
   var cutoff=Date.now()-2*86400000;
   var all=[];
 
-  // PRIMARY: our Cloudflare Worker pulls Israeli sports RSS directly (returns JSON)
+  // PRIMARY: Worker proxies Google News RSS (with stale-cache fallback on its side)
   try{
     var r=await fetch('https://wc-reminders.ranbashary.workers.dev/?news=1');
     if(r.ok){
-      var data=await r.json();
-      if(data&&data.items&&data.items.length){
-        data.items.forEach(function(it){
-          if(it.t&&it.t<cutoff) return;
-          all.push({src:it.src||'חדשות', title:(it.title||'').trim(), link:(it.link||'').trim(), t:it.t||Date.now()});
+      var xml=await r.text();
+      if(xml&&xml.indexOf('<item')!==-1){
+        var doc=new DOMParser().parseFromString(xml,'text/xml');
+        doc.querySelectorAll('item').forEach(function(it){
+          var title=(it.querySelector('title')||{}).textContent||'';
+          var link=(it.querySelector('link')||{}).textContent||'';
+          var pd=(it.querySelector('pubDate')||{}).textContent||'';
+          var srcEl=it.querySelector('source');
+          var src=srcEl&&srcEl.textContent?srcEl.textContent.trim():'חדשות';
+          var t=pd?new Date(pd).getTime():Date.now();
+          if(t<cutoff) return;
+          var cut=title.lastIndexOf(' - ');
+          if(cut>10) title=title.slice(0,cut);
+          all.push({src:src, title:title.trim(), link:link.trim(), t:t});
         });
         console.log('������ Worker news: '+all.length+' items');
-      } else {
-        console.warn('������ Worker returned 0 items');
       }
     }
   }catch(e){ console.warn('������ worker news failed', e); }
@@ -4234,7 +4333,7 @@ const SLBL = {group:'שלב בתים',r32:'שלב 32 האחרונות',r16:'שמ
 const SCSS = {group:'pill-group',r32:'pill-r32',r16:'pill-r16',qf:'pill-qf',sf:'pill-sf','3rd':'pill-3rd',final:'pill-final'};
 
 let ME = null, MEDATA = null;
-let MATCHES = {}, BETS = {}, USERS = {};
+let MATCHES = {}, BETS = {}, USERS = {}, ODDS_CACHE = {};
 let filterStage = 'all';
 let betId = null, betS = [0,0];
 let resId = null, resS = [0,0];
@@ -4373,6 +4472,7 @@ async function rejectU(uid){ await remove(ref(db,'users/'+uid)); toast('🗑 נ�
 function initData(){
   onValue(ref(db,'matches'),s=>{ MATCHES=s.exists()?s.val():{};  refreshAll(); });
   onValue(ref(db,'bets'),   s=>{ BETS=s.exists()?s.val():{};     refreshAll(); });
+  onValue(ref(db,'oddsCache'),s=>{ ODDS_CACHE=s.exists()?s.val():{}; refreshAll(); });
   onValue(ref(db,'users'),  s=>{ if(s.exists()) USERS=s.val();   refreshAll(); renderGroupsSummary(); loadUsers(); });
   onValue(ref(db,'scoring'),s=>{ if(s.exists()){ SCORING=s.val(); renderScoringTable(); if(MEDATA&&MEDATA.isAdmin) renderScoringEdit(); } });
 }
@@ -4516,6 +4616,9 @@ function renderToday(){
         ab.innerHTML=abHtml;
         card.appendChild(ab);
       }
+      // Odds bar
+      const ob1=_oddsBar(id,m);
+      if(ob1){ const obd=document.createElement('div'); obd.innerHTML=ob1; card.appendChild(obd.firstChild); }
     } else {
       if(myBet){
         const ind=document.createElement('div');
@@ -4548,6 +4651,9 @@ function renderToday(){
       betRow.appendChild(lbl); betRow.appendChild(m1); betRow.appendChild(v1); betRow.appendChild(p1);
       betRow.appendChild(sep); betRow.appendChild(m2); betRow.appendChild(v2); betRow.appendChild(p2);
       betRow.appendChild(saveBtn); card.appendChild(betRow);
+      // Odds bar
+      const ob2=_oddsBar(id,m);
+      if(ob2){ const obd2=document.createElement('div'); obd2.innerHTML=ob2; card.appendChild(obd2.firstChild); }
     }
     return card;
   }
@@ -4647,6 +4753,12 @@ function renderMatches(){
       }
     }
 
+    // Odds bar (numbers + bar, or "will update" for TBD knockout matches)
+    if(!hasRes){
+      const obH=_oddsBar(id,m);
+      if(obH){ const obw=document.createElement('div'); obw.innerHTML=obH; card.appendChild(obw.firstChild); }
+    }
+
     lst.appendChild(card);
   });
 }
@@ -4742,6 +4854,7 @@ function renderMyBets(){
         <button class='btn btn-red btn-xs' style='flex:1;' data-deletebet='${id}'>🗑 מחק</button>
       </div>`:''}
       ${lk?_allBetsSection(id,m,hasRes):''}
+      ${!hasRes?`<div style='padding:0 14px 12px;'>${_oddsBar(id,m)}</div>`:''}
     </div>`;
   });
   lst.innerHTML=html;
@@ -4857,6 +4970,17 @@ el('run-bot-btn')&&el('run-bot-btn').addEventListener('click', async()=>{
 el('save-odds-key-btn')&&el('save-odds-key-btn').addEventListener('click', ()=>window.saveOddsApiKey());
 el('delete-bot-bets-btn')&&el('delete-bot-bets-btn').addEventListener('click', ()=>window.deleteBotOpenBets());
 el('clean-orphan-bets-btn')&&el('clean-orphan-bets-btn').addEventListener('click', ()=>window.cleanBotOrphanBets());
+el('refresh-odds-btn')&&el('refresh-odds-btn').addEventListener('click', async()=>{
+  var st=el('refresh-odds-status');
+  if(st){ st.textContent='\uD83D\uDCCA \u05DE\u05D5\u05E9\u05DA \u05D9\u05D7\u05E1\u05D9\u05DD...'; st.style.color='var(--text2)'; }
+  try{
+    var res=await window.refreshOddsCache();
+    if(st){
+      if(res.saved>0){ st.textContent='\u2705 \u05E0\u05E9\u05DE\u05E8\u05D5 \u05D9\u05D7\u05E1\u05D9\u05DD \u05DC-'+res.saved+' \u05DE\u05E9\u05D7\u05E7\u05D9\u05DD'; st.style.color='#34d399'; }
+      else { st.textContent='\u26A0 \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05D9\u05D7\u05E1\u05D9\u05DD ('+(res.reason||'')+')'; st.style.color='#fbbf24'; }
+    }
+  }catch(e){ if(st){ st.textContent='\u274C \u05E9\u05D2\u05D9\u05D0\u05D4'; st.style.color='#f87171'; } }
+});
 // Load saved odds key into the field (masked)
 (async()=>{
   try{
