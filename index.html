@@ -3226,13 +3226,16 @@ function _achievements(uids){
     }).filter(Boolean).sort(function(a,b){return a.dt>b.dt?1:-1;});
   });
 
-  // 1) Top scorer of hits: "מלך הבולים"
-  var bestHit=null, bestHitUid=null;
+  // 1) Top scorer of hits: "מלך הבולים" — only if strictly unique
+  var bestHit=null;
   uids.forEach(function(u){
     var h=finished[u].filter(function(f){return f.p.hit;}).length;
-    if(h>0 && (bestHit===null||h>bestHit)){ bestHit=h; bestHitUid=u; }
+    if(h>0 && (bestHit===null||h>bestHit)) bestHit=h;
   });
-  if(bestHitUid) out[bestHitUid].push({icon:'\uD83C\uDFAF', label:'\u05DE\u05DC\u05DA \u05D4\u05D1\u05D5\u05DC\u05D9\u05DD \u2014 '+bestHit+' \u05D1\u05D5\u05DC\u05D9\u05DD, \u05D4\u05DB\u05D9 \u05D4\u05E8\u05D1\u05D4 \u05D1\u05E7\u05D1\u05D5\u05E6\u05D4'});
+  var kingUids=bestHit!==null ? uids.filter(function(u){
+    return finished[u].filter(function(f){return f.p.hit;}).length===bestHit;
+  }) : [];
+  if(kingUids.length===1) out[kingUids[0]].push({icon:'\uD83C\uDFAF', label:'\u05DE\u05DC\u05DA \u05D4\u05D1\u05D5\u05DC\u05D9\u05DD \u2014 '+bestHit+' \u05D1\u05D5\u05DC\u05D9\u05DD, \u05D4\u05DB\u05D9 \u05D4\u05E8\u05D1\u05D4 \u05D1\u05E7\u05D1\u05D5\u05E6\u05D4'});
 
   // 2) Hot streak: 3+ exact hits in a row (most recent finished bets)
   uids.forEach(function(u){
@@ -3591,48 +3594,37 @@ function renderTicker(){
       if(beating>0) items.push('🤖 '+tag(gid)+beating+' שחקנים מנצחים את Boti-Goal בטבלה');
     }
 
-    // sole exact hit per finished match (last 48h)
+    // Sole exact hit on the LAST finished match only (keeps ticker consistent with rank arrows)
+    var lastMid=null, lastTime=-1;
     Object.entries(MATCHES).forEach(function(me2){
-      var mid=me2[0], m=me2[1];
-      if(!m||m.result===undefined||!m.datetime) return;
-      var age=now-new Date(m.datetime).getTime();
-      if(age>2*86400000) return;
-      var hitters=uids.filter(function(u){
-        var b=BETS[u]&&BETS[u][mid];
-        return b!==undefined&&calcPts(m,b).hit;
-      });
-      if(hitters.length===1){
-        items.push('🎯 '+tag(gid)+'רק '+nameOf(hitters[0])+' קלע בול במשחק '+displayName(m.team1)+' נגד '+displayName(m.team2)+'!');
+      var m=me2[1];
+      if(m&&m.result!==undefined&&m.datetime){
+        var tt=new Date(m.datetime).getTime();
+        if(tt>lastTime){ lastTime=tt; lastMid=me2[0]; }
       }
     });
-
-    // yesterday: bad day / top earner
-    var yest=new Date(now-86400000).toDateString();
-    var yMids=Object.entries(MATCHES).filter(function(me2){
-      var m=me2[1];
-      return m&&m.result!==undefined&&m.datetime&&new Date(m.datetime).toDateString()===yest;
-    });
-    if(yMids.length){
-      var anyHit=yMids.some(function(me2){
-        var mid=me2[0],m=me2[1];
-        return uids.some(function(u){
-          var b=BETS[u]&&BETS[u][mid];
-          return b!==undefined&&calcPts(m,b).hit;
-        });
+    if(lastMid){
+      var lm=MATCHES[lastMid];
+      var hitters=uids.filter(function(u){
+        var b=BETS[u]&&BETS[u][lastMid];
+        return b!==undefined&&calcPts(lm,b).hit;
       });
-      if(!anyHit) items.push('😱 '+tag(gid)+'אף אחד לא קלע בול אתמול — יום קשה לקבוצה');
-      var ydayPts={};
+      if(hitters.length===1){
+        items.push('\uD83C\uDFAF '+tag(gid)+'\u05E8\u05E7 '+nameOf(hitters[0])+' \u05E7\u05DC\u05E2 \u05D1\u05D5\u05DC \u05D1\u05DE\u05E9\u05D7\u05E7 '+displayName(lm.team1)+' \u05E0\u05D2\u05D3 '+displayName(lm.team2)+'!');
+      } else if(hitters.length===0){
+        items.push('\uD83D\uDE31 '+tag(gid)+'\u05D0\u05E3 \u05D0\u05D7\u05D3 \u05DC\u05D0 \u05E7\u05DC\u05E2 \u05D1\u05D5\u05DC \u05D1\u05DE\u05E9\u05D7\u05E7 '+displayName(lm.team1)+' \u05E0\u05D2\u05D3 '+displayName(lm.team2));
+      }
+      // Top earner on the last match
+      var lmPts={};
       uids.forEach(function(u){
-        yMids.forEach(function(me2){
-          var b=BETS[u]&&BETS[u][me2[0]];
-          if(b===undefined) return;
-          ydayPts[u]=(ydayPts[u]||0)+calcPts(me2[1],b).total;
-        });
+        var b=BETS[u]&&BETS[u][lastMid];
+        if(b===undefined) return;
+        lmPts[u]=calcPts(lm,b).total;
       });
-      var topYPts=null;
-      Object.entries(ydayPts).forEach(function(e){ if(e[1]>0&&(topYPts===null||e[1]>topYPts)) topYPts=e[1]; });
-      var topYUids=topYPts!==null?Object.keys(ydayPts).filter(function(u){return ydayPts[u]===topYPts;}):[];
-      if(topYUids.length===1) items.push('⭐ '+tag(gid)+'מצטיין אתמול: '+nameOf(topYUids[0])+' עם '+topYPts+' נק׳!');
+      var topLPts=null;
+      Object.entries(lmPts).forEach(function(e){ if(e[1]>0&&(topLPts===null||e[1]>topLPts)) topLPts=e[1]; });
+      var topLUids=topLPts!==null?Object.keys(lmPts).filter(function(u){return lmPts[u]===topLPts;}):[];
+      if(topLUids.length===1) items.push('\u2B50 '+tag(gid)+'\u05DE\u05E6\u05D8\u05D9\u05D9\u05DF \u05D4\u05DE\u05E9\u05D7\u05E7 \u05D4\u05D0\u05D7\u05E8\u05D5\u05DF: '+nameOf(topLUids[0])+' \u05E2\u05DD '+topLPts+' \u05E0\u05E7\u05F3!');
     }
     // achievements (computed within this group only)
     var ach=_achievements(uids);
