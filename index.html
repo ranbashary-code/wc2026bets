@@ -251,9 +251,10 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 .rank-up{font-size:10px;font-weight:900;color:#34d399;}
 .rank-down{font-size:10px;font-weight:900;color:#f87171;}
 
-/* Achievement badges + tooltip */
+/* Achievement badges + tooltip (JS-driven #ach-tip avoids overflow clipping) */
 .ach-badge{font-size:14px;margin-right:5px;cursor:help;position:relative;}
-.ach-badge:hover::after{content:attr(data-tip);position:absolute;bottom:130%;right:50%;transform:translateX(50%);background:#0f1828;color:#fff;border:1px solid var(--gold);padding:6px 10px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.4);}
+#ach-tip{position:fixed;display:none;z-index:9999;background:#0f1828;color:#fff;border:1px solid var(--gold);padding:7px 11px;border-radius:8px;font-size:11.5px;font-weight:600;line-height:1.4;max-width:240px;white-space:normal;text-align:center;direction:rtl;box-shadow:0 4px 16px rgba(0,0,0,0.45);pointer-events:none;}
+body.light-mode #ach-tip{background:#fff;color:#1c2c4f;border-color:#c8960a;}
 
 /* News ticker */
 #news-ticker{display:none;overflow:hidden;background:linear-gradient(90deg,rgba(255,215,0,0.08),rgba(255,215,0,0.03));border-top:1px solid rgba(255,215,0,0.15);border-bottom:1px solid rgba(255,215,0,0.15);padding:7px 0;white-space:nowrap;position:relative;}
@@ -3362,10 +3363,10 @@ async function fetchWcNews(){
           if(cut>10) title=title.slice(0,cut);
           all.push({src:src, title:title.trim(), link:link.trim(), t:t});
         });
-        console.log('������ Worker news: '+all.length+' items');
+        console.log('       Worker news: '+all.length+' items');
       }
     }
-  }catch(e){ console.warn('������ worker news failed', e); }
+  }catch(e){ console.warn('       worker news failed', e); }
 
   // Dedup
   var seen={};
@@ -3393,7 +3394,7 @@ async function fetchWcNews(){
   } else {
     _newsFetched=Date.now()-28*60000;
   }
-  console.log('������ total news: '+_newsItems.length+' from '+srcOrder.length+' sources');
+  console.log('       total news: '+_newsItems.length+' from '+srcOrder.length+' sources');
   if(_newsItems.length){
     try{ localStorage.setItem('wcNewsCache', JSON.stringify({t:Date.now(), items:_newsItems})); }catch(e){}
   }
@@ -5699,6 +5700,35 @@ function confetti(){
   function draw(){ ctx.clearRect(0,0,c.width,c.height); let done=true; pp.forEach(p=>{ p.y+=p.speed;p.rot+=p.rs; if(p.y<c.height)done=false; ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore(); }); if(!done)fr=requestAnimationFrame(draw); else{c.style.display='none';cancelAnimationFrame(fr);} }
   draw(); setTimeout(()=>{c.style.display='none';cancelAnimationFrame(fr);},4000);
 }
+
+/* Achievement badge tooltip — rendered on <body> so it escapes the
+   leaderboard's overflow clipping and is always clamped to the viewport */
+(function(){
+  var tip;
+  function getTip(){
+    if(!tip){ tip=document.createElement('div'); tip.id='ach-tip'; document.body.appendChild(tip); }
+    return tip;
+  }
+  function show(badge){
+    var txt=badge.getAttribute('data-tip'); if(!txt) return;
+    var t=getTip();
+    t.textContent=txt;
+    t.style.display='block';
+    var br=badge.getBoundingClientRect();
+    var tr=t.getBoundingClientRect();
+    var left=br.left+br.width/2-tr.width/2;
+    left=Math.max(6,Math.min(left,window.innerWidth-tr.width-6));
+    var top=br.top-tr.height-8;
+    if(top<6) top=br.bottom+8; // not enough room above → flip below
+    t.style.left=left+'px';
+    t.style.top=top+'px';
+  }
+  function hide(){ if(tip) tip.style.display='none'; }
+  document.addEventListener('mouseover',function(e){ var b=e.target.closest&&e.target.closest('.ach-badge'); if(b) show(b); });
+  document.addEventListener('mouseout',function(e){ var b=e.target.closest&&e.target.closest('.ach-badge'); if(b) hide(); });
+  window.addEventListener('scroll',hide,true);
+  window.addEventListener('resize',hide);
+})();
 
 </script>
 
