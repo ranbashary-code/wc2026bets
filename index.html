@@ -189,10 +189,10 @@ body{font-family:'Rubik',sans-serif;font-weight:300;background:var(--navy);color
 .odds-box{margin-top:10px;padding:9px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;}
 .odds-title{font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.5px;margin-bottom:6px;text-align:center;}
 .odds-tbd{margin-top:10px;padding:9px 10px;background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.12);border-radius:10px;font-size:10px;font-weight:700;color:var(--text2);text-align:center;}
-.odds-nums{display:flex;justify-content:space-between;gap:6px;margin-bottom:6px;}
-.odds-seg{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;}
-.odds-seg .odds-pct{font-size:15px;font-weight:900;line-height:1;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;}
-.odds-seg .odds-lbl{font-size:9px;font-weight:700;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.odds-nums{display:flex;gap:0;margin-bottom:6px;}
+.odds-seg{display:flex;flex-direction:column;align-items:center;min-width:0;overflow:visible;}
+.odds-seg .odds-pct{font-size:14px;font-weight:900;line-height:1;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;white-space:nowrap;}
+.odds-seg .odds-lbl{font-size:8px;font-weight:700;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 .odds-seg-1 .odds-pct{color:#34d399;}
 .odds-seg-x .odds-pct{color:#fbbf24;}
 .odds-seg-2 .odds-pct{color:#60a5fa;}
@@ -1443,9 +1443,9 @@ function _oddsBar(id, m){
   '<div class="odds-box">'+
     '<div class="odds-title">\uD83D\uDCCA \u05D9\u05D7\u05E1\u05D9 \u05D4\u05D9\u05DE\u05D5\u05E8\u05D9\u05DD</div>'+
     '<div class="odds-nums">'+
-      '<div class="odds-seg odds-seg-1"><span class="odds-pct">'+p1+'%</span><span class="odds-lbl">'+n1+'</span></div>'+
-      '<div class="odds-seg odds-seg-x"><span class="odds-pct">'+pd+'%</span><span class="odds-lbl">\u05EA\u05D9\u05E7\u05D5</span></div>'+
-      '<div class="odds-seg odds-seg-2"><span class="odds-pct">'+p2+'%</span><span class="odds-lbl">'+n2+'</span></div>'+
+      '<div class="odds-seg odds-seg-1" style="width:'+p1+'%;"><span class="odds-pct">'+p1+'%</span><span class="odds-lbl">'+n1+'</span></div>'+
+      '<div class="odds-seg odds-seg-x" style="width:'+pd+'%;"><span class="odds-pct">'+pd+'%</span><span class="odds-lbl">\u05EA\u05D9\u05E7\u05D5</span></div>'+
+      '<div class="odds-seg odds-seg-2" style="width:'+p2+'%;"><span class="odds-pct">'+p2+'%</span><span class="odds-lbl">'+n2+'</span></div>'+
     '</div>'+
     '<div class="odds-bar">'+
       '<div class="odds-fill odds-fill-1" style="width:'+p1+'%;"></div>'+
