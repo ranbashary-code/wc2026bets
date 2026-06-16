@@ -4616,9 +4616,11 @@ function renderToday(){
         ab.innerHTML=abHtml;
         card.appendChild(ab);
       }
-      // Odds bar
-      const ob1=_oddsBar(id,m);
-      if(ob1){ const obd=document.createElement('div'); obd.innerHTML=ob1; card.appendChild(obd.firstChild); }
+      // Odds bar — show cached odds even after lock (until a final result is entered)
+      if(!hasRes){
+        const ob1=_oddsBar(id,m);
+        if(ob1){ const obd=document.createElement('div'); obd.innerHTML=ob1; card.appendChild(obd.firstChild); }
+      }
     } else {
       if(myBet){
         const ind=document.createElement('div');
