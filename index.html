@@ -698,7 +698,7 @@ select.inp option{background:var(--card2);}
         <div class="stat-lbl">נקודות כולל</div>
       </div>
     </div>
-    <div id="ps-chart-lbl" style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin:14px 0 6px;display:none;">📈 התקדמות נקודות (זהב = השחקן, מקווקו = ממוצע הקבוצה)</div>
+    <div id="ps-chart-lbl" style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin:14px 0 6px;display:none;">📈 התקדמות נקודות (זהב = השחקן, כחול מקווקו = ממוצע הקבוצה)</div>
     <canvas id="ps-chart" style="width:100%;height:130px;display:none;"></canvas>
   </div>
 </div>
@@ -3817,15 +3817,15 @@ function _drawProgressChart(uid){
   ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; ctx.setLineDash([]);
   ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
 
-  // Avg area fill
+  // Avg area fill (blue — distinct from the player's gold)
   if(dayList.length>1){
     ctx.beginPath();
     avg.forEach(function(v,i){ if(i===0)ctx.moveTo(px(i),py(v)); else ctx.lineTo(px(i),py(v)); });
     ctx.lineTo(px(dayList.length-1),py(0)); ctx.lineTo(px(0),py(0)); ctx.closePath();
-    ctx.fillStyle='rgba(160,174,192,0.08)'; ctx.fill();
+    ctx.fillStyle='rgba(116,185,224,0.08)'; ctx.fill();
   }
-  // Avg dashed line
-  ctx.strokeStyle='rgba(160,174,192,0.55)'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+  // Avg dashed line (blue)
+  ctx.strokeStyle='rgba(116,185,224,0.9)'; ctx.lineWidth=2; ctx.setLineDash([5,4]);
   ctx.beginPath(); avg.forEach(function(v,i){ if(i===0)ctx.moveTo(px(i),py(v)); else ctx.lineTo(px(i),py(v)); }); ctx.stroke();
   ctx.setLineDash([]);
 
@@ -3846,7 +3846,7 @@ function _drawProgressChart(uid){
   ctx.beginPath(); mine.forEach(function(v,i){ if(i===0)ctx.moveTo(px(i),py(v)); else ctx.lineTo(px(i),py(v)); }); ctx.stroke();
   ctx.shadowBlur=0;
 
-  // Data points
+  // Data points + value label at each point
   mine.forEach(function(v,i){
     ctx.shadowColor='rgba(255,215,0,0.6)'; ctx.shadowBlur=6;
     ctx.beginPath(); ctx.arc(px(i),py(v),4,0,Math.PI*2);
@@ -3854,11 +3854,16 @@ function _drawProgressChart(uid){
     ctx.shadowBlur=0;
     ctx.beginPath(); ctx.arc(px(i),py(v),4,0,Math.PI*2);
     ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=1.5; ctx.stroke();
-    if(i===mine.length-1&&mine.length>1){
-      ctx.font='700 10px Rubik,sans-serif'; ctx.textAlign='left';
-      ctx.fillStyle='#FFD700';
-      ctx.fillText(Math.round(v)+'\u05E0\u05E7\u05F3',px(i)+7,py(v)+4);
-    }
+
+    // Number label — above the point, or below if too close to the top edge
+    var lx=px(i), ly=py(v)-10;
+    if(ly < padT+8){ ly=py(v)+16; }
+    ctx.font='800 10px Rubik,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineWidth=3; ctx.strokeStyle='rgba(10,18,32,0.9)';
+    ctx.strokeText(Math.round(v),lx,ly);   // dark outline for legibility
+    ctx.fillStyle='#FFD700';
+    ctx.fillText(Math.round(v),lx,ly);
   });
 }
 window._drawProgressChart=_drawProgressChart;
