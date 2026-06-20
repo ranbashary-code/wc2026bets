@@ -1390,12 +1390,17 @@ function _eventProbs(ev){
 }
 
 // Find odds event matching a Hebrew-named match
+function _normDia(s){
+  // strip accents/diacritics so "Curaçao" matches "curacao", "Türkiye" matches "turkiye", etc.
+  try{ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+  catch(e){ return (s||'').toLowerCase(); }
+}
 function findOddsEvent(events, team1Heb, team2Heb){
-  var en1=_teamToEn(team1Heb), en2=_teamToEn(team2Heb);
+  var en1=_teamToEn(team1Heb).map(_normDia), en2=_teamToEn(team2Heb).map(_normDia);
   if(!en1.length||!en2.length) return null;
   for(var i=0;i<events.length;i++){
     var ev=events[i];
-    var h=(ev.home_team||'').toLowerCase(), a=(ev.away_team||'').toLowerCase();
+    var h=_normDia(ev.home_team), a=_normDia(ev.away_team);
     var m1h=en1.some(function(e){return h.indexOf(e)!==-1;});
     var m1a=en1.some(function(e){return a.indexOf(e)!==-1;});
     var m2h=en2.some(function(e){return h.indexOf(e)!==-1;});
@@ -3399,32 +3404,6 @@ async function fetchWcNews(){
     }
   }catch(e){ console.warn('       worker news failed', e); }
 
-  // SECONDARY: if the Worker gave nothing, pull the Israeli RSS feeds directly
-  // via the public CORS proxies (keeps the banner alive when the Worker is down)
-  if(!all.length){
-    for(var fi=0; fi<NEWS_FEEDS.length; fi++){
-      try{
-        var feed=NEWS_FEEDS[fi];
-        var xml2=await _fetchViaProxy(feed.url);
-        if(!xml2 || xml2.indexOf('<item')===-1) continue;
-        var doc2=new DOMParser().parseFromString(xml2,'text/xml');
-        var added=0;
-        doc2.querySelectorAll('item').forEach(function(it){
-          if(added>=5) return;
-          var title=(it.querySelector('title')||{}).textContent||'';
-          var link=(it.querySelector('link')||{}).textContent||'';
-          var pd=(it.querySelector('pubDate')||{}).textContent||'';
-          var t=pd?new Date(pd).getTime():Date.now();
-          if(!title.trim()) return;
-          if(t<cutoff) return;
-          all.push({src:feed.src, title:title.trim(), link:link.trim(), t:t});
-          added++;
-        });
-      }catch(e){}
-    }
-    if(all.length) console.log('       fallback RSS news: '+all.length+' items');
-  }
-
   // Dedup
   var seen={};
   var deduped=all.filter(function(a){
@@ -3450,16 +3429,6 @@ async function fetchWcNews(){
     _newsItems=mixed;
   } else {
     _newsFetched=Date.now()-28*60000;
-    // everything failed — fall back to cached items so the banner doesn't vanish
-    try{
-      var craw=localStorage.getItem('wcNewsCache');
-      if(craw){
-        var co=JSON.parse(craw);
-        var ccut=Date.now()-2*86400000;
-        var cfresh=(co&&co.items?co.items:[]).filter(function(n){ return !(n.t&&n.t<ccut); });
-        if(cfresh.length) _newsItems=cfresh;
-      }
-    }catch(e){}
   }
   console.log('       total news: '+_newsItems.length+' from '+srcOrder.length+' sources');
   if(_newsItems.length){
