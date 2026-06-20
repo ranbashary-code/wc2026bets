@@ -1317,12 +1317,42 @@ const TEAM_EN = {
   '\u05E7\u05D5\u05E0\u05D2\u05D5':['dr congo','congo','democratic republic']
 };
 
+// Reverse index of the flag table: ISO code -> [english aliases]. Built lazily.
+let _codeToEn = null;
+function _buildCodeToEn(){
+  _codeToEn = {};
+  try{
+    for(var k in _knownCodes){
+      // keep only latin (english) keys, skip hebrew names
+      if(/[a-z]/i.test(k) && !/[\u0590-\u05FF]/.test(k)){
+        var code=_knownCodes[k];
+        (_codeToEn[code]=_codeToEn[code]||[]).push(k.toLowerCase());
+      }
+    }
+  }catch(e){ _codeToEn={}; }
+}
+
 function _teamToEn(hebName){
   if(!hebName) return [];
   if(TEAM_EN[hebName]) return TEAM_EN[hebName];
   for(var k in TEAM_EN){
     if(hebName.indexOf(k)!==-1 || k.indexOf(hebName)!==-1) return TEAM_EN[k];
   }
+  // ── systematic fallback: derive the english name(s) from the flag table ──
+  // every team in the tournament must have a flag, so this covers any team
+  // that wasn't manually added to TEAM_EN (Sweden, Bosnia, etc.)
+  try{
+    if(typeof _knownCodes !== 'undefined'){
+      if(!_codeToEn) _buildCodeToEn();
+      var code = _knownCodes[hebName];          // exact hebrew match first
+      if(!code){
+        for(var hk in _knownCodes){             // then partial hebrew match
+          if(/[\u0590-\u05FF]/.test(hk) && (hebName.indexOf(hk)!==-1 || hk.indexOf(hebName)!==-1)){ code=_knownCodes[hk]; break; }
+        }
+      }
+      if(code && _codeToEn[code] && _codeToEn[code].length) return _codeToEn[code];
+    }
+  }catch(e){}
   return [];
 }
 
@@ -3369,6 +3399,32 @@ async function fetchWcNews(){
     }
   }catch(e){ console.warn('       worker news failed', e); }
 
+  // SECONDARY: if the Worker gave nothing, pull the Israeli RSS feeds directly
+  // via the public CORS proxies (keeps the banner alive when the Worker is down)
+  if(!all.length){
+    for(var fi=0; fi<NEWS_FEEDS.length; fi++){
+      try{
+        var feed=NEWS_FEEDS[fi];
+        var xml2=await _fetchViaProxy(feed.url);
+        if(!xml2 || xml2.indexOf('<item')===-1) continue;
+        var doc2=new DOMParser().parseFromString(xml2,'text/xml');
+        var added=0;
+        doc2.querySelectorAll('item').forEach(function(it){
+          if(added>=5) return;
+          var title=(it.querySelector('title')||{}).textContent||'';
+          var link=(it.querySelector('link')||{}).textContent||'';
+          var pd=(it.querySelector('pubDate')||{}).textContent||'';
+          var t=pd?new Date(pd).getTime():Date.now();
+          if(!title.trim()) return;
+          if(t<cutoff) return;
+          all.push({src:feed.src, title:title.trim(), link:link.trim(), t:t});
+          added++;
+        });
+      }catch(e){}
+    }
+    if(all.length) console.log('       fallback RSS news: '+all.length+' items');
+  }
+
   // Dedup
   var seen={};
   var deduped=all.filter(function(a){
@@ -3394,6 +3450,16 @@ async function fetchWcNews(){
     _newsItems=mixed;
   } else {
     _newsFetched=Date.now()-28*60000;
+    // everything failed — fall back to cached items so the banner doesn't vanish
+    try{
+      var craw=localStorage.getItem('wcNewsCache');
+      if(craw){
+        var co=JSON.parse(craw);
+        var ccut=Date.now()-2*86400000;
+        var cfresh=(co&&co.items?co.items:[]).filter(function(n){ return !(n.t&&n.t<ccut); });
+        if(cfresh.length) _newsItems=cfresh;
+      }
+    }catch(e){}
   }
   console.log('       total news: '+_newsItems.length+' from '+srcOrder.length+' sources');
   if(_newsItems.length){
