@@ -5333,7 +5333,7 @@ function renderBracket(){
         return nameA.localeCompare(nameB, 'he');
       });
 
-      h+="<div class='card' style='padding:12px;margin-bottom:12px;'><div style='font-size:16px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;font-weight:900;'>בית "+gn+"</div><table style='width:100%;border-collapse:collapse;font-size:12px;'><thead><tr style='color:var(--text2);font-size:10px;text-transform:uppercase;'><th style='text-align:right;padding:4px 6px;width:24px;'>#</th><th style='text-align:right;padding:4px 6px;'>קבוצה</th><th style='text-align:center;'>מ</th><th style='text-align:center;'>נ</th><th style='text-align:center;'>ת</th><th style='text-align:center;'>ה</th><th style='text-align:center;'>שע</th><th style='text-align:center;color:var(--gold);'>נק</th></tr></thead><tbody>";
+      h+="<div class='card' style='padding:12px;margin-bottom:12px;'><div style='font-size:16px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;font-weight:900;'>בית "+gn+"</div><table style='width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px;'><thead><tr style='color:var(--text2);font-size:10px;text-transform:uppercase;'><th style='text-align:right;padding:4px 6px;width:28px;'>#</th><th style='text-align:right;padding:4px 6px;'>קבוצה</th><th style='text-align:center;width:30px;'>מ</th><th style='text-align:center;width:30px;'>נ</th><th style='text-align:center;width:30px;'>ת</th><th style='text-align:center;width:30px;'>ה</th><th style='text-align:center;width:48px;'>שע</th><th style='text-align:center;width:40px;color:var(--gold);'>נק</th></tr></thead><tbody>";
       sorted.forEach(([name,s],i)=>{
         const isTop2=i<2;
         const rankColor=i===0?'var(--gold)':i===1?'#60a5fa':i===2?'#a78bfa':'var(--text2)';
