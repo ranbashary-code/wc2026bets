@@ -5753,7 +5753,7 @@ function confetti(){
 }
 
 /* Bet celebration — green pulse on the card + a burst of football emojis from the button.
-   Used for every bet (new/update, group/knockout) when a player saves. */
+   Uses the Web Animations API so it fires reliably on EVERY save (new or update, any stage). */
 function _betFx(anchorEl, cardEl){
   if(cardEl){
     cardEl.classList.remove('bet-celebrate'); void cardEl.offsetWidth;
@@ -5761,24 +5761,25 @@ function _betFx(anchorEl, cardEl){
     setTimeout(function(){ cardEl.classList.remove('bet-celebrate'); }, 900);
   }
   var r = (anchorEl && anchorEl.getBoundingClientRect) ? anchorEl.getBoundingClientRect() : null;
-  var cx = r ? r.left + r.width/2 : innerWidth/2;
-  var cy = r ? r.top + r.height/2 : innerHeight/2;
-  var icons=['\u26BD','\u{1F945}','\u{1F3AF}','\u26BD','\u26BD','\u{1F389}'];
-  for(var i=0;i<14;i++){
+  // if the anchor was detached (rect collapsed), fall back to screen centre
+  var cx = (r && r.width) ? r.left + r.width/2 : innerWidth/2;
+  var cy = (r && r.width) ? r.top + r.height/2 : innerHeight/2;
+  var icons=['\u26BD','\u{1F945}','\u{1F3AF}','\u26BD','\u26BD','\u{1F389}','\u2B50'];
+  var N=18;
+  for(var i=0;i<N;i++){
     var s=document.createElement('div');
     s.textContent=icons[Math.floor(Math.random()*icons.length)];
-    s.style.cssText='position:fixed;left:'+cx+'px;top:'+cy+'px;font-size:'+(15+Math.random()*13)+'px;pointer-events:none;z-index:10000;will-change:transform,opacity;transition:transform .9s cubic-bezier(.15,.7,.3,1),opacity .9s ease-out;transform:translate(-50%,-50%);opacity:1;';
+    s.style.cssText='position:fixed;left:'+cx+'px;top:'+cy+'px;font-size:'+(18+Math.random()*16)+'px;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);';
     document.body.appendChild(s);
-    (function(el){
-      var ang=Math.PI*2*Math.random();
-      var dist=55+Math.random()*80;
-      var dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist-45, rot=Math.random()*720-360;
-      requestAnimationFrame(function(){
-        el.style.transform='translate(calc(-50% + '+dx+'px), calc(-50% + '+dy+'px)) rotate('+rot+'deg) scale(.55)';
-        el.style.opacity='0';
-      });
-      setTimeout(function(){ el.remove(); }, 1000);
-    })(s);
+    var ang=Math.PI*2*(i/N)+(Math.random()*0.5-0.25);
+    var dist=70+Math.random()*90;
+    var dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist-55, rot=Math.random()*720-360;
+    var anim=s.animate([
+      { transform:'translate(-50%,-50%) translate(0px,0px) rotate(0deg) scale(0.6)', opacity:1, offset:0 },
+      { transform:'translate(-50%,-50%) translate('+(dx*0.6)+'px,'+(dy*0.6)+'px) rotate('+(rot*0.6)+'deg) scale(1.1)', opacity:1, offset:0.5 },
+      { transform:'translate(-50%,-50%) translate('+dx+'px,'+dy+'px) rotate('+rot+'deg) scale(0.5)', opacity:0, offset:1 }
+    ], { duration:850+Math.random()*350, easing:'cubic-bezier(.2,.7,.3,1)', fill:'forwards' });
+    anim.onfinish=(function(el){ return function(){ el.remove(); }; })(s);
   }
 }
 window._betFx=_betFx;
