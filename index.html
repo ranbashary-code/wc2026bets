@@ -264,7 +264,7 @@ body.light-mode #ach-tip{background:#fff;color:#1c2c4f;border-color:#c8960a;}
 @keyframes tickerMove{0%{transform:translateX(0);}100%{transform:translateX(50%);}}
 @keyframes tickerOnce{0%{transform:translateX(calc(-100vw + 70px));}100%{transform:translateX(calc(100% + 30px));}}
 body.light-mode #news-ticker{background:linear-gradient(90deg,rgba(200,150,10,0.06),rgba(200,150,10,0.02));}
-body.light-mode .ticker-track{color:#c8960a;}
+body.light-mode .ticker-track{color:#2a3a52;}
 
 /* Skeleton loading */
 .skel{position:relative;overflow:hidden;background:rgba(255,255,255,0.05);border-radius:12px;}
@@ -331,6 +331,11 @@ body.light-mode .ticker-label{background:linear-gradient(270deg,#f7f8fb 78%,tran
 body.light-mode .ticker-modal-box{background:#fff;}
 body.light-mode .ticker-modal-item{background:rgba(0,0,0,0.04);}
 body.light-mode .ticker-modal-item a{color:#2a6496;}
+/* light-mode contrast fixes for elements with hardcoded light text on adaptive backgrounds */
+body.light-mode .stn-btn{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.18);color:var(--text);}
+body.light-mode .tm-vs{color:rgba(0,0,0,0.32);}
+body.light-mode .login-sub{color:#4a6080;}
+body.light-mode .allbets-summary{color:#2a6496;}
 
 
 /* ── Hero: two-column today layout (open / locked) ── */
@@ -2004,7 +2009,7 @@ async function loadKoUpdateHistory(){
       const lbl=KO_STAGE_LABELS[s]||s;const entry=log.filter(e=>e.stage===s).pop();
       if(entry){const d=new Date(entry.ts).toLocaleDateString('he-IL',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});html+=`<div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;"><span style="color:#34d399;">✅ ${lbl}</span><span style="color:var(--text2);font-size:10px;white-space:nowrap;">${d} · ${entry.count} משחקים</span></div>`;}
       else if(s===nextStage){html+=`<div style="color:var(--gold);font-size:11px;">⏭️ הבא: ${lbl}</div>`;}
-      else{html+=`<div style="color:rgba(255,255,255,0.25);font-size:11px;">⏳ ${lbl}</div>`;}
+      else{html+=`<div style="color:var(--text2);font-size:11px;">⏳ ${lbl}</div>`;}
     });
     html+='</div>';box.innerHTML=html;
   }catch(e){if(el('ko-update-history'))el('ko-update-history').innerHTML='<div style="color:var(--text2);">שגיאה</div>';}
