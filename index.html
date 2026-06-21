@@ -5348,7 +5348,7 @@ function renderBracket(){
         const isTop2=i<2;
         const rankColor=i===0?'var(--gold)':i===1?'#60a5fa':i===2?'#a78bfa':'var(--text2)';
         const flag=flagCircle(name,18);
-        h+="<tr style='border-top:1px solid rgba(255,255,255,0.04);color:"+(isTop2?'#fff':'var(--text2)')+";'>";
+        h+="<tr style='border-top:1px solid rgba(255,255,255,0.04);color:"+(isTop2?'var(--text)':'var(--text2)')+";'>";
         h+="<td style='padding:5px 6px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:14px;color:"+rankColor+";font-weight:700;'>"+(i+1)+"</td>";
         h+="<td style='padding:5px 6px;font-weight:"+(isTop2?700:400)+";'><div style='display:flex;align-items:center;gap:6px;'>"+flag+"<span>"+displayName(name)+"</span></div></td>";
         h+="<td style='text-align:center;'>"+s.p+"</td><td style='text-align:center;'>"+s.w+"</td><td style='text-align:center;'>"+s.d+"</td><td style='text-align:center;'>"+s.l+"</td><td style='text-align:center;'>"+s.gf+":"+s.ga+"</td>";
