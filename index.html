@@ -1036,6 +1036,7 @@ select.inp option{background:var(--card2);}
           </div>
           <button class="btn btn-primary" id="update-ko-teams-btn" style="width:100%;">🔁 עדכן קבוצות TBD בנוקאאוט</button>
           <button class="btn btn-green" id="fill-advanced-ko-btn" style="width:100%;margin-top:8px;">🧩 מלא קבוצות שהעפילו (מהדירוג שלי)</button>
+          <button class="btn btn-primary" id="fix-bracket-order-btn" style="width:100%;margin-top:8px;">🌳 סדר בראקט (מיקום בעץ לפי FIFA)</button>
           <p style="font-size:10px;color:var(--text2);margin-top:6px;">ממלא מנצחת/סגנית של כל בית שהסתיים (כל 3 המשחקים), לפי התוצאות שהזנת — בלי תלות ב-openfootball. מיטב המקומות השלישיים נשאר ל-openfootball/ידני.</p>
           <div id="update-ko-status" style="margin-top:10px;font-size:12px;text-align:center;"></div>
         </div>
@@ -2036,8 +2037,11 @@ async function getOFKoMap(){
   function toIL(d,t){if(!d)return null;if(!t)return d+'T12:00';const m=t.match(/(\d+):(\d+)\s*UTC([+-]\d+(?:\.\d+)?)?/);if(!m)return d+'T'+t.substring(0,5);const h=parseInt(m[1]),mn=parseInt(m[2]),off=m[3]?parseFloat(m[3]):0,tot=h*60+mn-Math.round(off*60)+180,dd=Math.floor(tot/1440),ih=Math.floor((tot%1440+1440)%1440/60),im=(tot%60+60)%60,dt=new Date(d+'T00:00:00Z');dt.setUTCDate(dt.getUTCDate()+dd);return dt.toISOString().substring(0,10)+'T'+String(ih).padStart(2,'0')+':'+String(im).padStart(2,'0');}
   function isKO(round,group){if(group)return false;const r=(round||'').toLowerCase();return r.includes('round')||r.includes('quarter')||r.includes('semi')||r.includes('final')||r.includes('third')||r.includes('3rd');}
   function transT(n){if(!n)return'TBD';if(/^(W|L)\d+$|winner$|path/i.test(n))return'TBD';if(/^\d[A-L](\/[A-L])*$/i.test(n))return n;return n;}
+  function getStage(round){const r=(round||'').toLowerCase();if(r.includes('round of 32'))return'r32';if(r.includes('round of 16'))return'r16';if(r.includes('quarter'))return'qf';if(r.includes('semi'))return'sf';if(r.includes('third')||r.includes('3rd'))return'3rd';if(r.includes('final'))return'final';return null;}
   const map={};
-  for(const m of data.matches){if(!isKO(m.round,m.group))continue;const dt=toIL(m.date,m.time);if(!dt)continue;map[dt]={team1:transT(m.team1||''),team2:transT(m.team2||'')};}
+  // Track sequential index within each stage — this IS the bracket tree order (FIFA match numbers)
+  const stageIdx={};
+  for(const m of data.matches){if(!isKO(m.round,m.group))continue;const dt=toIL(m.date,m.time);if(!dt)continue;const st=getStage(m.round);if(!stageIdx[st])stageIdx[st]=0;map[dt]={team1:transT(m.team1||''),team2:transT(m.team2||''),stage:st,koOrder:stageIdx[st]};stageIdx[st]++;}
   _ofKoCache=map;return map;
 }
 window.resetKoMatch=async function(id){
@@ -2054,10 +2058,11 @@ el('update-ko-teams-btn')&&el('update-ko-teams-btn').addEventListener('click',as
     const snap=await get(ref(db,'matches'));if(!snap.exists())throw new Error('אין משחקים');
     const existing=snap.val();const updates={};const updatedStages=new Set();let updated=0;
     for(const [key,match] of Object.entries(existing)){
-      if(match.stage==='group')continue;if(match.team1!=='TBD'&&match.team2!=='TBD')continue;
+      if(match.stage==='group')continue;
       const src=koMap[match.datetime];if(!src)continue;let changed=false;
       if(match.team1==='TBD'&&src.team1!=='TBD'){updates['matches/'+key+'/team1']=src.team1;changed=true;}
       if(match.team2==='TBD'&&src.team2!=='TBD'){updates['matches/'+key+'/team2']=src.team2;changed=true;}
+      if(src.koOrder!==undefined && match.koOrder!==src.koOrder){updates['matches/'+key+'/koOrder']=src.koOrder;changed=true;}
       if(changed){updated++;updatedStages.add(match.stage||'r32');}
     }
     if(!Object.keys(updates).length){status.style.color='#f59e0b';status.textContent='⚠️ אין TBD לעדכון.';}
@@ -5093,6 +5098,33 @@ async function fillAdvancedKoTeams(){
 }
 el('fill-advanced-ko-btn')&&el('fill-advanced-ko-btn').addEventListener('click',fillAdvancedKoTeams);
 
+el('fix-bracket-order-btn')&&el('fix-bracket-order-btn').addEventListener('click',async function(){
+  var status=el('update-ko-status');
+  var btn=el('fix-bracket-order-btn');
+  if(btn)btn.disabled=true;
+  if(status){status.style.color='var(--text2)';status.textContent='⏳ מוריד נתונים מ-openfootball...';}
+  try{
+    _ofKoCache=null; // force fresh fetch
+    var koMap=await getOFKoMap();
+    var snap=await get(ref(db,'matches'));if(!snap.exists())throw new Error('אין משחקים');
+    var existing=snap.val(), updates={}, count=0;
+    for(var key in existing){
+      var m=existing[key]; if(m.stage==='group')continue;
+      var src=koMap[m.datetime];
+      if(src && src.koOrder!==undefined){
+        if(m.koOrder!==src.koOrder){ updates['matches/'+key+'/koOrder']=src.koOrder; count++; }
+      }
+    }
+    if(!count){ if(status){status.style.color='#f59e0b';status.textContent='⚠️ הבראקט כבר מסודר (או אין התאמת datetime).';} }
+    else{
+      await update(ref(db),updates);
+      if(status){status.style.color='#34d399';status.textContent='✅ עודכן סדר בראקט ל-'+count+' משחקים!';}
+      toast('✅ סדר הבראקט עודכן'); renderBracket();
+    }
+  }catch(e){ if(status){status.style.color='#f87171';status.textContent='❌ '+e.message;} }
+  finally{ if(btn)btn.disabled=false; }
+});
+
 el('save-special-result')&&el('save-special-result').addEventListener('click',async function(){
   var champ=el('result-champion')?el('result-champion').value:'';
   var scorer=(el('result-scorer')?el('result-scorer').value:'').trim();
@@ -5486,7 +5518,13 @@ function renderBracket(){
   
   function getStageMatches(stage) {
     return Object.entries(MATCHES).filter(([,m])=>m.stage===stage)
-      .sort(([,a],[,b])=>(a.datetime||'')>(b.datetime||'')?1:-1);
+      .sort(([,a],[,b])=>{
+        // Sort by koOrder (bracket tree position from FIFA) if available, else fall back to datetime
+        if(a.koOrder!==undefined && b.koOrder!==undefined) return a.koOrder - b.koOrder;
+        if(a.koOrder!==undefined) return -1;
+        if(b.koOrder!==undefined) return 1;
+        return (a.datetime||'')>(b.datetime||'')?1:-1;
+      });
   }
   
   function koCard(m) {
