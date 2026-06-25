@@ -955,6 +955,16 @@ select.inp option{background:var(--card2);}
           </div>
         </div>
         <button class="btn btn-green" id="save-scoring" style="width:100%;margin-bottom:20px;">💾 שמור שינויים</button>
+
+        <div class="sec-head"><span style="font-size:20px;">🏆</span><div class="sec-title" style="font-size:17px;">תוצאת אמת — הימורים מיוחדים</div></div>
+        <div class="card" style="padding:14px;margin-bottom:20px;">
+          <p style="font-size:11px;color:var(--text2);margin-bottom:10px;">קבע מי הנבחרת האלופה ומלך השערים בפועל. כל שחקן שניחש נכון יקבל את הנקודות בטבלה אוטומטית.</p>
+          <div style="margin-bottom:8px;"><div style="font-size:11px;color:var(--text2);margin-bottom:3px;">🥇 נבחרת אלופה</div>
+            <select id="result-champion" class="inp" style="font-size:13px;"></select></div>
+          <div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text2);margin-bottom:3px;">👟 מלך שערים</div>
+            <input id="result-scorer" class="inp" type="text" placeholder="שם פרטי ושם משפחה" style="font-size:13px;"></div>
+          <button class="btn btn-grad" id="save-special-result" style="width:100%;font-size:13px;padding:9px;">💾 שמור תוצאת אמת</button>
+        </div>
       </div>
 
     </div>
@@ -1025,6 +1035,8 @@ select.inp option{background:var(--card2);}
             <div style="color:var(--text2);">טוען היסטוריה...</div>
           </div>
           <button class="btn btn-primary" id="update-ko-teams-btn" style="width:100%;">🔁 עדכן קבוצות TBD בנוקאאוט</button>
+          <button class="btn btn-green" id="fill-advanced-ko-btn" style="width:100%;margin-top:8px;">🧩 מלא קבוצות שהעפילו (מהדירוג שלי)</button>
+          <p style="font-size:10px;color:var(--text2);margin-top:6px;">ממלא מנצחת/סגנית של כל בית שהסתיים (כל 3 המשחקים), לפי התוצאות שהזנת — בלי תלות ב-openfootball. מיטב המקומות השלישיים נשאר ל-openfootball/ידני.</p>
           <div id="update-ko-status" style="margin-top:10px;font-size:12px;text-align:center;"></div>
         </div>
         <div class="card" style="padding:18px;margin-bottom:14px;">
@@ -4027,6 +4039,18 @@ function renderLeader() {
     });
   });
 
+  // Special bets (champion / top scorer) — award once the actual result is set by admin
+  var _spRes = SPECIAL_RESULT || {};
+  if(_spRes.champion || _spRes.scorer){
+    var _champPts = (SCORING.champion && SCORING.champion.h) || 10;
+    var _scorerPts = (SCORING.scorer && SCORING.scorer.h) || 10;
+    Object.entries(SPECIAL_BETS||{}).forEach(function(e){
+      var uid=e[0], sb=e[1]; if(!sc[uid]||!sb) return;
+      if(_spRes.champion && sb.champion && _sameTeam(sb.champion,_spRes.champion)) sc[uid].pts += _champPts;
+      if(_spRes.scorer && sb.scorer && _sameName(sb.scorer,_spRes.scorer)) sc[uid].pts += _scorerPts;
+    });
+  }
+
   const gkeys = Object.keys(ALL_GROUPS);
 
   // If no groups defined yet - show simple leaderboard
@@ -4381,6 +4405,7 @@ const SCSS = {group:'pill-group',r32:'pill-r32',r16:'pill-r16',qf:'pill-qf',sf:'
 
 let ME = null, MEDATA = null;
 let MATCHES = {}, BETS = {}, USERS = {}, ODDS_CACHE = {};
+let SPECIAL_BETS = {}, SPECIAL_RESULT = {};
 let filterStage = 'all';
 let betId = null, betS = [0,0];
 let resId = null, resS = [0,0];
@@ -4522,6 +4547,8 @@ function initData(){
   onValue(ref(db,'oddsCache'),s=>{ ODDS_CACHE=s.exists()?s.val():{}; refreshAll(); });
   onValue(ref(db,'users'),  s=>{ if(s.exists()) USERS=s.val();   refreshAll(); renderGroupsSummary(); loadUsers(); });
   onValue(ref(db,'scoring'),s=>{ if(s.exists()){ SCORING=s.val(); renderScoringTable(); if(MEDATA&&MEDATA.isAdmin) renderScoringEdit(); } });
+  onValue(ref(db,'specialBets'),s=>{ SPECIAL_BETS=s.exists()?s.val():{}; renderLeader(); });
+  onValue(ref(db,'admin/special_result'),s=>{ SPECIAL_RESULT=s.exists()?s.val():{}; renderLeader(); if(MEDATA&&MEDATA.isAdmin) renderSpecialResultEditor(); });
 }
 function refreshAll(){
   renderToday(); renderMatches(); renderMyBets(); renderLeader(); renderBracket(); try{renderTicker();}catch(e){} try{if(!window._newsInit){window._newsInit=1;initWcNews();}}catch(e){}
@@ -4984,7 +5011,97 @@ function renderScoringEdit(){
     html+="<div class='score-edit-row'><span style='font-weight:700;font-size:13px;'>"+labels[stage]+"</span><div style='display:flex;align-items:center;gap:12px;'><div style='display:flex;align-items:center;gap:6px;'><span style='font-size:11px;color:var(--text2);'>כיוון:</span><input type='number' class='inp' style='width:60px;padding:6px;' id='sc-d-"+stage+"' value='"+cur.d+"' min='0'></div><div style='display:flex;align-items:center;gap:6px;'><span style='font-size:11px;color:var(--text2);'>מדויק:</span><input type='number' class='inp' style='width:60px;padding:6px;' id='sc-h-"+stage+"' value='"+cur.h+"' min='0'></div></div></div>";
   });
   lst.innerHTML=html;
+  renderSpecialResultEditor();
 }
+
+// ── Special-bet result editor + advanced-KO fill + scoring helpers ──
+function _sameTeam(a,b){ return (a||'').trim()===(b||'').trim(); }
+function _sameName(a,b){ return (a||'').trim().toLowerCase().replace(/\s+/g,' ')===(b||'').trim().toLowerCase().replace(/\s+/g,' '); }
+
+function renderSpecialResultEditor(){
+  var sel=el('result-champion'); if(!sel) return;
+  var teamSet=new Set();
+  Object.values(MATCHES).forEach(function(m){
+    if(m.stage==='group'){ if(m.team1&&m.team1!=='TBD')teamSet.add(m.team1); if(m.team2&&m.team2!=='TBD')teamSet.add(m.team2); }
+  });
+  var teams=['—', ...Array.from(teamSet).sort()];
+  var cur=(SPECIAL_RESULT&&SPECIAL_RESULT.champion)||'';
+  sel.innerHTML=teams.map(function(t){ var v=t==='—'?'':t; return '<option value="'+v+'" '+(cur===v?'selected':'')+'>'+t+'</option>'; }).join('');
+  var sc=el('result-scorer'); if(sc && document.activeElement!==sc) sc.value=(SPECIAL_RESULT&&SPECIAL_RESULT.scorer)||'';
+}
+
+// Group standings from entered results (for resolving 1A/2B/3C codes)
+function _groupStandings(){
+  var groups={};
+  Object.values(MATCHES).filter(function(m){return m.stage==='group'&&m.group;}).forEach(function(m){
+    var g=m.group.toUpperCase();
+    if(!groups[g])groups[g]={};
+    ['team1','team2'].forEach(function(tk){ if(m[tk]&&m[tk]!=='TBD'&&!groups[g][m[tk]])groups[g][m[tk]]={p:0,gf:0,ga:0,pts:0,vs:{}}; });
+    if(m.result){
+      var g1=m.result[0],g2=m.result[1],t1=groups[g][m.team1],t2=groups[g][m.team2];
+      if(!t1||!t2)return;
+      t1.p++;t2.p++;t1.gf+=g1;t1.ga+=g2;t2.gf+=g2;t2.ga+=g1;
+      if(g1>g2){t1.pts+=3;t1.vs[m.team2]='W';t2.vs[m.team1]='L';}
+      else if(g1<g2){t2.pts+=3;t2.vs[m.team1]='W';t1.vs[m.team2]='L';}
+      else{t1.pts++;t2.pts++;t1.vs[m.team2]='D';t2.vs[m.team1]='D';}
+    }
+  });
+  var out={};
+  Object.entries(groups).forEach(function(e){
+    var gn=e[0], teams=e[1], arr=Object.entries(teams);
+    var complete=arr.length>0 && arr.every(function(t){return t[1].p>=3;});
+    var sorted=arr.sort(function(a,b){
+      var A=a[1],B=b[1];
+      if(B.pts!==A.pts)return B.pts-A.pts;
+      var gdA=A.gf-A.ga,gdB=B.gf-B.ga; if(gdB!==gdA)return gdB-gdA;
+      if(A.vs[b[0]]==='W')return -1; if(B.vs[a[0]]==='W')return 1;
+      if(B.gf!==A.gf)return B.gf-A.gf;
+      return a[0]<b[0]?-1:1;
+    }).map(function(x){return x[0];});
+    out[gn]={sorted:sorted, complete:complete};
+  });
+  return out;
+}
+
+async function fillAdvancedKoTeams(){
+  var status=el('update-ko-status');
+  if(status){status.style.color='var(--text2)';status.textContent='בודק בתים שהסתיימו...';}
+  try{
+    var st=_groupStandings();
+    function resolve(code){
+      var m=(code||'').match(/^([123])([A-L])$/);
+      if(!m)return null;
+      var rank=parseInt(m[1])-1, g=m[2];
+      if(!st[g]||!st[g].complete)return null;
+      return st[g].sorted[rank]||null;
+    }
+    var updates={}, count=0;
+    Object.entries(MATCHES).forEach(function(e){
+      var id=e[0], m=e[1];
+      if(m.stage==='group')return;
+      ['team1','team2'].forEach(function(tk){
+        var r=resolve(m[tk]);
+        if(r){ updates['matches/'+id+'/'+tk]=r; count++; }
+      });
+    });
+    if(!count){ if(status){status.style.color='#f59e0b';status.textContent='⚠️ אין קבוצות חדשות למלא (אין בתים שהסתיימו עם קוד ממתין).';} return; }
+    await update(ref(db),updates);
+    if(status){status.style.color='#34d399';status.textContent='✅ מולאו '+count+' קבוצות שהעפילו!';}
+    toast('✅ מולאו '+count+' קבוצות שהעפילו');
+    renderKoEditor();
+  }catch(err){ if(status){status.style.color='#f87171';status.textContent='❌ '+err.message;} }
+}
+el('fill-advanced-ko-btn')&&el('fill-advanced-ko-btn').addEventListener('click',fillAdvancedKoTeams);
+
+el('save-special-result')&&el('save-special-result').addEventListener('click',async function(){
+  var champ=el('result-champion')?el('result-champion').value:'';
+  var scorer=(el('result-scorer')?el('result-scorer').value:'').trim();
+  try{
+    await set(ref(db,'admin/special_result'),{champion:champ||null,scorer:scorer||null});
+    toast('✅ תוצאת אמת נשמרה');
+    renderLeader();
+  }catch(e){ toast('❌ שגיאה בשמירה'); }
+});
 el('save-scoring')&&el('save-scoring').addEventListener('click', async()=>{
   const stages=['group','r32','r16','qf','sf','3rd','final'];
   const newSc={};
