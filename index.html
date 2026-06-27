@@ -426,16 +426,15 @@ select.inp option{background:var(--card2);}
 .bet-celebrate{animation:betPulseGreen 0.85s ease-out;border-radius:12px;}
 
 /* ── VISUAL BRACKET (Sport5-style tree with connector lines) ── */
-.ko-bracket-scroll{width:100%;overflow:hidden;position:relative;padding-bottom:0;}
+.ko-bracket-scroll{width:100%;overflow:hidden;position:relative;padding-bottom:0;direction:ltr;}
 .ko-wrap{
   position:relative;
   display:flex;flex-direction:row;align-items:stretch;justify-content:center;
   gap:0;
-  padding:26px 6px 16px;
+  padding:26px 2px 16px;
   direction:ltr;
-  width:1080px;min-width:1080px;
-  transform-origin:top left;
-  will-change:transform;
+  width:100%;
+  margin:0 auto;
 }
 /* SVG overlay that draws the connector lines — sits behind the cards */
 .ko-lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible;color:rgba(150,175,210,0.40);}
@@ -443,8 +442,8 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
 .ko-side{display:flex;flex-direction:row;align-items:stretch;flex:1;min-width:0;direction:ltr;position:relative;z-index:1;}
 .ko-col{
   display:flex;flex-direction:column;justify-content:space-around;
-  flex:1;min-width:120px;
-  padding:0 7px;
+  flex:1;min-width:0;
+  padding:0 3px;
   position:relative;
 }
 .ko-col-label{
@@ -462,9 +461,9 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
 }
 .ko-center{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  flex-shrink:0;width:118px;
+  flex-shrink:0;width:90px;
   position:relative;z-index:1;
-  gap:6px;
+  gap:4px;
 }
 .ko-center-label{
   font-family:'Bebas Neue',sans-serif;
@@ -472,23 +471,23 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
   color:var(--gold);text-align:center;
   text-shadow:0 0 10px rgba(255,215,0,0.35);
 }
-.ko-center-sub{font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:var(--text2);text-align:center;margin-top:6px;}
+.ko-center-sub{font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:var(--text2);text-align:center;margin-top:4px;}
 .ko-logo-wrap{
-  width:84px;height:84px;border-radius:50%;overflow:hidden;background:#000;
+  width:64px;height:64px;border-radius:50%;overflow:hidden;background:#000;
   display:flex;align-items:center;justify-content:center;
   border:2px solid rgba(255,215,0,0.45);
   box-shadow:0 0 22px rgba(255,215,0,0.30);
-  flex-shrink:0;margin:6px 0;
+  flex-shrink:0;margin:4px 0;
 }
 .ko-logo{width:100%;height:100%;object-fit:cover;object-position:center;}
 
 .ko-match{
   background:var(--card2);
   border:1px solid var(--border);
-  border-radius:7px;
+  border-radius:5px;
   overflow:hidden;
   width:100%;
-  margin:2.5px 0;
+  margin:2px 0;
   transition:border-color 0.2s,box-shadow 0.2s;
   position:relative;
 }
@@ -499,31 +498,39 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
 .ko-match:hover{border-color:rgba(255,215,0,0.4);}
 .ko-team{
   display:flex;align-items:center;justify-content:space-between;
-  padding:3px 6px;font-weight:700;
+  padding:2px 4px;font-weight:700;
   border-bottom:1px solid rgba(255,255,255,0.06);
-  min-height:19px;
+  min-height:16px;
   direction:rtl;
 }
 .ko-team:last-child{border-bottom:none;}
 .ko-team.winner{color:var(--gold);}
 .ko-team.winner .ko-score{color:var(--gold);}
 .ko-team.loser{color:var(--text2);opacity:0.78;}
-.ko-team-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;min-width:0;font-size:9px;line-height:1.25;}
-.ko-score{font-family:'Bebas Neue',sans-serif;font-size:12px;min-width:12px;text-align:center;flex-shrink:0;color:var(--text);}
-.ko-team-flag{width:13px;height:13px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:3px;}
+.ko-team-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;min-width:0;font-size:8px;line-height:1.2;}
+.ko-score{font-family:'Bebas Neue',sans-serif;font-size:10px;min-width:10px;text-align:center;flex-shrink:0;color:var(--text);}
+.ko-team-flag{width:11px;height:11px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;margin-left:2px;}
 .ko-round-label{font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:var(--text2);text-align:center;margin-bottom:3px;}
 .ko-empty{
   background:rgba(255,255,255,0.03);
   border:1px dashed rgba(255,255,255,0.10);
-  border-radius:7px;width:100%;
-  padding:5px;
-  display:flex;flex-direction:column;gap:3px;
+  border-radius:5px;width:100%;
+  padding:4px;
+  display:flex;flex-direction:column;gap:2px;
 }
-.ko-empty-team{height:15px;background:rgba(255,255,255,0.05);border-radius:4px;}
+.ko-empty-team{height:13px;background:rgba(255,255,255,0.05);border-radius:4px;}
 body.light-mode .ko-col-label{color:var(--gold);}
 body.light-mode .ko-empty{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.12);}
 body.light-mode .ko-empty-team{background:rgba(0,0,0,0.06);}
-@media(max-width:768px){.ko-wrap{min-width:1040px;}}
+@media(max-width:600px){
+  .ko-center{width:60px;}
+  .ko-logo-wrap{width:44px;height:44px;}
+  .ko-center-label{font-size:9px;}
+  .ko-col-label{font-size:8px;}
+  .ko-team-name{font-size:7px;}
+  .ko-team{padding:1px 2px;min-height:14px;}
+  .ko-team-flag{width:9px;height:9px;}
+}
 
 </style>
 </head>
@@ -1062,6 +1069,7 @@ body.light-mode .ko-empty-team{background:rgba(0,0,0,0.06);}
           <button class="btn btn-primary" id="update-ko-teams-btn" style="width:100%;">🔁 עדכן קבוצות TBD בנוקאאוט</button>
           <button class="btn btn-green" id="fill-advanced-ko-btn" style="width:100%;margin-top:8px;">🧩 מלא קבוצות שהעפילו (מהדירוג שלי)</button>
           <button class="btn btn-primary" id="fix-bracket-order-btn" style="width:100%;margin-top:8px;">🌳 סדר בראקט (מיקום בעץ לפי FIFA)</button>
+          <button class="btn btn-green" id="fill-ko-winners-btn" style="width:100%;margin-top:8px;">🏆 קדם מנצחות נוקאאוט</button>
           <p style="font-size:10px;color:var(--text2);margin-top:6px;">ממלא מנצחת/סגנית של כל בית שהסתיים (כל 3 המשחקים), לפי התוצאות שהזנת — בלי תלות ב-openfootball. מיטב המקומות השלישיים נשאר ל-openfootball/ידני.</p>
           <div id="update-ko-status" style="margin-top:10px;font-size:12px;text-align:center;"></div>
         </div>
@@ -5000,6 +5008,8 @@ el('confirm-res').addEventListener('click', async()=>{
   await update(ref(db,'matches/'+resId),{result:resS});
   el('res-modal').classList.remove('open'); toast('✅ תוצאה עודכנה!'); confetti();
   try{ renderToday(); }catch(e){}
+  // Auto-advance KO winners when a knockout result is saved
+  try{ var m=MATCHES[resId]; if(m&&m.stage&&m.stage!=='group') setTimeout(()=>fillKoWinners(true),600); }catch(e){}
 });
 async function delMatch(id){ if(!confirm('למחוק?')) return; await remove(ref(db,'matches/'+id)); toast('🗑 נמחק'); }
 
@@ -5123,6 +5133,68 @@ async function fillAdvancedKoTeams(){
   }catch(err){ if(status){status.style.color='#f87171';status.textContent='❌ '+err.message;} }
 }
 el('fill-advanced-ko-btn')&&el('fill-advanced-ko-btn').addEventListener('click',fillAdvancedKoTeams);
+
+// ── KO winner propagation (R32→R16→QF→SF→Final + 3rd) ──
+// Each [stage][koOrder] lists the two feeder matches [feederStage, feederKoOrder, 'W'|'L'].
+// Derived from the official FIFA 2026 bracket tree (W = winner, L = loser of that match).
+const KO_ADVANCE = {
+  r16:{ 0:[['r32',1,'W'],['r32',4,'W']], 1:[['r32',0,'W'],['r32',2,'W']],
+        2:[['r32',3,'W'],['r32',5,'W']], 3:[['r32',6,'W'],['r32',7,'W']],
+        4:[['r32',10,'W'],['r32',11,'W']], 5:[['r32',8,'W'],['r32',9,'W']],
+        6:[['r32',13,'W'],['r32',15,'W']], 7:[['r32',12,'W'],['r32',14,'W']] },
+  qf:{ 0:[['r16',0,'W'],['r16',1,'W']], 1:[['r16',4,'W'],['r16',5,'W']],
+       2:[['r16',2,'W'],['r16',3,'W']], 3:[['r16',6,'W'],['r16',7,'W']] },
+  sf:{ 0:[['qf',0,'W'],['qf',1,'W']], 1:[['qf',2,'W'],['qf',3,'W']] },
+  final:{ 0:[['sf',0,'W'],['sf',1,'W']] },
+  '3rd':{ 0:[['sf',0,'L'],['sf',1,'L']] }
+};
+function _isPlaceholderCode(t){
+  return !t || t==='TBD' || /^[123][A-L]$/.test(t) || /^3[A-L](\/[A-L])+$/.test(t);
+}
+async function fillKoWinners(silent){
+  var status=silent?null:el('update-ko-status');
+  if(status){status.style.color='var(--text2)';status.textContent='מקדם מנצחות נוקאאוט...';}
+  try{
+    // Index every KO match by stage+koOrder (need the match object and its DB id).
+    var byKo={}, idByKo={};
+    ['r32','r16','qf','sf','final','3rd'].forEach(function(s){ byKo[s]={}; idByKo[s]={}; });
+    Object.entries(MATCHES).forEach(function(e){
+      var id=e[0], m=e[1];
+      if(m.stage==='group'||m.koOrder===undefined) return;
+      if(byKo[m.stage]){ byKo[m.stage][m.koOrder]=m; idByKo[m.stage][m.koOrder]=id; }
+    });
+    function feederTeam(fs,fk,which){
+      var mm=byKo[fs] && byKo[fs][fk];
+      if(!mm||!mm.result) return null;
+      var a=mm.result[0], b=mm.result[1];
+      if(a===b) return null; // draw → no winner stored (penalties not modelled)
+      var win=a>b?mm.team1:mm.team2, lose=a>b?mm.team2:mm.team1;
+      var t=which==='W'?win:lose;
+      return _isPlaceholderCode(t)?null:t;
+    }
+    var updates={}, count=0;
+    Object.entries(KO_ADVANCE).forEach(function(se){
+      var stage=se[0], map=se[1];
+      Object.entries(map).forEach(function(ke){
+        var ko=ke[0], feeders=ke[1];
+        var id=idByKo[stage] && idByKo[stage][ko];
+        var cur=byKo[stage] && byKo[stage][ko];
+        if(!id||!cur) return;
+        ['team1','team2'].forEach(function(tk,i){
+          var t=feederTeam(feeders[i][0],feeders[i][1],feeders[i][2]);
+          if(t && cur[tk]!==t){ updates['matches/'+id+'/'+tk]=t; count++; }
+        });
+      });
+    });
+    if(!count){ if(status){status.style.color='#f59e0b';status.textContent='⚠️ אין מנצחות חדשות לקדם.';} return 0; }
+    await update(ref(db),updates);
+    if(status){status.style.color='#34d399';status.textContent='✅ קודמו '+count+' קבוצות בנוקאאוט!';}
+    if(!silent) toast('✅ קודמו '+count+' קבוצות בנוקאאוט');
+    return count;
+  }catch(err){ if(status){status.style.color='#f87171';status.textContent='❌ '+err.message;} return 0; }
+}
+window.fillKoWinners=fillKoWinners;
+el('fill-ko-winners-btn')&&el('fill-ko-winners-btn').addEventListener('click',function(){ fillKoWinners(false); });
 
 el('fix-bracket-order-btn')&&el('fix-bracket-order-btn').addEventListener('click',async function(){
   var status=el('update-ko-status');
@@ -5641,30 +5713,10 @@ function renderBracket(){
 // becomes visible or the window resizes (hidden elements have no measurable size).
 const KO_COUNTS={r32:8,r16:4,qf:2,sf:1};
 const KO_STAGES_LAYOUT=['r32','r16','qf','sf']; // outer → inner
-// Scale the whole bracket so it always fits the screen width — no scrollbar, ever.
-function applyKoScale(){
-  const host=document.querySelector('.ko-bracket-scroll');
-  const wrap=document.getElementById('ko-wrap');
-  if(!host||!wrap) return;
-  const naturalW=wrap.offsetWidth||1080;   // fixed 1080px design width
-  const naturalH=wrap.offsetHeight||0;     // offset* ignore transform → true natural size
-  const avail=host.clientWidth||0;
-  if(!avail||!naturalH) return;            // hidden / not laid out yet
-  let s=avail/naturalW;
-  if(s>1.25) s=1.25;                       // don't blow it up on ultra-wide monitors
-  if(s<0.05) s=0.05;
-  const tx=Math.max(0,(avail-naturalW*s)/2); // center horizontally
-  wrap.style.transformOrigin='top left';
-  wrap.style.transform='translateX('+tx+'px) scale('+s+')';
-  host.style.height=Math.ceil(naturalH*s)+'px'; // collapse the empty space the scale leaves
-}
-window.applyKoScale=applyKoScale;
-
 function layoutKoBracket(){
   const wrap=document.getElementById('ko-wrap');
   const svg=document.getElementById('ko-lines');
   if(!wrap||!svg) return;
-  applyKoScale();                          // fit-to-width first, then measure for the lines
   const wrapRect=wrap.getBoundingClientRect();
   const W=wrapRect.width, H=wrapRect.height;
   if(W<10||H<10) return; // not visible yet — will re-run when shown
