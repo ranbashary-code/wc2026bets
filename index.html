@@ -3457,6 +3457,7 @@ async function fetchWcNews(){
   }catch(e){ console.warn('       worker news failed', e); }
 
   // SECONDARY: if Worker gave nothing, pull Israeli RSS feeds directly via CORS proxies
+  var _newsKW=['\u05DE\u05D5\u05E0\u05D3\u05D9\u05D0\u05DC','\u05D2\u05D1\u05D9\u05E2 \u05D4\u05E2\u05D5\u05DC\u05DD','world cup','fifa'];
   if(!all.length){
     for(var fi=0; fi<NEWS_FEEDS.length; fi++){
       try{
@@ -3472,6 +3473,8 @@ async function fetchWcNews(){
           var pd2=(it.querySelector('pubDate')||{}).textContent||'';
           var t2=pd2?new Date(pd2).getTime():Date.now();
           if(!title2.trim()||t2<cutoff) return;
+          var lc2=title2.toLowerCase();
+          if(!_newsKW.some(function(kw){return lc2.indexOf(kw.toLowerCase())!==-1;})) return;
           all.push({src:feed.src, title:title2.trim(), link:link2.trim(), t:t2});
           added++;
         });
