@@ -431,7 +431,7 @@ select.inp option{background:var(--card2);}
   position:relative;
   display:flex;flex-direction:row;align-items:stretch;justify-content:center;
   gap:0;
-  padding:26px 2px 16px;
+  padding:32px 4px 24px;
   direction:ltr;
   width:100%;
   margin:0 auto;
@@ -443,7 +443,7 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
 .ko-col{
   display:flex;flex-direction:column;justify-content:space-around;
   flex:1;min-width:0;
-  padding:0 3px;
+  padding:0 4px;
   position:relative;
 }
 .ko-col-label{
@@ -487,7 +487,7 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
   border-radius:5px;
   overflow:hidden;
   width:100%;
-  margin:2px 0;
+  margin:4px 0;
   transition:border-color 0.2s,box-shadow 0.2s;
   position:relative;
 }
@@ -498,9 +498,9 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
 .ko-match:hover{border-color:rgba(255,215,0,0.4);}
 .ko-team{
   display:flex;align-items:center;justify-content:space-between;
-  padding:2px 4px;font-weight:700;
+  padding:3px 5px;font-weight:700;
   border-bottom:1px solid rgba(255,255,255,0.06);
-  min-height:16px;
+  min-height:18px;
   direction:rtl;
 }
 .ko-team:last-child{border-bottom:none;}
@@ -935,11 +935,11 @@ body.light-mode .ko-empty-team{background:rgba(0,0,0,0.06);}
     <div class="page" id="page-bracket">
       <div class="sec-head"><span style="font-size:22px;">🗂</span><div class="sec-title">בראקט</div></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button class="btn btn-grad btn-xs btab" data-btab="groups" style="flex-shrink:0;">שלב בתים</button>
-        <button class="btn btn-ghost btn-xs btab" data-btab="ko" style="flex-shrink:0;">נוקאאוט</button>
+        <button class="btn btn-ghost btn-xs btab" data-btab="groups" style="flex-shrink:0;">שלב בתים</button>
+        <button class="btn btn-grad btn-xs btab" data-btab="ko" style="flex-shrink:0;">נוקאאוט</button>
       </div>
-      <div id="bracket-groups"></div>
-      <div id="bracket-ko" style="display:none;"></div>
+      <div id="bracket-groups" style="display:none;"></div>
+      <div id="bracket-ko"></div>
     </div>
 
     <div class="page" id="page-scoring">
