@@ -1284,7 +1284,7 @@ async function checkBotRoundAlert() {
       } else {
         // Stage exists in schedule but teams not set yet — check if it has any matches at all
         const stageKey = key.startsWith('group') ? 'group' : key;
-        const hasMatches = Object.values(allMatches).some(m => m.stage === stageKey);
+        const hasMatches = Object.values(MATCHES).some(m => m.stage === stageKey);
         if(!hasMatches) return ''; // stage doesn't exist in DB at all
         return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
           <span style="color:rgba(255,255,255,0.3);">🕐 ${label}</span>
