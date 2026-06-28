@@ -1245,21 +1245,46 @@ async function checkBotRoundAlert() {
   // ── Render bot rounds status in admin panel ──
   const statusDiv = el('bot-rounds-status');
   if(statusDiv) {
-    if(allRounds.length){
-      statusDiv.innerHTML = allRounds.map(round => {
+    // Build full picture: ready rounds + upcoming KO stages with no teams yet
+    const allStageKeys = [
+      { key:'group1', label:'סיבוב 1 — שלב הבתים' },
+      { key:'group2', label:'סיבוב 2 — שלב הבתים' },
+      { key:'group3', label:'סיבוב 3 — שלב הבתים' },
+      { key:'r32',   label:'שלב 32 האחרונות' },
+      { key:'r16',   label:'שמינית גמר' },
+      { key:'qf',    label:'רבע גמר' },
+      { key:'sf',    label:'חצי גמר' },
+      { key:'3rd',   label:'מקום שלישי' },
+      { key:'final', label:'גמר 🏆' },
+    ];
+    // Map ready rounds by label for quick lookup
+    const readyByLabel = {};
+    allRounds.forEach(r => { readyByLabel[r.label] = r; });
+
+    statusDiv.innerHTML = allStageKeys.map(({ key, label }) => {
+      const round = readyByLabel[label];
+      if(round) {
+        // Has real matches with known teams
         const total = round.matches.length;
         const done = round.matches.filter(([id]) => !!botBets[id]).length;
         const allDone = done === total;
         const color = allDone ? '#34d399' : done > 0 ? '#fbbf24' : 'var(--text2)';
         const icon = allDone ? '✅' : done > 0 ? '⏳' : '⭕';
         return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
-          <span style="color:${color};">${icon} ${round.label}</span>
+          <span style="color:${color};">${icon} ${label}</span>
           <span style="color:${color};font-weight:700;">${done}/${total} הימורים</span>
         </div>`;
-      }).join('');
-    } else {
-      statusDiv.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:4px 0;">עדיין אין סיבובים עם קבוצות ידועות</div>';
-    }
+      } else {
+        // Stage exists in schedule but teams not set yet — check if it has any matches at all
+        const stageKey = key.startsWith('group') ? 'group' : key;
+        const hasMatches = Object.values(allMatches).some(m => m.stage === stageKey);
+        if(!hasMatches) return ''; // stage doesn't exist in DB at all
+        return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
+          <span style="color:rgba(255,255,255,0.3);">🕐 ${label}</span>
+          <span style="color:rgba(255,255,255,0.3);">ממתין לעולות</span>
+        </div>`;
+      }
+    }).join('');
   }
 
   // Stack below pending-banner if visible
