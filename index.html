@@ -539,6 +539,7 @@ body.ko-fullbleed .side-bg{display:none;}
   margin-right:calc(50% - 50vw);
   padding:0 14px;
   box-sizing:border-box;
+  min-height:calc(100vh - 54px);
 }
 #bracket-ko.ko-fullbleed::before{
   content:'';position:absolute;inset:0;
@@ -2312,8 +2313,27 @@ function displayName(name) {
   return _DISPLAY_NAMES[name] || name;
 }
 
-
-// ── SPECIAL BETS ──
+// Short names for the KO bracket where space is tight
+const _KO_SHORT = {
+  'קונגו הדמוקרטית':'קונגו דמ.',
+  'ערב הסעודית':'סעודית',
+  'קוסטה ריקה':'קוסטה ר.',
+  'צפון מקדוניה':'מקדוניה',
+  'בוסניה והרצגובינה':'בוסניה',
+  'בוסניה':'בוסניה',
+  'אוזבקיסטן':'אוזבקיסטן',
+  'קזחסטן':'קזחסטן',
+  'קוראסאו':'קוראסאו',
+  'דרום קוריאה':'ד. קוריאה',
+  'דרום אפריקה':'ד. אפריקה',
+  'ניו זילנד':'נ. זילנד',
+  'ארה"ב':'ארה"ב',
+};
+function koShortName(name) {
+  if(!name) return name;
+  const full = displayName(name);
+  return _KO_SHORT[full] || full;
+}
 const WC_START_TIME = new Date('2026-06-11T19:00:00Z');
 function specialLocked() { return Date.now() >= WC_START_TIME.getTime(); }
 
@@ -5834,7 +5854,9 @@ function renderBracket(){
     const hasRes=m.result!==undefined;
     const w=hasRes?(m.result[0]>m.result[1]?m.team1:m.result[1]>m.result[0]?m.team2:null):null;
     const d1=koTeamDisplay(m.team1), d2=koTeamDisplay(m.team2);
-    const t1=d1.text, t2=d2.text;
+    const t1=d1.isPlaceholder?d1.text:koShortName(m.team1);
+    const t2=d2.isPlaceholder?d2.text:koShortName(m.team2);
+    const t1full=d1.text, t2full=d2.text;
     const c1=d1.isPlaceholder?null:getCountryCode(m.team1);
     const c2=d2.isPlaceholder?null:getCountryCode(m.team2);
     const f1=c1?'<span class="fi fi-'+c1+' ko-team-flag"></span>':'';
@@ -5843,14 +5865,15 @@ function renderBracket(){
     const s2=d2.isPlaceholder?'font-size:8px;color:var(--text2);font-style:italic;':'';
     const _ka=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const t1e=_ka(t1), t2e=_ka(t2);
+    const t1fe=_ka(t1full), t2fe=_ka(t2full);
     const isAdm=MEDATA&&MEDATA.isAdmin;
     // Find the DB id for this match (needed for admin advance popup)
     const dbId=Object.entries(MATCHES).find(([,mm])=>mm===m)?.[0]||'';
-    const adm1=isAdm&&!d1.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team1" style="cursor:pointer;" title="קדם '+t1e+' לשלב הבא"':'';
-    const adm2=isAdm&&!d2.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team2" style="cursor:pointer;" title="קדם '+t2e+' לשלב הבא"':'';
+    const adm1=isAdm&&!d1.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team1" style="cursor:pointer;" title="קדם '+t1fe+' לשלב הבא"':'';
+    const adm2=isAdm&&!d2.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team2" style="cursor:pointer;" title="קדם '+t2fe+' לשלב הבא"':'';
     return '<div class="'+cls+'" id="'+id+'">'+
-      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1e+'">'+t1e+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
-      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2e+'">'+t2e+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
     '</div>';
   }
 
