@@ -1211,7 +1211,10 @@ function getAllBotRounds(allMatches) {
   ];
   koStages.forEach(({ key, label }) => {
     const stageMs = Object.entries(allMatches)
-      .filter(([,m]) => m.stage === key && m.datetime && m.team1 && m.team2 && m.team1 !== 'TBD' && m.team2 !== 'TBD')
+      .filter(([,m]) => m.stage === key && m.datetime
+        && m.team1 && m.team2
+        && !koPlaceholderDisplay(m.team1).isPlaceholder
+        && !koPlaceholderDisplay(m.team2).isPlaceholder)
       .sort(([,a],[,b]) => a.datetime > b.datetime ? 1 : -1);
     if(stageMs.length) rounds.push({ label, matches: stageMs, stage: key });
   });
@@ -4772,6 +4775,10 @@ function renderToday(){
       }
       card.appendChild(lb);
       const hasRes=m.result!==undefined;
+      if(!hasRes && m.stage && m.stage!=='group'){
+        const kn=document.createElement('div'); kn.style.cssText='text-align:center;margin-top:5px;font-size:10px;color:var(--text2);';
+        kn.textContent='⏱️ התוצאה הקובעת היא בסוף 90 דקות'; card.appendChild(kn);
+      }
       // Actual result (visible to everyone once entered)
       if(hasRes){
         const rb=document.createElement('div');
@@ -4833,6 +4840,10 @@ function renderToday(){
       betRow.appendChild(lbl); betRow.appendChild(m1); betRow.appendChild(v1); betRow.appendChild(p1);
       betRow.appendChild(sep); betRow.appendChild(m2); betRow.appendChild(v2); betRow.appendChild(p2);
       betRow.appendChild(saveBtn); card.appendChild(betRow);
+      if(m.stage && m.stage!=='group'){
+        const kn=document.createElement('div'); kn.style.cssText='text-align:center;margin-top:5px;font-size:10px;color:var(--text2);';
+        kn.textContent='⏱️ התוצאה הקובעת היא בסוף 90 דקות'; card.appendChild(kn);
+      }
       // Odds bar
       const ob2=_oddsBar(id,m);
       if(ob2){ const obd2=document.createElement('div'); obd2.innerHTML=ob2; card.appendChild(obd2.firstChild); }
@@ -4906,6 +4917,10 @@ function renderMatches(){
       row.appendChild(lbl); row.appendChild(sc);
       if(pts){ const b=document.createElement('span'); b.className=pts.hit?'badge-hit':pts.dir?'badge-dir':'badge-miss'; b.style.marginTop='6px'; b.style.display='inline-block'; b.textContent=(pts.total>0?'+':'')+pts.total+" נק'"; row.appendChild(b); }
       card.appendChild(row);
+      if(!lk){
+        const eb=document.createElement('button'); eb.className='btn btn-ghost'; eb.style.cssText='width:100%;margin-top:8px;font-size:12px;padding:7px;';
+        eb.textContent='✏️ ערוך הימור'; eb.addEventListener('click',()=>openBetModal(id)); card.appendChild(eb);
+      }
     } else if(!lk){
       const bb=document.createElement('button'); bb.className='btn btn-grad'; bb.style.cssText='width:100%;margin-top:10px;font-size:13px;'; bb.textContent='✍️ המר עכשיו';
       bb.addEventListener('click',()=>openBetModal(id)); card.appendChild(bb);
