@@ -436,11 +436,6 @@ select.inp option{background:var(--card2);}
   width:100%;
   margin:0 auto;
 }
-/* Desktop: WC logo as faded background watermark */
-@media(min-width:901px){
-  .ko-wrap.ko-bg-logo{background-image:var(--ko-bg);background-repeat:no-repeat;background-position:center center;background-size:160px;}
-  .ko-wrap.ko-bg-logo .ko-logo-wrap{display:none;}
-}
 /* SVG overlay that draws the connector lines — sits behind the cards */
 .ko-lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible;color:rgba(150,175,210,0.40);}
 body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
@@ -470,9 +465,6 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
   position:relative;z-index:1;
   gap:5px;
 }
-@media(min-width:901px){
-  .ko-wrap.ko-bg-logo .ko-center{width:auto;min-width:80px;}
-}
 .ko-center-label{
   font-family:'Bebas Neue',sans-serif;
   font-size:13px;letter-spacing:2px;
@@ -487,7 +479,7 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
   box-shadow:0 0 22px rgba(255,215,0,0.30);
   flex-shrink:0;margin:5px 0;
 }
-.ko-logo{width:100%;height:100%;object-fit:cover;object-position:center;}
+.ko-logo{width:100%;height:100%;object-fit:contain;object-position:center;}
 
 .ko-match{
   background:var(--card2);
@@ -533,6 +525,36 @@ body.light-mode .ko-empty-team{background:rgba(0,0,0,0.06);}
 @media(max-width:900px){
   .ko-bracket-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .ko-wrap{min-width:1000px;}
+}
+/* ── KO FULL-BLEED MODE: spread bracket edge-to-edge, login image as faded backdrop ── */
+body.ko-fullbleed .side-bg{display:none;}
+#bracket-ko.ko-fullbleed{
+  position:relative;
+  width:100vw;
+  margin-left:calc(50% - 50vw);
+  margin-right:calc(50% - 50vw);
+  padding:0 14px;
+  box-sizing:border-box;
+}
+#bracket-ko.ko-fullbleed::before{
+  content:'';position:absolute;inset:0;
+  background-image:var(--ko-bg,none);
+  background-size:cover;background-position:center;
+  opacity:0.12;pointer-events:none;z-index:0;
+}
+body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
+#bracket-ko.ko-fullbleed .ko-bracket-scroll{position:relative;z-index:1;}
+@media(min-width:901px){
+  #bracket-ko.ko-fullbleed .ko-team-name{font-size:11px;}
+  #bracket-ko.ko-fullbleed .ko-score{font-size:13px;}
+  #bracket-ko.ko-fullbleed .ko-team{min-height:26px;padding:5px 8px;}
+  #bracket-ko.ko-fullbleed .ko-team-flag{width:15px;height:15px;}
+  #bracket-ko.ko-fullbleed .ko-match{margin:7px 0;border-radius:8px;}
+  #bracket-ko.ko-fullbleed .ko-col{padding:0 8px;}
+  #bracket-ko.ko-fullbleed .ko-col-label{font-size:12px;}
+  #bracket-ko.ko-fullbleed .ko-center{width:140px;}
+  #bracket-ko.ko-fullbleed .ko-logo-wrap{width:92px;height:92px;}
+  #bracket-ko.ko-fullbleed .ko-center-label{font-size:15px;}
 }
 
 </style>
@@ -1927,7 +1949,8 @@ function renderKoEditor() {
     if(m.stage === 'group' && m.team2 && m.team2 !== 'TBD') teamSet.add(m.team2);
   });
   const teams = ['TBD', ...Array.from(teamSet).sort()];
-  const teamOptions = teams.map(t => `<option value="${t}">${t}</option>`).join('');
+  const _ae=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const teamOptions = teams.map(t => `<option value="${_ae(t)}">${_ae(t)}</option>`).join('');
 
   list.innerHTML = stageMatches.map(([id, m]) => {
     const dt = m.datetime ? m.datetime.replace('T',' ').slice(0,16) : '';
@@ -1942,14 +1965,14 @@ function renderKoEditor() {
         <div>
           ${hint1?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p1.text+'</div>'):''}
           <select id="ko-t1-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
-            ${teams.map(t=>'<option value="'+t+'" '+(m.team1===t?'selected':'')+'>'+t+'</option>').join('')}
+            ${teams.map(t=>'<option value="'+_ae(t)+'" '+(m.team1===t?'selected':'')+'>'+_ae(t)+'</option>').join('')}
           </select>
         </div>
         <span style="color:var(--text2);font-size:12px;font-weight:700;padding-top:22px;">vs</span>
         <div>
           ${hint2?('<div style="font-size:9px;color:#a78bfa;margin-bottom:3px;">📌 '+p2.text+'</div>'):''}
           <select id="ko-t2-${id}" style="background:var(--navy);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:12px;direction:rtl;width:100%;">
-            ${teams.map(t=>'<option value="'+t+'" '+(m.team2===t?'selected':'')+'>'+t+'</option>').join('')}
+            ${teams.map(t=>'<option value="'+_ae(t)+'" '+(m.team2===t?'selected':'')+'>'+_ae(t)+'</option>').join('')}
           </select>
         </div>
       </div>
@@ -4641,7 +4664,12 @@ document.querySelectorAll('.tab[data-page]').forEach(tab=>{
     el('page-'+tab.dataset.page).classList.add('active');
     tab.classList.add('active');
     if(tab.dataset.page==='admin'){ loadUsers(); loadAnalytics(); loadActivity(); }
-    if(tab.dataset.page==='bracket'){ requestAnimationFrame(()=>{ try{layoutKoBracket();}catch(e){} }); }
+    if(tab.dataset.page==='bracket'){
+      try{ applyKoFullbleed(el('bracket-ko').style.display!=='none'); }catch(e){}
+      requestAnimationFrame(()=>{ try{layoutKoBracket();}catch(e){} });
+    } else {
+      try{ applyKoFullbleed(false); }catch(e){}
+    }
     trackTab(tab.dataset.page);
   });
 });
@@ -5534,11 +5562,26 @@ el('load-wc-matches')&&el('load-wc-matches').addEventListener('click', async()=>
 });
 
 // ── BRACKET ──
+function applyKoFullbleed(on){
+  const bk=el('bracket-ko'); if(!bk) return;
+  if(on){
+    document.body.classList.add('ko-fullbleed');
+    bk.classList.add('ko-fullbleed');
+    try{
+      const sb=document.querySelector('.side-bg-left')||document.querySelector('.side-bg');
+      if(sb){ const bg=getComputedStyle(sb).backgroundImage; if(bg&&bg!=='none') bk.style.setProperty('--ko-bg',bg); }
+    }catch(e){}
+  } else {
+    document.body.classList.remove('ko-fullbleed');
+    bk.classList.remove('ko-fullbleed');
+  }
+}
 document.querySelectorAll('.btab').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const t=btn.dataset.btab;
     el('bracket-groups').style.display=t==='groups'?'block':'none';
     el('bracket-ko').style.display=t==='ko'?'block':'none';
+    applyKoFullbleed(t==='ko');
     if(t==='ko'){ requestAnimationFrame(()=>{ try{layoutKoBracket();}catch(e){} }); }
     document.querySelectorAll('.btab').forEach(b=>{ b.className='btn btn-ghost btn-xs btab'; b.style.flexShrink='0'; });
     btn.className='btn btn-grad btn-xs btab'; btn.style.flexShrink='0';
@@ -5693,9 +5736,11 @@ function renderBracket(){
     const f2=c2?'<span class="fi fi-'+c2+' ko-team-flag"></span>':'';
     const s1=d1.isPlaceholder?'font-size:8px;color:var(--text2);font-style:italic;':'';
     const s2=d2.isPlaceholder?'font-size:8px;color:var(--text2);font-style:italic;':'';
+    const _ka=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const t1e=_ka(t1), t2e=_ka(t2);
     return '<div class="'+cls+'" id="'+id+'">'+
-      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'">'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1+'">'+t1+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
-      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'">'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2+'">'+t2+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'">'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1e+'">'+t1e+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
+      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'">'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2e+'">'+t2e+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
     '</div>';
   }
 
@@ -5716,7 +5761,7 @@ function renderBracket(){
     return h+'</div>';
   }
 
-  let html='<div class="ko-bracket-scroll" id="ko-bracket-scroll"><div class="ko-wrap ko-bg-logo" id="ko-wrap" style="--ko-bg:url(\''+WC_LOGO+'\')">';
+  let html='<div class="ko-bracket-scroll"><div class="ko-wrap" id="ko-wrap">';
   html+='<svg class="ko-lines" id="ko-lines" preserveAspectRatio="none"></svg>';
 
   // LEFT side: outer → inner
@@ -5741,16 +5786,8 @@ function renderBracket(){
   html+='</div></div>';
   bk.innerHTML=html;
 
-  requestAnimationFrame(()=>{ try{layoutKoBracket();}catch(e){} _scrollKoRight(); });
-  setTimeout(()=>{ try{layoutKoBracket();}catch(e){} _scrollKoRight(); },180);
-}
-
-/* On mobile, scroll the KO bracket to show the RIGHT side by default (once) */
-var _koScrolledOnce=false;
-function _scrollKoRight(){
-  if(window.innerWidth>900 || _koScrolledOnce) return;
-  var sc=document.getElementById('ko-bracket-scroll');
-  if(sc && sc.scrollWidth>sc.clientWidth){ sc.scrollLeft=sc.scrollWidth; _koScrolledOnce=true; }
+  requestAnimationFrame(()=>{ try{layoutKoBracket();}catch(e){} });
+  setTimeout(()=>{ try{layoutKoBracket();}catch(e){} },180);
 }
 
 // ── KNOCKOUT BRACKET CONNECTOR LINES (measured SVG overlay) ──
