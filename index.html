@@ -5966,23 +5966,47 @@ function renderBracket(){
     const adm1=isAdm&&!d1.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team1" style="cursor:pointer;" title="קדם '+t1fe+' לשלב הבא"':'';
     const adm2=isAdm&&!d2.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team2" style="cursor:pointer;" title="קדם '+t2fe+' לשלב הבא"':'';
 
-    // Determine display scores: use resultFull if available, else result
-    const dispRes = m.resultFull || m.result;
-    const hasPen = !!(m.penalties);
-    // Winner is based on resultFull if exists, else result; for penalties winner is pen score
+    // ── Score display logic ──
+    // Primary display: resultFull (ET) if exists, else result (90min)
+    const hasResult = m.result !== undefined;
+    const hasEt     = !!(m.resultFull);
+    const hasPen    = !!(m.penalties);
+    const dispRes   = hasEt ? m.resultFull : m.result;
+
+    // Winner determined by: penalties > resultFull > result
     let wFull = null;
-    if(dispRes){
-      if(hasPen){ wFull = m.penalties[0]>m.penalties[1]?m.team1:m.penalties[1]>m.penalties[0]?m.team2:null; }
-      else { wFull = dispRes[0]>dispRes[1]?m.team1:dispRes[1]>dispRes[0]?m.team2:null; }
+    if(hasResult){
+      if(hasPen){
+        wFull = m.penalties[0]>m.penalties[1]?m.team1:m.penalties[1]>m.penalties[0]?m.team2:null;
+      } else if(hasEt){
+        wFull = m.resultFull[0]>m.resultFull[1]?m.team1:m.resultFull[1]>m.resultFull[0]?m.team2:null;
+      } else {
+        wFull = m.result[0]>m.result[1]?m.team1:m.result[1]>m.result[0]?m.team2:null;
+      }
     }
-    const pen1 = hasPen ? '<span style="font-size:8px;color:#f87171;font-weight:900;margin-right:2px;">('+m.penalties[0]+')</span>' : '';
-    const pen2 = hasPen ? '<span style="font-size:8px;color:#f87171;font-weight:900;margin-right:2px;">('+m.penalties[1]+')</span>' : '';
+
     const sc1 = dispRes!==undefined ? String(dispRes[0]) : '';
     const sc2 = dispRes!==undefined ? String(dispRes[1]) : '';
 
+    // Info strip: shown only when ET or pen exist — compact single line below teams
+    let infoStrip = '';
+    if(hasResult && (hasEt || hasPen)){
+      const parts = [];
+      if(hasEt && hasPen){
+        // Show 90min + pen, skip repeating aet score (implicit from context)
+        parts.push('<span style="color:var(--text2);">90\'</span> <span style="font-weight:900;">'+m.result[0]+':'+m.result[1]+'</span>');
+        parts.push('<span style="color:#f87171;font-weight:900;">פנד\' '+m.penalties[0]+':'+m.penalties[1]+'</span>');
+      } else if(hasEt){
+        parts.push('<span style="color:var(--text2);">90\'</span> <span style="font-weight:900;">'+m.result[0]+':'+m.result[1]+'</span>');
+        parts.push('<span style="color:#fbbf24;">ET</span>');
+      }
+      infoStrip = '<div style="text-align:center;font-size:8px;padding:2px 4px;border-top:1px solid rgba(255,255,255,0.06);color:var(--text2);letter-spacing:0.3px;">'+parts.join(' · ')+'</div>';
+    }
+
     return '<div class="'+cls+'" id="'+id+'">'+
-      '<div class="ko-team '+(dispRes?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span>'+pen1+'<span class="ko-score">'+sc1+'</span></div>'+
-      '<div class="ko-team '+(dispRes?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span>'+pen2+'<span class="ko-score">'+sc2+'</span></div>'+
+      '<div class="ko-team '+(hasResult?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score">'+sc1+'</span></div>'+
+      '<div class="ko-team '+(hasResult?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score">'+sc2+'</span></div>'+
+      infoStrip+
     '</div>';
   }
 
