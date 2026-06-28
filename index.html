@@ -5439,8 +5439,21 @@ async function fillKoWinners(silent){
       var mm=byKo[fs] && byKo[fs][fk];
       if(!mm||!mm.result) return null;
       var a=mm.result[0], b=mm.result[1];
-      if(a===b) return null; // draw → no winner stored (penalties not modelled)
-      var win=a>b?mm.team1:mm.team2, lose=a>b?mm.team2:mm.team1;
+      var win, lose;
+      if(a!==b){
+        // decided in 90min
+        win=a>b?mm.team1:mm.team2; lose=a>b?mm.team2:mm.team1;
+      } else if(mm.penalties && mm.penalties[0]!==mm.penalties[1]){
+        // decided on penalties
+        var p1=mm.penalties[0], p2=mm.penalties[1];
+        win=p1>p2?mm.team1:mm.team2; lose=p1>p2?mm.team2:mm.team1;
+      } else if(mm.resultFull && mm.resultFull[0]!==mm.resultFull[1]){
+        // decided in extra time
+        var et1=mm.resultFull[0], et2=mm.resultFull[1];
+        win=et1>et2?mm.team1:mm.team2; lose=et1>et2?mm.team2:mm.team1;
+      } else {
+        return null; // still genuinely undecided
+      }
       var t=which==='W'?win:lose;
       return _isPlaceholderCode(t)?null:t;
     }
