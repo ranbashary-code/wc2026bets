@@ -1237,7 +1237,6 @@ async function checkBotRoundAlert() {
   if(!banner) return;
 
   const allRounds = getAllBotRounds(MATCHES);
-  if(!allRounds.length) { banner.style.display='none'; return; }
 
   const botBetSnap = await get(ref(db, 'bets/' + BOT_UID));
   const botBets = botBetSnap.exists() ? botBetSnap.val() : {};
@@ -1245,48 +1244,105 @@ async function checkBotRoundAlert() {
   // ── Render bot rounds status in admin panel ──
   const statusDiv = el('bot-rounds-status');
   if(statusDiv) {
-    statusDiv.innerHTML = allRounds.map(round => {
-      const total = round.matches.length;
-      const done = round.matches.filter(([id]) => !!botBets[id]).length;
-      const allDone = done === total;
-      const color = allDone ? '#34d399' : done > 0 ? '#fbbf24' : 'var(--text2)';
-      const icon = allDone ? '✅' : done > 0 ? '⏳' : '⭕';
-      return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
-        <span style="color:${color};">${icon} ${round.label}</span>
-        <span style="color:${color};font-weight:700;">${done}/${total} הימורים</span>
-      </div>`;
-    }).join('');
+    if(allRounds.length){
+      statusDiv.innerHTML = allRounds.map(round => {
+        const total = round.matches.length;
+        const done = round.matches.filter(([id]) => !!botBets[id]).length;
+        const allDone = done === total;
+        const color = allDone ? '#34d399' : done > 0 ? '#fbbf24' : 'var(--text2)';
+        const icon = allDone ? '✅' : done > 0 ? '⏳' : '⭕';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
+          <span style="color:${color};">${icon} ${round.label}</span>
+          <span style="color:${color};font-weight:700;">${done}/${total} הימורים</span>
+        </div>`;
+      }).join('');
+    } else {
+      statusDiv.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:4px 0;">עדיין אין סיבובים עם קבוצות ידועות</div>';
+    }
   }
-
-  const next = getNextBotRound(allRounds, botBets);
 
   // Stack below pending-banner if visible
   const pendingBanner = el('pending-banner');
   const pendingVisible = pendingBanner && pendingBanner.style.display === 'flex';
   banner.style.top = pendingVisible ? '94px' : '54px';
 
-  if(!next) { banner.style.display='none'; return; }
+  // ── Case 1: there is a real (ready-to-bet) round ──
+  const next = getNextBotRound(allRounds, botBets);
+  if(next) {
+    const { round, missing } = next;
+    const firstMatchMs = Math.min(...missing.map(([,m]) => new Date(m.datetime).getTime()));
+    const now = Date.now();
+    const hoursUntil = (firstMatchMs - now) / 3600000;
 
-  const { round, missing } = next;
-  const firstMatchMs = Math.min(...missing.map(([,m]) => new Date(m.datetime).getTime()));
+    if(now >= firstMatchMs) { banner.style.display='none'; return; }
+
+    const firstMatchDate = new Date(firstMatchMs);
+    const dateStr = firstMatchDate.toLocaleDateString('he-IL', { weekday:'short', day:'numeric', month:'numeric' });
+    const timeStr = firstMatchDate.toLocaleTimeString('he-IL', { hour:'2-digit', minute:'2-digit' });
+    const btnActive = hoursUntil <= 12;
+
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+        <span style="font-size:13px;font-weight:700;color:#fff;">
+          🤖 Boti-Goal לא הימר עדיין על <strong>${round.label}</strong> — ${missing.length} משחקים ממתינים
+        </span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.75);">
+          משחק ראשון: ${dateStr} בשעה ${timeStr} &nbsp;·&nbsp;
+          <span id="bot-banner-countdown"></span>
+        </span>
+      </div>
+      <button id="bot-banner-btn" onclick="window.runBotiGoalBot()"
+        ${btnActive ? '' : 'disabled'}
+        style="background:${btnActive?'#fff':'rgba(255,255,255,0.25)'};color:${btnActive?'#6d28d9':'rgba(255,255,255,0.5)'};
+               border:none;border-radius:8px;padding:5px 14px;font-weight:900;font-size:12px;
+               cursor:${btnActive?'pointer':'not-allowed'};flex-shrink:0;transition:all 0.3s;white-space:nowrap;">
+        ${btnActive ? '⚡ המר עכשיו' : '🔒 פעיל 12ש׳ לפני'}
+      </button>
+    `;
+    _startBotBannerCountdown(firstMatchMs, false);
+    return;
+  }
+
+  // ── Case 2: no ready round, but an upcoming KO stage exists (teams still TBD) ──
+  // Find the next KO stage by datetime — even if teams are placeholders
+  const koStageOrder = ['r32','r16','qf','sf','3rd','final'];
+  const koStageLabels = {r32:'שלב 32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
   const now = Date.now();
-  const hoursUntil = (firstMatchMs - now) / 3600000;
+  let upcomingStage = null, upcomingFirstMs = Infinity;
 
-  if(now >= firstMatchMs) { banner.style.display='none'; return; }
+  for(const stKey of koStageOrder){
+    const stageMs = Object.entries(MATCHES)
+      .filter(([,m]) => m.stage === stKey && m.datetime)
+      .map(([,m]) => new Date(m.datetime).getTime())
+      .filter(t => t > now);
+    if(!stageMs.length) continue;
+    const firstMs = Math.min(...stageMs);
+    // Check if bot already bet on this full stage (all real matches done)
+    const realMs = Object.entries(MATCHES)
+      .filter(([,m]) => m.stage === stKey && m.datetime
+        && m.team1 && m.team2
+        && !koPlaceholderDisplay(m.team1).isPlaceholder
+        && !koPlaceholderDisplay(m.team2).isPlaceholder);
+    const allBet = realMs.length > 0 && realMs.every(([id]) => !!botBets[id]);
+    if(allBet) continue; // already done — skip
+    if(firstMs < upcomingFirstMs){ upcomingFirstMs = firstMs; upcomingStage = stKey; break; }
+  }
 
-  // Format first match date/time
-  const firstMatchDate = new Date(firstMatchMs);
-  const dateStr = firstMatchDate.toLocaleDateString('he-IL', { weekday:'short', day:'numeric', month:'numeric' });
-  const timeStr = firstMatchDate.toLocaleTimeString('he-IL', { hour:'2-digit', minute:'2-digit' });
+  if(!upcomingStage || upcomingFirstMs <= now){ banner.style.display='none'; return; }
 
-  // Button active only within 12h before first match
+  const hoursUntil = (upcomingFirstMs - now) / 3600000;
+  const upDate = new Date(upcomingFirstMs);
+  const dateStr = upDate.toLocaleDateString('he-IL', { weekday:'short', day:'numeric', month:'numeric' });
+  const timeStr = upDate.toLocaleTimeString('he-IL', { hour:'2-digit', minute:'2-digit' });
   const btnActive = hoursUntil <= 12;
+  const label = koStageLabels[upcomingStage] || upcomingStage;
 
   banner.style.display = 'flex';
   banner.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
       <span style="font-size:13px;font-weight:700;color:#fff;">
-        🤖 Boti-Goal לא הימר עדיין על <strong>${round.label}</strong> — ${missing.length} משחקים ממתינים
+        🤖 <strong>${label}</strong> מתחיל בקרוב — הימורי הבוט עדיין ממתינים לקביעת העולות
       </span>
       <span style="font-size:11px;color:rgba(255,255,255,0.75);">
         משחק ראשון: ${dateStr} בשעה ${timeStr} &nbsp;·&nbsp;
@@ -1301,8 +1357,10 @@ async function checkBotRoundAlert() {
       ${btnActive ? '⚡ המר עכשיו' : '🔒 פעיל 12ש׳ לפני'}
     </button>
   `;
+  _startBotBannerCountdown(upcomingFirstMs, true);
+}
 
-  // Start/update countdown
+function _startBotBannerCountdown(firstMatchMs, pendingTeams){
   if(window._botBannerTimer) clearInterval(window._botBannerTimer);
   function updateCountdown(){
     const cdEl = document.getElementById('bot-banner-countdown');
@@ -1314,7 +1372,6 @@ async function checkBotRoundAlert() {
     const m2 = Math.floor((diff%3600000)/60000);
     const s = Math.floor((diff%60000)/1000);
     cdEl.textContent = `בעוד ${d>0?d+'י ':''}${String(h).padStart(2,'0')}:${String(m2).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    // Activate button when we cross 12h threshold
     const hoursLeft = diff/3600000;
     const btn = document.getElementById('bot-banner-btn');
     if(btn && hoursLeft <= 12 && btn.disabled){
