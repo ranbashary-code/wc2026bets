@@ -431,7 +431,7 @@ select.inp option{background:var(--card2);}
   position:relative;
   display:flex;flex-direction:row;align-items:stretch;justify-content:center;
   gap:0;
-  padding:36px 6px 28px;
+  padding:36px 6px 60px;
   direction:ltr;
   width:100%;
   margin:0 auto;
@@ -502,6 +502,7 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
   border-bottom:1px solid rgba(255,255,255,0.06);
   min-height:22px;
   direction:rtl;
+  color:var(--text);
 }
 .ko-team:last-child{border-bottom:none;}
 .ko-team.winner{color:var(--gold);}
@@ -5885,6 +5886,15 @@ function openKoAdvancePopup(matchId, clickedTk){
   const c1=getCountryCode(m.team1), c2=getCountryCode(m.team2);
   function flagHtml(code){ return code?'<span class="fi fi-'+code+'" style="width:32px;height:32px;border-radius:50%;display:inline-block;background-size:cover;border:2px solid rgba(255,255,255,0.2);"></span>':'<span style="width:32px;height:32px;border-radius:50%;background:#1a3a6b;display:inline-block;border:2px solid rgba(255,255,255,0.15);"></span>'; }
 
+  // Determine if there is already a real team in the next slot (for reset button)
+  const nextSlotInfo=_koFindNextSlot(matchId);
+  let nextSlotHasTeam=false;
+  if(nextSlotInfo){
+    const {nextId,slotKey}=nextSlotInfo;
+    const nm=MATCHES[nextId];
+    if(nm && nm[slotKey] && !koPlaceholderDisplay(nm[slotKey]).isPlaceholder) nextSlotHasTeam=true;
+  }
+
   // Remove any existing popup
   const old=document.getElementById('ko-adv-popup');
   if(old) old.remove();
@@ -5901,24 +5911,70 @@ function openKoAdvancePopup(matchId, clickedTk){
         <button onclick="window.koAdvanceTeam('${matchId}','team1')"
           style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;background:rgba(255,215,0,0.07);border:2px solid ${clickedTk==='team1'?'var(--gold)':'var(--border)'};border-radius:14px;padding:14px 8px;cursor:pointer;transition:all 0.2s;">
           ${flagHtml(c1)}
-          <span style="font-size:13px;font-weight:900;color:var(--text1);">${d1.text}</span>
+          <span style="font-size:13px;font-weight:900;color:var(--text);">${d1.text}</span>
           <span style="font-size:10px;color:var(--text2);">לחץ לקדם</span>
         </button>
         <button onclick="window.koAdvanceTeam('${matchId}','team2')"
           style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;background:rgba(255,215,0,0.07);border:2px solid ${clickedTk==='team2'?'var(--gold)':'var(--border)'};border-radius:14px;padding:14px 8px;cursor:pointer;transition:all 0.2s;">
           ${flagHtml(c2)}
-          <span style="font-size:13px;font-weight:900;color:var(--text1);">${d2.text}</span>
+          <span style="font-size:13px;font-weight:900;color:var(--text);">${d2.text}</span>
           <span style="font-size:10px;color:var(--text2);">לחץ לקדם</span>
         </button>
       </div>
       <div id="ko-adv-status" style="font-size:12px;min-height:16px;color:var(--text2);margin-bottom:12px;"></div>
-      <button onclick="document.getElementById('ko-adv-popup').remove()"
-        style="background:transparent;border:1px solid var(--border);border-radius:10px;padding:8px 24px;color:var(--text2);cursor:pointer;font-size:13px;font-weight:700;">סגור</button>
+      <div style="display:flex;gap:8px;justify-content:center;">
+        ${nextSlotHasTeam?`<button onclick="window.koResetNextSlot('${matchId}')"
+          style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.3);border-radius:10px;padding:8px 16px;color:#f87171;cursor:pointer;font-size:12px;font-weight:700;">🔄 אפס</button>`:''}
+        <button onclick="document.getElementById('ko-adv-popup').remove()"
+          style="background:transparent;border:1px solid var(--border);border-radius:10px;padding:8px 24px;color:var(--text2);cursor:pointer;font-size:13px;font-weight:700;">סגור</button>
+      </div>
     </div>`;
 
   overlay.addEventListener('click',function(e){ if(e.target===overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
+
+// Helper: find which next-stage match+slot this match feeds into
+function _koFindNextSlot(matchId){
+  const m=MATCHES[matchId]; if(!m||m.koOrder===undefined) return null;
+  const byKo={}, idByKo={};
+  ['r32','r16','qf','sf','final','3rd'].forEach(s=>{ byKo[s]={}; idByKo[s]={}; });
+  Object.entries(MATCHES).forEach(([id,mm])=>{
+    if(mm.stage==='group'||mm.koOrder===undefined) return;
+    if(byKo[mm.stage]){ byKo[mm.stage][mm.koOrder]=mm; idByKo[mm.stage][mm.koOrder]=id; }
+  });
+  const curStage=m.stage, curKo=m.koOrder;
+  for(const [nextStage,map] of Object.entries(KO_ADVANCE)){
+    for(const [ko,feeders] of Object.entries(map)){
+      for(let i=0;i<feeders.length;i++){
+        const [fs,fk,wl]=feeders[i];
+        if(fs===curStage && Number(fk)===Number(curKo) && wl==='W'){
+          const nextId=idByKo[nextStage]&&idByKo[nextStage][Number(ko)];
+          if(!nextId) return null;
+          return {nextId, slotKey:i===0?'team1':'team2'};
+        }
+      }
+    }
+  }
+  return null;
+}
+
+window.koResetNextSlot=async function(matchId){
+  const st=el('ko-adv-status');
+  const info=_koFindNextSlot(matchId);
+  if(!info){ if(st){st.style.color='#f87171';st.textContent='❌ לא נמצא שלב הבא';} return; }
+  const {nextId,slotKey}=info;
+  if(st){ st.style.color='var(--text2)'; st.textContent='מאפס...'; }
+  try{
+    await update(ref(db,'matches/'+nextId),{[slotKey]:'TBD'});
+    if(st){st.style.color='#34d399';st.textContent='✅ אופס בהצלחה';}
+    toast('🔄 הועלאה אופסה');
+    setTimeout(()=>{ renderBracket(); },400);
+    setTimeout(()=>{ const old=document.getElementById('ko-adv-popup'); if(old) old.remove(); },1200);
+  }catch(e){
+    if(st){st.style.color='#f87171';st.textContent='❌ שגיאה: '+e.message;}
+  }
+};
 
 window.koAdvanceTeam=async function(matchId, teamKey){
   const m=MATCHES[matchId]; if(!m) return;
@@ -5926,40 +5982,11 @@ window.koAdvanceTeam=async function(matchId, teamKey){
   const st=el('ko-adv-status');
   if(st){ st.style.color='var(--text2)'; st.textContent='מחפש שלב הבא...'; }
 
-  // Find which slot in next stage this match feeds into, using KO_ADVANCE
-  // Build reverse lookup: for each next-stage match, which feeders point here?
-  let foundNextStage=null, foundNextKo=null, foundSlot=null; // slot 0=team1, 1=team2
-  const byKo={}, idByKo={};
-  ['r32','r16','qf','sf','final','3rd'].forEach(s=>{ byKo[s]={}; idByKo[s]={}; });
-  Object.entries(MATCHES).forEach(([id,mm])=>{
-    if(mm.stage==='group'||mm.koOrder===undefined) return;
-    if(byKo[mm.stage]){ byKo[mm.stage][mm.koOrder]=mm; idByKo[mm.stage][mm.koOrder]=id; }
-  });
-
-  const curStage=m.stage, curKo=m.koOrder;
-  if(curKo===undefined){ if(st){st.style.color='#f87171';st.textContent='❌ אין koOrder למשחק זה';} return; }
-
-  outer:
-  for(const [nextStage,map] of Object.entries(KO_ADVANCE)){
-    for(const [ko,feeders] of Object.entries(map)){
-      for(let i=0;i<feeders.length;i++){
-        const [fs,fk,wl]=feeders[i];
-        if(fs===curStage && Number(fk)===Number(curKo) && wl==='W'){
-          foundNextStage=nextStage; foundNextKo=Number(ko); foundSlot=i;
-          break outer;
-        }
-      }
-    }
-  }
-
-  if(foundNextStage===null){
+  const info=_koFindNextSlot(matchId);
+  if(!info){
     if(st){st.style.color='#f87171';st.textContent='❌ לא נמצא שלב הבא (גמר?)';} return;
   }
-
-  const nextId=idByKo[foundNextStage]&&idByKo[foundNextStage][foundNextKo];
-  if(!nextId){ if(st){st.style.color='#f87171';st.textContent='❌ לא נמצא משחק בשלב הבא';} return; }
-
-  const slotKey=foundSlot===0?'team1':'team2';
+  const {nextId,slotKey}=info;
   try{
     await update(ref(db,'matches/'+nextId),{[slotKey]:teamName});
     if(st){st.style.color='#34d399';st.textContent='✅ '+koPlaceholderDisplay(teamName).text+' עלתה לשלב הבא!';}
