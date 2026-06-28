@@ -682,12 +682,14 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
 </div>
 
 <div class="modal" id="res-modal">
-  <div class="modal-box" style="max-width:340px;">
+  <div class="modal-box" style="max-width:360px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
       <div class="modal-title">עדכון תוצאה</div><button class="modal-close" id="close-res">×</button>
     </div>
-    <p id="res-title" style="color:var(--text2);font-size:13px;text-align:center;margin-bottom:14px;"></p>
-    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:18px;">
+    <p id="res-title" style="color:var(--text2);font-size:13px;text-align:center;margin-bottom:6px;"></p>
+    <!-- 90min label -->
+    <div id="res-90-label" style="text-align:center;font-size:10px;font-weight:700;color:var(--text2);margin-bottom:8px;letter-spacing:0.5px;">⏱️ תוצאה בסוף 90 דקות</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px;">
       <div style="text-align:center;">
         <div id="res-t1" style="font-size:11px;color:var(--text2);margin-bottom:6px;"></div>
         <div style="display:flex;align-items:center;gap:6px;"><button class="stn-btn" id="r-s1-m">-</button><div class="stn-val" id="res-s1">0</div><button class="stn-btn" id="r-s1-p">+</button></div>
@@ -698,7 +700,37 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
         <div style="display:flex;align-items:center;gap:6px;"><button class="stn-btn" id="r-s2-m">-</button><div class="stn-val" id="res-s2">0</div><button class="stn-btn" id="r-s2-p">+</button></div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;">
+    <!-- Extra time toggle (KO only) -->
+    <div id="res-et-section" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-bottom:10px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;justify-content:center;margin-bottom:10px;">
+        <input type="checkbox" id="res-et-check" style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;">
+        <span style="font-size:12px;font-weight:700;color:var(--text2);">הייתה הארכה (120 דק')?</span>
+      </label>
+      <!-- Extra time score -->
+      <div id="res-et-fields" style="display:none;">
+        <div style="text-align:center;font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:8px;letter-spacing:0.5px;">⏱️ תוצאה סופית (90+30 דק')</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:6px;"><button class="stn-btn" id="r-et1-m">-</button><div class="stn-val" id="res-et1">0</div><button class="stn-btn" id="r-et1-p">+</button></div>
+          <div style="font-size:1.1rem;color:var(--text2);font-weight:700;">:</div>
+          <div style="display:flex;align-items:center;gap:6px;"><button class="stn-btn" id="r-et2-m">-</button><div class="stn-val" id="res-et2">0</div><button class="stn-btn" id="r-et2-p">+</button></div>
+        </div>
+        <!-- Penalties toggle -->
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;justify-content:center;margin-bottom:10px;">
+          <input type="checkbox" id="res-pen-check" style="width:16px;height:16px;accent-color:#f87171;cursor:pointer;">
+          <span style="font-size:12px;font-weight:700;color:var(--text2);">הוכרע בפנדלים?</span>
+        </label>
+        <!-- Penalties score -->
+        <div id="res-pen-fields" style="display:none;">
+          <div style="text-align:center;font-size:10px;font-weight:700;color:#f87171;margin-bottom:8px;letter-spacing:0.5px;">🥅 פנדלים</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+            <div style="display:flex;align-items:center;gap:6px;"><button class="stn-btn" id="r-p1-m">-</button><div class="stn-val" id="res-p1">0</div><button class="stn-btn" id="r-p1-p">+</button></div>
+            <div style="font-size:1.1rem;color:var(--text2);font-weight:700;">:</div>
+            <div style="display:flex;align-items:center;gap:6px;"><button class="stn-btn" id="r-p2-m">-</button><div class="stn-val" id="res-p2">0</div><button class="stn-btn" id="r-p2-p">+</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
       <button class="btn btn-ghost" id="cancel-res" style="flex:1;">ביטול</button>
       <button class="btn btn-grad" id="confirm-res" style="flex:1;">שמור</button>
     </div>
@@ -5186,6 +5218,24 @@ function openResModal(id){
   el('res-title').textContent=displayName(m.team1)+' vs '+displayName(m.team2);
   el('res-t1').textContent=displayName(m.team1); el('res-t2').textContent=displayName(m.team2);
   el('res-s1').textContent=resS[0]; el('res-s2').textContent=resS[1];
+
+  // Show/hide extra time section for KO matches only
+  const isKo = m.stage && m.stage !== 'group';
+  el('res-et-section').style.display = isKo ? 'block' : 'none';
+  el('res-90-label').textContent = isKo ? '⏱️ תוצאה בסוף 90 דקות (לצורך ניקוד ההימורים)' : '⏱️ תוצאה';
+
+  // Load existing ET/pen data
+  const hasEt = !!(m.resultFull);
+  const hasPen = !!(m.penalties);
+  el('res-et-check').checked = hasEt;
+  el('res-et-fields').style.display = hasEt ? 'block' : 'none';
+  const etS = m.resultFull ? [m.resultFull[0], m.resultFull[1]] : [resS[0], resS[1]];
+  el('res-et1').textContent = etS[0]; el('res-et2').textContent = etS[1];
+  el('res-pen-check').checked = hasPen;
+  el('res-pen-fields').style.display = hasPen ? 'block' : 'none';
+  const penS = m.penalties ? [m.penalties[0], m.penalties[1]] : [0, 0];
+  el('res-p1').textContent = penS[0]; el('res-p2').textContent = penS[1];
+
   el('res-modal').classList.add('open');
 }
 el('close-res').addEventListener('click',()=>el('res-modal').classList.remove('open'));
@@ -5194,9 +5244,40 @@ el('r-s1-m').addEventListener('click',()=>{ resS[0]=Math.max(0,resS[0]-1); el('r
 el('r-s1-p').addEventListener('click',()=>{ resS[0]++; el('res-s1').textContent=resS[0]; });
 el('r-s2-m').addEventListener('click',()=>{ resS[1]=Math.max(0,resS[1]-1); el('res-s2').textContent=resS[1]; });
 el('r-s2-p').addEventListener('click',()=>{ resS[1]++; el('res-s2').textContent=resS[1]; });
+
+// ET spinners
+el('res-et-check').addEventListener('change',()=>{
+  el('res-et-fields').style.display = el('res-et-check').checked ? 'block' : 'none';
+  if(!el('res-et-check').checked){ el('res-pen-check').checked=false; el('res-pen-fields').style.display='none'; }
+});
+el('res-pen-check').addEventListener('change',()=>{
+  el('res-pen-fields').style.display = el('res-pen-check').checked ? 'block' : 'none';
+});
+el('r-et1-m').addEventListener('click',()=>{ const v=Math.max(0,parseInt(el('res-et1').textContent)-1); el('res-et1').textContent=v; });
+el('r-et1-p').addEventListener('click',()=>{ el('res-et1').textContent=parseInt(el('res-et1').textContent)+1; });
+el('r-et2-m').addEventListener('click',()=>{ const v=Math.max(0,parseInt(el('res-et2').textContent)-1); el('res-et2').textContent=v; });
+el('r-et2-p').addEventListener('click',()=>{ el('res-et2').textContent=parseInt(el('res-et2').textContent)+1; });
+el('r-p1-m').addEventListener('click',()=>{ const v=Math.max(0,parseInt(el('res-p1').textContent)-1); el('res-p1').textContent=v; });
+el('r-p1-p').addEventListener('click',()=>{ el('res-p1').textContent=parseInt(el('res-p1').textContent)+1; });
+el('r-p2-m').addEventListener('click',()=>{ const v=Math.max(0,parseInt(el('res-p2').textContent)-1); el('res-p2').textContent=v; });
+el('r-p2-p').addEventListener('click',()=>{ el('res-p2').textContent=parseInt(el('res-p2').textContent)+1; });
+
 el('confirm-res').addEventListener('click', async()=>{
   if(!resId) return;
-  await update(ref(db,'matches/'+resId),{result:resS});
+  const upd = { result: resS };
+  const isKo = MATCHES[resId] && MATCHES[resId].stage !== 'group';
+  if(isKo && el('res-et-check').checked){
+    upd.resultFull = [parseInt(el('res-et1').textContent), parseInt(el('res-et2').textContent)];
+    if(el('res-pen-check').checked){
+      upd.penalties = [parseInt(el('res-p1').textContent), parseInt(el('res-p2').textContent)];
+    } else {
+      upd.penalties = null;
+    }
+  } else {
+    upd.resultFull = null;
+    upd.penalties = null;
+  }
+  await update(ref(db,'matches/'+resId), upd);
   el('res-modal').classList.remove('open'); toast('✅ תוצאה עודכנה!'); confetti();
   try{ renderToday(); }catch(e){}
   // Auto-advance KO winners when a knockout result is saved
@@ -5871,9 +5952,24 @@ function renderBracket(){
     const dbId=Object.entries(MATCHES).find(([,mm])=>mm===m)?.[0]||'';
     const adm1=isAdm&&!d1.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team1" style="cursor:pointer;" title="קדם '+t1fe+' לשלב הבא"':'';
     const adm2=isAdm&&!d2.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team2" style="cursor:pointer;" title="קדם '+t2fe+' לשלב הבא"':'';
+
+    // Determine display scores: use resultFull if available, else result
+    const dispRes = m.resultFull || m.result;
+    const hasPen = !!(m.penalties);
+    // Winner is based on resultFull if exists, else result; for penalties winner is pen score
+    let wFull = null;
+    if(dispRes){
+      if(hasPen){ wFull = m.penalties[0]>m.penalties[1]?m.team1:m.penalties[1]>m.penalties[0]?m.team2:null; }
+      else { wFull = dispRes[0]>dispRes[1]?m.team1:dispRes[1]>dispRes[0]?m.team2:null; }
+    }
+    const pen1 = hasPen ? '<span style="font-size:8px;color:#f87171;font-weight:900;margin-right:2px;">('+m.penalties[0]+')</span>' : '';
+    const pen2 = hasPen ? '<span style="font-size:8px;color:#f87171;font-weight:900;margin-right:2px;">('+m.penalties[1]+')</span>' : '';
+    const sc1 = dispRes!==undefined ? String(dispRes[0]) : '';
+    const sc2 = dispRes!==undefined ? String(dispRes[1]) : '';
+
     return '<div class="'+cls+'" id="'+id+'">'+
-      '<div class="ko-team '+(hasRes?(w===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score">'+(hasRes?m.result[0]:'')+'</span></div>'+
-      '<div class="ko-team '+(hasRes?(w===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score">'+(hasRes?m.result[1]:'')+'</span></div>'+
+      '<div class="ko-team '+(dispRes?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span>'+pen1+'<span class="ko-score">'+sc1+'</span></div>'+
+      '<div class="ko-team '+(dispRes?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span>'+pen2+'<span class="ko-score">'+sc2+'</span></div>'+
     '</div>';
   }
 
