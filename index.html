@@ -3175,7 +3175,9 @@ let ALL_GROUPS = {}; // {groupId: {name, icon, color}}
 
 function renderIcon(icon, size) {
   size = size || '20px';
+  if(!icon) return '<span style="font-size:'+size+';">🏆</span>';
   if(icon === '__IL_FLAG__') return '<span class="fi fi-il" style="width:'+size+';height:calc('+size+' * 0.75);display:inline-block;border-radius:3px;vertical-align:middle;"></span>';
+  if(icon.startsWith('http')||icon.startsWith('data:')) return '<img src="'+icon+'" style="width:'+size+';height:'+size+';border-radius:50%;object-fit:cover;vertical-align:middle;display:inline-block;" onerror="this.style.display=\'none\'">';
   return '<span style="font-size:'+size+';">'+icon+'</span>';
 }
 let selectedGroupColor = '#7c3aed';
