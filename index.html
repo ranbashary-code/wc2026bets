@@ -5927,11 +5927,7 @@ function renderBracket(){
       linksEl.innerHTML=myGroups.filter(gid=>ALL_GROUPS&&ALL_GROUPS[gid]).map(gid=>{
         const g=ALL_GROUPS[gid];
         const color=g.color||'var(--gold)';
-        // Icon: if it's a flag-icons class string render as span, else emoji
-        const isFiClass = g.icon && g.icon.includes('fi-');
-        const iconHtml = isFiClass
-          ? `<span class="${g.icon}" style="width:18px;height:13px;border-radius:2px;display:inline-block;background-size:cover;flex-shrink:0;"></span>`
-          : `<span style="font-size:15px;line-height:1;">${g.icon||'🏆'}</span>`;
+        const iconHtml = renderIcon(g.icon||'🏆', '18px');
         return `<button onclick="document.querySelector('[data-page=main]').click();setTimeout(()=>{const el=document.getElementById('leader-list');if(el)el.scrollIntoView({behavior:'smooth'});},200)"
           style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid ${color};border-radius:20px;padding:7px 16px;color:${color};font-size:12px;font-weight:900;cursor:pointer;">
           ${iconHtml}<span>טבלת קבוצת ${g.name}</span>
@@ -6086,18 +6082,18 @@ function renderBracket(){
     const sc1 = dispRes!==undefined ? String(dispRes[0]) : '';
     const sc2 = dispRes!==undefined ? String(dispRes[1]) : '';
 
-    // Bet row below teams — only when no result yet
+    // Bet row — always show if user has a bet, even if locked or has result
     let betRow = '';
-    if(bothReal && !hasResult){
-      if(isLocked){
-        betRow = '<div style="text-align:center;font-size:8px;color:rgba(255,255,255,0.3);padding:2px 4px;border-top:1px solid rgba(255,255,255,0.05);">🔒 נעול</div>';
-      } else if(myBetData && Array.isArray(myBetData)){
+    if(bothReal){
+      if(myBetData && Array.isArray(myBetData)){
         betRow = '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-top:1px solid rgba(16,185,129,0.2);background:rgba(16,185,129,0.07);">'+
           '<span style="font-size:10px;font-weight:900;color:#34d399;direction:ltr;">'+myBetData[0]+' : '+myBetData[1]+'</span>'+
           '<span style="font-size:8px;color:#34d399;font-weight:700;">הימור שלי</span>'+
         '</div>';
-      } else {
+      } else if(!isLocked && !hasResult){
         betRow = '<div style="text-align:center;font-size:8px;color:#fbbf24;font-weight:900;padding:3px 4px;border-top:1px solid rgba(251,191,36,0.2);background:rgba(251,191,36,0.06);animation:pulse 2s infinite;">המר ›</div>';
+      } else if(isLocked && !hasResult){
+        betRow = '<div style="text-align:center;font-size:8px;color:rgba(255,255,255,0.3);padding:2px 4px;border-top:1px solid rgba(255,255,255,0.05);">🔒 נעול</div>';
       }
     }
 
