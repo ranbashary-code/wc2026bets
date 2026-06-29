@@ -431,7 +431,7 @@ select.inp option{background:var(--card2);}
   position:relative;
   display:flex;flex-direction:row;align-items:stretch;justify-content:center;
   gap:0;
-  padding:48px 6px 80px;
+  padding:48px 6px 120px;
   direction:ltr;
   width:100%;
   margin:0 auto;
@@ -551,7 +551,7 @@ body.ko-fullbleed .side-bg{display:none;}
 body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
 #bracket-ko.ko-fullbleed .ko-bracket-scroll{position:relative;z-index:1;}
 @media(min-width:901px){
-  #bracket-ko.ko-fullbleed .ko-wrap{padding:52px 10px 100px;}
+  #bracket-ko.ko-fullbleed .ko-wrap{padding:52px 10px 140px;}
   #bracket-ko.ko-fullbleed .ko-team-name{font-size:12px;}
   #bracket-ko.ko-fullbleed .ko-score{font-size:14px;}
   #bracket-ko.ko-fullbleed .ko-team{min-height:30px;padding:7px 10px;}
@@ -1007,14 +1007,14 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
       <!-- ── Bracket Hero Header ── -->
       <div style="text-align:center;margin-bottom:18px;padding:20px 0 0;">
         <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:var(--gold);text-transform:uppercase;opacity:0.8;margin-bottom:6px;">FIFA World Cup 2026</div>
-        <div style="font-size:26px;font-weight:900;color:var(--text);letter-spacing:1px;margin-bottom:4px;">עץ הנוקאאוט</div>
+        <div style="font-size:26px;font-weight:900;color:var(--text);letter-spacing:1px;margin-bottom:4px;">ברקט הנוקאאוט</div>
         <div style="font-size:12px;color:var(--text2);">לחץ על משחק כדי להמר</div>
       </div>
       <!-- ── Tab bar + Bet-all button ── -->
       <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
         <button class="btn btn-ghost btn-xs btab" data-btab="groups" style="flex-shrink:0;">🏟 שלב בתים</button>
         <button class="btn btn-grad btn-xs btab" data-btab="ko" style="flex-shrink:0;">⚡ נוקאאוט</button>
-        <button id="ko-bet-all-btn" onclick="window.koBetAll()" style="margin-right:auto;flex-shrink:0;background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(190,18,60,0.2));border:1px solid rgba(255,215,0,0.3);border-radius:20px;padding:5px 14px;color:var(--gold);font-weight:900;font-size:11px;cursor:pointer;letter-spacing:0.5px;display:none;">🎯 המר על הכל</button>
+        <button id="ko-bet-all-btn" onclick="window.koBetAll()" style="margin-right:auto;flex-shrink:0;background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(190,18,60,0.25));border:1px solid rgba(255,215,0,0.35);border-radius:20px;padding:5px 14px;color:var(--gold);font-weight:900;font-size:11px;cursor:pointer;letter-spacing:0.5px;display:none;">🎯 המר על הכל</button>
       </div>
       <div id="bracket-groups" style="display:none;"></div>
       <div id="bracket-ko"></div>
@@ -6083,15 +6083,25 @@ function renderBracket(){
 
   // ── Admin advance popup: delegate click on any clickable ko-team ──
   bk.onclick=function(e){
-    // Admin advance — click on team name
+    const teamEl=e.target.closest('[data-ko-adv]');
+    const cardEl=e.target.closest('[data-ko-bet]');
+
     if(MEDATA&&MEDATA.isAdmin){
-      const t=e.target.closest('[data-ko-adv]');
-      if(t){ openKoAdvancePopup(t.dataset.koAdv, t.dataset.koTk); return; }
-    }
-    // Everyone — click on match card to bet
-    const card=e.target.closest('[data-ko-bet]');
-    if(card && !e.target.closest('[data-ko-adv]')){
-      openBetModal(card.dataset.koBet); return;
+      if(teamEl){
+        // Admin clicked team name — open advance popup only
+        openKoAdvancePopup(teamEl.dataset.koAdv, teamEl.dataset.koTk);
+        return;
+      }
+      if(cardEl){
+        // Admin clicked card body — open dual popup (bet + advance)
+        openKoDualPopup(cardEl.dataset.koBet);
+        return;
+      }
+    } else {
+      // Regular user — click card to bet
+      if(cardEl && !teamEl){
+        openBetModal(cardEl.dataset.koBet);
+      }
     }
   };
 
@@ -6122,8 +6132,154 @@ window.koBetAll=async function(){
     return !(myB&&Array.isArray(myB));
   }).sort(([,a],[,b])=>a.datetime>b.datetime?1:-1);
   if(!openUnbet.length){ toast('✅ הימרת על כל המשחקים הפתוחים!'); return; }
-  openBetModal(openUnbet[0][0]);
+
+  // Group by stage
+  const stageLabels={r32:'שלב 32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר 🏆'};
+  const byStage={};
+  openUnbet.forEach(([id,m])=>{ if(!byStage[m.stage]) byStage[m.stage]=[]; byStage[m.stage].push([id,m]); });
+
+  const old=document.getElementById('ko-betall-popup');
+  if(old) old.remove();
+  const overlay=document.createElement('div');
+  overlay.id='ko-betall-popup';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;padding:16px;';
+
+  let rows='';
+  ['r32','r16','qf','sf','3rd','final'].forEach(stk=>{
+    if(!byStage[stk]) return;
+    rows+=`<div style="font-size:10px;font-weight:900;color:var(--gold);letter-spacing:1px;margin:12px 0 6px;">${stageLabels[stk]||stk}</div>`;
+    byStage[stk].forEach(([id,m])=>{
+      const dt=new Date(m.datetime);
+      const timeStr=dt.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'numeric'})+' '+dt.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+      const c1=getCountryCode(m.team1), c2=getCountryCode(m.team2);
+      const f1=c1?`<span class="fi fi-${c1}" style="width:16px;height:16px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;"></span>`:'';
+      const f2=c2?`<span class="fi fi-${c2}" style="width:16px;height:16px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;"></span>`:'';
+      rows+=`<button onclick="document.getElementById('ko-betall-popup').remove();openBetModal('${id}')"
+        style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:10px 12px;cursor:pointer;margin-bottom:6px;text-align:right;">
+        <div style="display:flex;align-items:center;gap:5px;flex:1;">
+          ${f1}<span style="font-size:12px;font-weight:700;color:var(--text);">${koShortName(m.team1)}</span>
+          <span style="color:var(--text2);font-size:11px;margin:0 4px;">נגד</span>
+          ${f2}<span style="font-size:12px;font-weight:700;color:var(--text);">${koShortName(m.team2)}</span>
+        </div>
+        <span style="font-size:10px;color:var(--text2);flex-shrink:0;">${timeStr}</span>
+        <span style="font-size:10px;color:var(--gold);font-weight:900;flex-shrink:0;">המר ›</span>
+      </button>`;
+    });
+  });
+
+  overlay.innerHTML=`
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:20px 20px 16px 16px;padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:15px;font-weight:900;color:var(--text);">🎯 משחקים ללא הימור</div>
+        <button onclick="document.getElementById('ko-betall-popup').remove()" style="background:transparent;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">לחץ על משחק כדי להמר</div>
+      ${rows}
+    </div>`;
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 };
+
+// ── KO Dual Popup (admin) — bet + advance in one panel ──
+function openKoDualPopup(matchId){
+  const m=MATCHES[matchId]; if(!m) return;
+  const d1=koTeamDisplay(m.team1), d2=koTeamDisplay(m.team2);
+  const stageLabels={r32:'שלב 32 האחרונות',r16:'שמינית גמר',qf:'רבע גמר',sf:'חצי גמר','3rd':'מקום שלישי',final:'גמר'};
+  const c1=getCountryCode(m.team1), c2=getCountryCode(m.team2);
+  function flagHtml(code){ return code?'<span class="fi fi-'+code+'" style="width:28px;height:28px;border-radius:50%;display:inline-block;background-size:cover;border:2px solid rgba(255,255,255,0.15);flex-shrink:0;"></span>':''; }
+
+  const old=document.getElementById('ko-dual-popup');
+  if(old) old.remove();
+
+  const myBet=ME&&BETS[ME.uid]&&BETS[ME.uid][matchId];
+  const s1=myBet&&Array.isArray(myBet)?myBet[0]:0;
+  const s2=myBet&&Array.isArray(myBet)?myBet[1]:0;
+
+  const nextInfo=_koFindNextSlot(matchId);
+  const canAdv1=!d1.isPlaceholder, canAdv2=!d2.isPlaceholder;
+  const isLocked=m.datetime&&Date.now()>=new Date(m.datetime).getTime();
+
+  const overlay=document.createElement('div');
+  overlay.id='ko-dual-popup';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:16px;';
+
+  overlay.innerHTML=`
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:420px;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(190,18,60,0.15));padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:2px;">${stageLabels[m.stage]||m.stage}</div>
+          <div style="font-size:13px;font-weight:900;color:var(--text);">${d1.text} נגד ${d2.text}</div>
+        </div>
+        <button onclick="document.getElementById('ko-dual-popup').remove()" style="background:transparent;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="display:flex;border-bottom:1px solid var(--border);">
+        <div style="flex:1;padding:16px;border-left:1px solid var(--border);">
+          <div style="font-size:10px;font-weight:900;color:var(--gold);letter-spacing:1px;margin-bottom:10px;">🎯 הימור</div>
+          ${isLocked?`<div style="font-size:11px;color:var(--text2);text-align:center;padding:12px 0;">🔒 נעול</div>`:`
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">
+            <div style="text-align:center;">
+              <div style="font-size:9px;color:var(--text2);margin-bottom:4px;">${koShortName(m.team1)}</div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <button onclick="var v=parseInt(document.getElementById('dp-s1').textContent);document.getElementById('dp-s1').textContent=Math.max(0,v-1)" style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:13px;line-height:1;">-</button>
+                <span id="dp-s1" style="font-size:20px;font-weight:900;color:var(--text);min-width:20px;text-align:center;">${s1}</span>
+                <button onclick="var v=parseInt(document.getElementById('dp-s1').textContent);document.getElementById('dp-s1').textContent=v+1" style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:13px;line-height:1;">+</button>
+              </div>
+            </div>
+            <div style="font-size:16px;color:var(--text2);font-weight:700;">:</div>
+            <div style="text-align:center;">
+              <div style="font-size:9px;color:var(--text2);margin-bottom:4px;">${koShortName(m.team2)}</div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <button onclick="var v=parseInt(document.getElementById('dp-s2').textContent);document.getElementById('dp-s2').textContent=Math.max(0,v-1)" style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:13px;line-height:1;">-</button>
+                <span id="dp-s2" style="font-size:20px;font-weight:900;color:var(--text);min-width:20px;text-align:center;">${s2}</span>
+                <button onclick="var v=parseInt(document.getElementById('dp-s2').textContent);document.getElementById('dp-s2').textContent=v+1" style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:13px;line-height:1;">+</button>
+              </div>
+            </div>
+          </div>
+          <button onclick="window.koDualSaveBet('${matchId}')" style="width:100%;background:linear-gradient(135deg,#7c3aed,#be123c);border:none;border-radius:8px;padding:8px;color:#fff;font-weight:900;font-size:12px;cursor:pointer;">שמור הימור</button>
+          <div id="dp-bet-status" style="font-size:10px;text-align:center;margin-top:6px;min-height:14px;color:var(--text2);"></div>
+          `}
+        </div>
+        <div style="flex:1;padding:16px;">
+          <div style="font-size:10px;font-weight:900;color:#a78bfa;letter-spacing:1px;margin-bottom:10px;">⬆️ קידום</div>
+          ${!nextInfo?`<div style="font-size:10px;color:var(--text2);text-align:center;padding:12px 0;">שלב אחרון</div>`:`
+          <div style="font-size:9px;color:var(--text2);margin-bottom:8px;text-align:center;">מי עולה לשלב הבא?</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${canAdv1?`<button onclick="window.koAdvanceTeam('${matchId}','team1');document.getElementById('ko-dual-popup').remove()"
+              style="display:flex;align-items:center;gap:6px;background:rgba(255,215,0,0.07);border:1px solid var(--border);border-radius:8px;padding:7px 8px;cursor:pointer;width:100%;">
+              ${flagHtml(c1)}<span style="font-size:11px;font-weight:700;color:var(--text);">${d1.text}</span>
+            </button>`:''}
+            ${canAdv2?`<button onclick="window.koAdvanceTeam('${matchId}','team2');document.getElementById('ko-dual-popup').remove()"
+              style="display:flex;align-items:center;gap:6px;background:rgba(255,215,0,0.07);border:1px solid var(--border);border-radius:8px;padding:7px 8px;cursor:pointer;width:100%;">
+              ${flagHtml(c2)}<span style="font-size:11px;font-weight:700;color:var(--text);">${d2.text}</span>
+            </button>`:''}
+            <button onclick="window.koResetNextSlot('${matchId}')"
+              style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.25);border-radius:8px;padding:6px;color:#f87171;cursor:pointer;font-size:10px;font-weight:700;width:100%;margin-top:2px;">🔄 אפס</button>
+          </div>
+          `}
+        </div>
+      </div>
+    </div>`;
+
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+window.koDualSaveBet=async function(matchId){
+  if(!ME) return;
+  const s1=parseInt(document.getElementById('dp-s1').textContent);
+  const s2=parseInt(document.getElementById('dp-s2').textContent);
+  const st=document.getElementById('dp-bet-status');
+  if(st) st.textContent='שומר...';
+  try{
+    await set(ref(db,'bets/'+ME.uid+'/'+matchId),[s1,s2]);
+    if(st){ st.style.color='#34d399'; st.textContent='✅ נשמר!'; }
+    toast('✅ הימור נשמר!');
+    setTimeout(()=>renderBracket(),400);
+  }catch(e){
+    if(st){ st.style.color='#f87171'; st.textContent='❌ שגיאה'; }
+  }
+};
+
 function openKoAdvancePopup(matchId, clickedTk){
   const m=MATCHES[matchId]; if(!m) return;
   const d1=koTeamDisplay(m.team1), d2=koTeamDisplay(m.team2);
