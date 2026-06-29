@@ -926,16 +926,16 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
   <div id="wc-news-ticker" style="display: none;"></div>
 
   <div class="tabs">
-    <div class="tab active" data-page="main" id="tab-main">🏆 ראשי</div>
+    <div class="tab" data-page="main" id="tab-main">🏆 ראשי</div>
     <div class="tab" data-page="mybets">🎯 ההימורים שלי</div>
-    <div class="tab" data-page="bracket">🏆 נוקאאוט<span id="bracket-tab-badge" style="display:none;background:#ef4444;color:#fff;font-size:9px;font-weight:900;border-radius:10px;padding:1px 5px;margin-right:4px;vertical-align:middle;"></span></div>
+    <div class="tab active" data-page="bracket">🏆 נוקאאוט<span id="bracket-tab-badge" style="display:none;background:#ef4444;color:#fff;font-size:9px;font-weight:900;border-radius:10px;padding:1px 5px;margin-right:4px;vertical-align:middle;"></span></div>
     <div class="tab" data-page="scoring">📊 ניקוד</div>
     <div class="tab admin-only" data-page="admin" id="tab-admin" style="display:none;">⚙️ אדמין</div>
   </div>
 
   <div class="content">
 
-    <div class="page active" id="page-main">
+    <div class="page" id="page-main">
       <div class="card" style="padding:18px;margin-bottom:14px;text-align:center;">
         <p style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:10px;letter-spacing:2px;text-transform:uppercase;">ספירה לאחור לפתיחת המונדיאל</p>
         <div class="flip-clock" style="direction:ltr;">
@@ -1012,7 +1012,7 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
       <div id="mybets-list"></div>
     </div>
 
-    <div class="page" id="page-bracket">
+    <div class="page active" id="page-bracket">
       <!-- ── Bracket Hero Header ── -->
       <div style="text-align:center;margin-bottom:18px;padding:20px 0 0;">
         <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:var(--gold);text-transform:uppercase;opacity:0.8;margin-bottom:6px;">FIFA World Cup 2026</div>
@@ -5913,9 +5913,11 @@ function renderBracket(){
       linksEl.innerHTML=myGroups.filter(gid=>ALL_GROUPS&&ALL_GROUPS[gid]).map(gid=>{
         const g=ALL_GROUPS[gid];
         const color=g.color||'var(--gold)';
+        // Render icon safely — emoji or text, not flag-icons class
+        const iconHtml=g.icon?`<span style="font-size:15px;line-height:1;">${g.icon}</span>`:`<span style="font-size:15px;">🏆</span>`;
         return `<button onclick="document.querySelector('[data-page=main]').click();setTimeout(()=>{const el=document.getElementById('leader-list');if(el)el.scrollIntoView({behavior:'smooth'});},200)"
-          style="background:rgba(255,255,255,0.06);border:1px solid ${color};border-radius:20px;padding:5px 14px;color:${color};font-size:11px;font-weight:900;cursor:pointer;">
-          ${g.icon||'🏆'} טבלת ${g.name}
+          style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid ${color};border-radius:20px;padding:7px 16px;color:${color};font-size:12px;font-weight:900;cursor:pointer;">
+          ${iconHtml}<span>טבלת קבוצת ${g.name}</span>
         </button>`;
       }).join('');
     }
@@ -6020,8 +6022,8 @@ function renderBracket(){
     const isAdm=MEDATA&&MEDATA.isAdmin;
     // Find the DB id for this match (needed for admin advance popup)
     const dbId=Object.entries(MATCHES).find(([,mm])=>mm===m)?.[0]||'';
-    const adm1=isAdm&&!d1.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team1" style="cursor:pointer;" title="קדם '+t1fe+' לשלב הבא"':'';
-    const adm2=isAdm&&!d2.isPlaceholder?' data-ko-adv="'+dbId+'" data-ko-tk="team2" style="cursor:pointer;" title="קדם '+t2fe+' לשלב הבא"':'';
+    const adm1='';
+    const adm2='';
 
     // ── Score display logic ──
     // Primary display: resultFull (ET) if exists, else result (90min)
@@ -6074,8 +6076,8 @@ function renderBracket(){
         betRow = '<div style="text-align:center;font-size:8px;color:rgba(255,255,255,0.3);padding:2px 4px;border-top:1px solid rgba(255,255,255,0.05);">🔒 נעול</div>';
       } else if(myBetData && Array.isArray(myBetData)){
         betRow = '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-top:1px solid rgba(16,185,129,0.2);background:rgba(16,185,129,0.07);">'+
-          '<span style="font-size:8px;color:#34d399;font-weight:700;">הימור שלי</span>'+
           '<span style="font-size:10px;font-weight:900;color:#34d399;direction:ltr;">'+myBetData[0]+' : '+myBetData[1]+'</span>'+
+          '<span style="font-size:8px;color:#34d399;font-weight:700;">הימור שלי</span>'+
         '</div>';
       } else {
         betRow = '<div style="text-align:center;font-size:8px;color:#fbbf24;font-weight:900;padding:3px 4px;border-top:1px solid rgba(251,191,36,0.2);background:rgba(251,191,36,0.06);animation:pulse 2s infinite;">המר ›</div>';
