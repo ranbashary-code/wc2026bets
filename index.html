@@ -928,7 +928,7 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
   <div class="tabs">
     <div class="tab active" data-page="main" id="tab-main">🏆 ראשי</div>
     <div class="tab" data-page="mybets">🎯 ההימורים שלי</div>
-    <div class="tab" data-page="bracket">🗂 בראקט</div>
+    <div class="tab" data-page="bracket">🏆 נוקאאוט<span id="bracket-tab-badge" style="display:none;background:#ef4444;color:#fff;font-size:9px;font-weight:900;border-radius:10px;padding:1px 5px;margin-right:4px;vertical-align:middle;"></span></div>
     <div class="tab" data-page="scoring">📊 ניקוד</div>
     <div class="tab admin-only" data-page="admin" id="tab-admin" style="display:none;">⚙️ אדמין</div>
   </div>
@@ -949,6 +949,15 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
         </div>
       </div>
       <div class="sec-head"><span style="font-size:22px;">🏆</span><div class="sec-title">טבלת מובילים</div></div>
+      <!-- KO Promo Banner — shown when user has unbetted KO matches -->
+      <div id="ko-promo-banner" style="display:none;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(190,18,60,0.15));border:1px solid rgba(255,215,0,0.25);border-radius:14px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:12px;cursor:pointer;" onclick="document.querySelector('[data-page=bracket]').click()">
+        <div style="font-size:24px;flex-shrink:0;">🏆</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:900;color:var(--text);margin-bottom:2px;">יש לך <span id="ko-promo-count" style="color:var(--gold);">0</span> משחקי נוקאאוט ללא הימור!</div>
+          <div style="font-size:11px;color:var(--text2);">לחץ כאן כדי להמר בשלבי הנוקאאוט</div>
+        </div>
+        <div style="font-size:18px;color:var(--gold);flex-shrink:0;">›</div>
+      </div>
       <div id="leader-list" style="margin-bottom:24px;"><div class="skel skel-row"></div><div class="skel skel-row"></div><div class="skel skel-row"></div></div>
       <div class="sec-divider"></div>
 
@@ -1007,7 +1016,7 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
       <!-- ── Bracket Hero Header ── -->
       <div style="text-align:center;margin-bottom:18px;padding:20px 0 0;">
         <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:var(--gold);text-transform:uppercase;opacity:0.8;margin-bottom:6px;">FIFA World Cup 2026</div>
-        <div style="font-size:26px;font-weight:900;color:var(--text);letter-spacing:1px;margin-bottom:4px;">ברקט הנוקאאוט</div>
+        <div style="font-size:26px;font-weight:900;color:var(--text);letter-spacing:1px;margin-bottom:4px;">שלבי הנוקאאוט</div>
         <div style="font-size:12px;color:var(--text2);">לחץ על משחק כדי להמר</div>
       </div>
       <!-- ── Tab bar + Bet-all button ── -->
@@ -4807,6 +4816,19 @@ function refreshAll(){
   checkBotRoundAlert();
   if(MEDATA?.isAdmin) renderKoEditor();
   renderSpecialBetsReveal(specialLocked());
+  // Update bracket tab badge + promo banner
+  try{
+    const openUnbet=Object.entries(MATCHES).filter(([id,m])=>{
+      if(!m.team1||!m.team2||m.stage==='group'||m.result!==undefined) return false;
+      if(koPlaceholderDisplay(m.team1).isPlaceholder||koPlaceholderDisplay(m.team2).isPlaceholder) return false;
+      if(Date.now()>=new Date(m.datetime).getTime()) return false;
+      return !(ME&&BETS[ME.uid]&&BETS[ME.uid][id]&&Array.isArray(BETS[ME.uid][id]));
+    });
+    const badge=el('bracket-tab-badge');
+    if(badge){ if(openUnbet.length){badge.textContent=openUnbet.length;badge.style.display='inline';}else{badge.style.display='none';} }
+    const promo=el('ko-promo-banner');
+    if(promo){ if(openUnbet.length){promo.style.display='flex';const c=el('ko-promo-count');if(c)c.textContent=openUnbet.length;}else{promo.style.display='none';} }
+  }catch(e){}
 }
 
 // ── TABS ──
@@ -6020,9 +6042,9 @@ function renderBracket(){
       if(isLocked){
         betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:7px;background:rgba(80,80,80,0.5);border-radius:3px;padding:1px 4px;color:rgba(255,255,255,0.35);">🔒</div>';
       } else if(myBetData && Array.isArray(myBetData)){
-        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:7px;background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.35);border-radius:3px;padding:1px 4px;color:#34d399;font-weight:900;">✓ '+myBetData[0]+':'+myBetData[1]+'</div>';
+        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:9px;background:rgba(16,185,129,0.22);border:1px solid rgba(16,185,129,0.4);border-radius:4px;padding:2px 5px;color:#34d399;font-weight:900;direction:ltr;white-space:nowrap;">✓ '+myBetData[0]+':'+myBetData[1]+'</div>';
       } else {
-        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:7px;background:rgba(251,191,36,0.18);border:1px solid rgba(251,191,36,0.3);border-radius:3px;padding:1px 4px;color:#fbbf24;font-weight:900;animation:pulse 2s infinite;">המר!</div>';
+        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:9px;background:rgba(251,191,36,0.22);border:1px solid rgba(251,191,36,0.4);border-radius:4px;padding:2px 5px;color:#fbbf24;font-weight:900;animation:pulse 2s infinite;direction:rtl;unicode-bidi:embed;white-space:nowrap;">המר ›</div>';
       }
     }
     const canBet = bothReal && !isLocked && !hasResult;
