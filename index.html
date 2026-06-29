@@ -5930,10 +5930,10 @@ function renderBracket(){
         const g=ALL_GROUPS[gid];
         const color=g.color||'var(--gold)';
         const iconHtml = renderIcon(g.logo||g.icon||'🏆', '22px');
-        return `<button onclick="document.querySelector('[data-page=main]').click();setTimeout(()=>{const el=document.getElementById('leader-list');if(el)el.scrollIntoView({behavior:'smooth'});},200)"
-          style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid ${color};border-radius:20px;padding:7px 16px;color:${color};font-size:12px;font-weight:900;cursor:pointer;">
-          ${iconHtml}<span>טבלת קבוצת ${g.name}</span>
-        </button>`;
+        return `<button onclick="document.querySelector('[data-page=main]').click();setTimeout(()=>{window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>{const t=document.getElementById('leader-list');if(t){const y=t.getBoundingClientRect().top+window.scrollY-60;window.scrollTo({top:y,behavior:'smooth'});}},100);},200)"
+            style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid ${color};border-radius:20px;padding:7px 16px;color:${color};font-size:12px;font-weight:900;cursor:pointer;">
+            ${iconHtml}<span>טבלת קבוצת ${g.name}</span>
+          </button>`;
       }).join('');
     }
   }catch(e){}
@@ -6088,9 +6088,9 @@ function renderBracket(){
     let betRow = '';
     if(bothReal){
       if(myBetData && Array.isArray(myBetData)){
-        betRow = '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-top:1px solid rgba(16,185,129,0.2);background:rgba(16,185,129,0.07);">'+
+        betRow = '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-top:1px solid rgba(16,185,129,0.2);background:rgba(16,185,129,0.07);">'+
           '<span style="font-size:10px;font-weight:900;color:#34d399;direction:ltr;">'+myBetData[0]+' : '+myBetData[1]+'</span>'+
-          '<span style="font-size:8px;color:#34d399;font-weight:700;">הימור שלי</span>'+
+          '<span style="font-size:9px;color:#34d399;font-weight:700;">✓ הימור שלי · לחץ לעריכה</span>'+
         '</div>';
       } else if(!isLocked && !hasResult){
         betRow = '<div style="text-align:center;font-size:11px;color:#fff;font-weight:900;padding:5px 4px;border-top:1px solid rgba(251,191,36,0.3);background:linear-gradient(135deg,rgba(124,58,237,0.35),rgba(190,18,60,0.35));letter-spacing:0.5px;">⚡ לחץ להימור</div>';
