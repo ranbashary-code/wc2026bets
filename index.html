@@ -5929,7 +5929,7 @@ function renderBracket(){
       linksEl.innerHTML=myGroups.filter(gid=>ALL_GROUPS&&ALL_GROUPS[gid]).map(gid=>{
         const g=ALL_GROUPS[gid];
         const color=g.color||'var(--gold)';
-        const iconHtml = renderIcon(g.icon||'🏆', '18px');
+        const iconHtml = renderIcon(g.logo||g.icon||'🏆', '22px');
         return `<button onclick="document.querySelector('[data-page=main]').click();setTimeout(()=>{const el=document.getElementById('leader-list');if(el)el.scrollIntoView({behavior:'smooth'});},200)"
           style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid ${color};border-radius:20px;padding:7px 16px;color:${color};font-size:12px;font-weight:900;cursor:pointer;">
           ${iconHtml}<span>טבלת קבוצת ${g.name}</span>
