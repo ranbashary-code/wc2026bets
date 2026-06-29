@@ -1017,7 +1017,8 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
       <div style="text-align:center;margin-bottom:18px;padding:20px 0 0;">
         <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:var(--gold);text-transform:uppercase;opacity:0.8;margin-bottom:6px;">FIFA World Cup 2026</div>
         <div style="font-size:26px;font-weight:900;color:var(--text);letter-spacing:1px;margin-bottom:4px;">שלבי הנוקאאוט</div>
-        <div style="font-size:12px;color:var(--text2);">לחץ על משחק כדי להמר</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">לחץ על משחק כדי להמר</div>
+        <div id="ko-leaderboard-links" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"></div>
       </div>
       <!-- ── Tab bar + Bet-all button ── -->
       <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
@@ -5153,6 +5154,16 @@ el('confirm-bet').addEventListener('click', async()=>{
   await set(ref(db,'bets/'+ME.uid+'/'+betId),betS);
   try{ _betFx(el('confirm-bet'), null); }catch(e){}
   el('bet-modal').classList.remove('open'); toast('✅ הימור נשמר!');
+  // Return to bet-all list if came from there
+  if(window._koBetAllReturnList){
+    window._koBetAllReturnList=false;
+    const listPopup=document.getElementById('ko-betall-popup');
+    if(listPopup){
+      // Refresh list content and re-show
+      listPopup.style.display='flex';
+      setTimeout(()=>{ window.koBetAll(); },300);
+    }
+  }
 });
 
 // ── EDIT MATCH MODAL ──
@@ -5894,6 +5905,22 @@ function koTeamDisplay(name) {
 }
 
 function renderBracket(){
+  // ── Leaderboard links for user's groups ──
+  try{
+    const linksEl=el('ko-leaderboard-links');
+    if(linksEl && ME && USERS[ME.uid]){
+      const myGroups=(USERS[ME.uid].groups)||[];
+      linksEl.innerHTML=myGroups.filter(gid=>ALL_GROUPS&&ALL_GROUPS[gid]).map(gid=>{
+        const g=ALL_GROUPS[gid];
+        const color=g.color||'var(--gold)';
+        return `<button onclick="document.querySelector('[data-page=main]').click();setTimeout(()=>{const el=document.getElementById('leader-list');if(el)el.scrollIntoView({behavior:'smooth'});},200)"
+          style="background:rgba(255,255,255,0.06);border:1px solid ${color};border-radius:20px;padding:5px 14px;color:${color};font-size:11px;font-weight:900;cursor:pointer;">
+          ${g.icon||'🏆'} טבלת ${g.name}
+        </button>`;
+      }).join('');
+    }
+  }catch(e){}
+
   // ── GROUPS ──
   const groups={};
   Object.entries(MATCHES).filter(([,m])=>m.stage==='group'&&m.group).forEach(([,m])=>{
@@ -6015,9 +6042,6 @@ function renderBracket(){
       }
     }
 
-    const sc1 = dispRes!==undefined ? String(dispRes[0]) : '';
-    const sc2 = dispRes!==undefined ? String(dispRes[1]) : '';
-
     // Info strip: shown only when ET or pen exist — compact single line below teams
     let infoStrip = '';
     if(hasResult && (hasEt || hasPen)){
@@ -6033,31 +6057,41 @@ function renderBracket(){
       infoStrip = '<div style="text-align:center;font-size:8px;padding:2px 4px;border-top:1px solid rgba(255,255,255,0.06);color:var(--text2);letter-spacing:0.3px;">'+parts.join(' · ')+'</div>';
     }
 
-    // ── Bet status badge + clickability ──
+    // ── Bet status ──
     const myBetData = ME && BETS[ME.uid] && BETS[ME.uid][dbId];
     const isLocked = m.datetime && Date.now() >= new Date(m.datetime).getTime();
     const bothReal = !d1.isPlaceholder && !d2.isPlaceholder;
-    let betBadge = '';
+    const canBet = bothReal && !isLocked && !hasResult;
+
+    // Score column: real result if exists, else empty
+    const sc1 = dispRes!==undefined ? String(dispRes[0]) : '';
+    const sc2 = dispRes!==undefined ? String(dispRes[1]) : '';
+
+    // Bet row below teams — only when no result yet
+    let betRow = '';
     if(bothReal && !hasResult){
       if(isLocked){
-        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:7px;background:rgba(80,80,80,0.5);border-radius:3px;padding:1px 4px;color:rgba(255,255,255,0.35);">🔒</div>';
+        betRow = '<div style="text-align:center;font-size:8px;color:rgba(255,255,255,0.3);padding:2px 4px;border-top:1px solid rgba(255,255,255,0.05);">🔒 נעול</div>';
       } else if(myBetData && Array.isArray(myBetData)){
-        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:9px;background:rgba(16,185,129,0.22);border:1px solid rgba(16,185,129,0.4);border-radius:4px;padding:2px 5px;color:#34d399;font-weight:900;direction:ltr;white-space:nowrap;">✓ '+myBetData[0]+':'+myBetData[1]+'</div>';
+        betRow = '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-top:1px solid rgba(16,185,129,0.2);background:rgba(16,185,129,0.07);">'+
+          '<span style="font-size:8px;color:#34d399;font-weight:700;">הימור שלי</span>'+
+          '<span style="font-size:10px;font-weight:900;color:#34d399;direction:ltr;">'+myBetData[0]+' : '+myBetData[1]+'</span>'+
+        '</div>';
       } else {
-        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:9px;background:rgba(251,191,36,0.22);border:1px solid rgba(251,191,36,0.4);border-radius:4px;padding:2px 5px;color:#fbbf24;font-weight:900;animation:pulse 2s infinite;direction:rtl;unicode-bidi:embed;white-space:nowrap;">המר ›</div>';
+        betRow = '<div style="text-align:center;font-size:8px;color:#fbbf24;font-weight:900;padding:3px 4px;border-top:1px solid rgba(251,191,36,0.2);background:rgba(251,191,36,0.06);animation:pulse 2s infinite;">המר ›</div>';
       }
     }
-    const canBet = bothReal && !isLocked && !hasResult;
-    const clickAttr = canBet ? ' data-ko-bet="'+dbId+'"' : '';
-    const cursorStyle = canBet ? 'cursor:pointer;' : '';
+
+    const clickAttr = canBet || (MEDATA&&MEDATA.isAdmin&&bothReal) ? ' data-ko-bet="'+dbId+'"' : '';
+    const cursorStyle = (canBet || (MEDATA&&MEDATA.isAdmin&&bothReal)) ? 'cursor:pointer;' : '';
     const glowBorder = canBet && myBetData ? 'border-color:rgba(16,185,129,0.45);box-shadow:0 0 10px rgba(16,185,129,0.12),0 2px 8px rgba(0,0,0,0.25);' :
                        canBet ? 'border-color:rgba(251,191,36,0.3);box-shadow:0 0 8px rgba(251,191,36,0.08),0 2px 8px rgba(0,0,0,0.25);' : '';
 
     return '<div class="'+cls+'" id="'+id+'"'+clickAttr+' style="position:relative;'+cursorStyle+glowBorder+'">'+
-      betBadge+
       '<div class="ko-team '+(hasResult?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score">'+sc1+'</span></div>'+
       '<div class="ko-team '+(hasResult?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score">'+sc2+'</span></div>'+
       infoStrip+
+      betRow+
     '</div>';
   }
 
@@ -6145,6 +6179,15 @@ function renderBracket(){
   setTimeout(()=>{ try{layoutKoBracket();}catch(e){} },180);
 }
 
+window.koBetAllOpenMatch=function(matchId){
+  // Hide the list popup temporarily (don't remove)
+  const listPopup=document.getElementById('ko-betall-popup');
+  if(listPopup) listPopup.style.display='none';
+  // Open bet modal — after save, re-show list
+  window._koBetAllReturnList=true;
+  openBetModal(matchId);
+};
+
 window.koBetAll=async function(){
   const openUnbet=Object.entries(MATCHES).filter(([id,m])=>{
     if(!m.team1||!m.team2||m.stage==='group'||m.result!==undefined) return false;
@@ -6176,7 +6219,7 @@ window.koBetAll=async function(){
       const c1=getCountryCode(m.team1), c2=getCountryCode(m.team2);
       const f1=c1?`<span class="fi fi-${c1}" style="width:16px;height:16px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;"></span>`:'';
       const f2=c2?`<span class="fi fi-${c2}" style="width:16px;height:16px;border-radius:50%;display:inline-block;background-size:cover;flex-shrink:0;"></span>`:'';
-      rows+=`<button onclick="document.getElementById('ko-betall-popup').remove();openBetModal('${id}')"
+      rows+=`<button onclick="window.koBetAllOpenMatch('${id}')"
         style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:10px 12px;cursor:pointer;margin-bottom:6px;text-align:right;">
         <div style="display:flex;align-items:center;gap:5px;flex:1;">
           ${f1}<span style="font-size:12px;font-weight:700;color:var(--text);">${koShortName(m.team1)}</span>
