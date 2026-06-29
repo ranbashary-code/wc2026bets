@@ -4817,6 +4817,20 @@ function refreshAll(){
   checkBotRoundAlert();
   if(MEDATA?.isAdmin) renderKoEditor();
   renderSpecialBetsReveal(specialLocked());
+  // Ensure KO fullbleed is active since bracket is default page
+  if(!window._koInitDone){
+    window._koInitDone=true;
+    try{
+      // Activate ko btab
+      document.querySelectorAll('.btab').forEach(b=>{ b.className='btn btn-ghost btn-xs btab'; b.style.flexShrink='0'; });
+      const koBtn=document.querySelector('.btab[data-btab="ko"]');
+      if(koBtn){ koBtn.className='btn btn-grad btn-xs btab'; koBtn.style.flexShrink='0'; }
+      el('bracket-groups').style.display='none';
+      el('bracket-ko').style.display='block';
+      applyKoFullbleed(true);
+      requestAnimationFrame(()=>{ try{layoutKoBracket();}catch(e){} });
+    }catch(e){}
+  }
   // Update bracket tab badge + promo banner
   try{
     const openUnbet=Object.entries(MATCHES).filter(([id,m])=>{
