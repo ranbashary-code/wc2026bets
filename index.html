@@ -6089,8 +6089,8 @@ function renderBracket(){
     if(bothReal){
       if(myBetData && Array.isArray(myBetData)){
         betRow = '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-top:1px solid rgba(16,185,129,0.2);background:rgba(16,185,129,0.07);">'+
-          '<span style="font-size:10px;font-weight:900;color:#34d399;direction:ltr;">'+myBetData[0]+' : '+myBetData[1]+'</span>'+
-          '<span style="font-size:9px;color:#34d399;font-weight:700;">✓ הימור שלי · לחץ לעריכה</span>'+
+          '<span style="font-size:10px;font-weight:900;color:#34d399;direction:ltr;">✓ '+myBetData[0]+':'+myBetData[1]+'</span>'+
+          '<span style="font-size:9px;color:#34d399;font-weight:700;">לעריכה ›</span>'+
         '</div>';
       } else if(!isLocked && !hasResult){
         betRow = '<div style="text-align:center;font-size:11px;color:#fff;font-weight:900;padding:5px 4px;border-top:1px solid rgba(251,191,36,0.3);background:linear-gradient(135deg,rgba(124,58,237,0.35),rgba(190,18,60,0.35));letter-spacing:0.5px;">⚡ לחץ להימור</div>';
