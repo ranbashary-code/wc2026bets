@@ -498,6 +498,7 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
   box-shadow:0 0 20px rgba(255,215,0,0.25),0 2px 12px rgba(0,0,0,0.3);
 }
 .ko-match:hover{border-color:rgba(255,215,0,0.5);box-shadow:0 4px 16px rgba(255,215,0,0.15);transform:translateY(-1px);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
 .ko-team{
   display:flex;align-items:center;justify-content:space-between;
   padding:6px 8px;font-weight:700;
@@ -1003,10 +1004,17 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
     </div>
 
     <div class="page" id="page-bracket">
-      <div class="sec-head"><span style="font-size:22px;">🗂</span><div class="sec-title">בראקט</div></div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button class="btn btn-ghost btn-xs btab" data-btab="groups" style="flex-shrink:0;">שלב בתים</button>
-        <button class="btn btn-grad btn-xs btab" data-btab="ko" style="flex-shrink:0;">נוקאאוט</button>
+      <!-- ── Bracket Hero Header ── -->
+      <div style="text-align:center;margin-bottom:18px;padding:20px 0 0;">
+        <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:var(--gold);text-transform:uppercase;opacity:0.8;margin-bottom:6px;">FIFA World Cup 2026</div>
+        <div style="font-size:26px;font-weight:900;color:var(--text);letter-spacing:1px;margin-bottom:4px;">עץ הנוקאאוט</div>
+        <div style="font-size:12px;color:var(--text2);">לחץ על משחק כדי להמר</div>
+      </div>
+      <!-- ── Tab bar + Bet-all button ── -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+        <button class="btn btn-ghost btn-xs btab" data-btab="groups" style="flex-shrink:0;">🏟 שלב בתים</button>
+        <button class="btn btn-grad btn-xs btab" data-btab="ko" style="flex-shrink:0;">⚡ נוקאאוט</button>
+        <button id="ko-bet-all-btn" onclick="window.koBetAll()" style="margin-right:auto;flex-shrink:0;background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(190,18,60,0.2));border:1px solid rgba(255,215,0,0.3);border-radius:20px;padding:5px 14px;color:var(--gold);font-weight:900;font-size:11px;cursor:pointer;letter-spacing:0.5px;display:none;">🎯 המר על הכל</button>
       </div>
       <div id="bracket-groups" style="display:none;"></div>
       <div id="bracket-ko"></div>
@@ -6003,7 +6011,28 @@ function renderBracket(){
       infoStrip = '<div style="text-align:center;font-size:8px;padding:2px 4px;border-top:1px solid rgba(255,255,255,0.06);color:var(--text2);letter-spacing:0.3px;">'+parts.join(' · ')+'</div>';
     }
 
-    return '<div class="'+cls+'" id="'+id+'">'+
+    // ── Bet status badge + clickability ──
+    const myBetData = ME && BETS[ME.uid] && BETS[ME.uid][dbId];
+    const isLocked = m.datetime && Date.now() >= new Date(m.datetime).getTime();
+    const bothReal = !d1.isPlaceholder && !d2.isPlaceholder;
+    let betBadge = '';
+    if(bothReal && !hasResult){
+      if(isLocked){
+        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:7px;background:rgba(80,80,80,0.5);border-radius:3px;padding:1px 4px;color:rgba(255,255,255,0.35);">🔒</div>';
+      } else if(myBetData && Array.isArray(myBetData)){
+        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:7px;background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.35);border-radius:3px;padding:1px 4px;color:#34d399;font-weight:900;">✓ '+myBetData[0]+':'+myBetData[1]+'</div>';
+      } else {
+        betBadge = '<div style="position:absolute;top:3px;left:3px;font-size:7px;background:rgba(251,191,36,0.18);border:1px solid rgba(251,191,36,0.3);border-radius:3px;padding:1px 4px;color:#fbbf24;font-weight:900;animation:pulse 2s infinite;">המר!</div>';
+      }
+    }
+    const canBet = bothReal && !isLocked && !hasResult;
+    const clickAttr = canBet ? ' data-ko-bet="'+dbId+'"' : '';
+    const cursorStyle = canBet ? 'cursor:pointer;' : '';
+    const glowBorder = canBet && myBetData ? 'border-color:rgba(16,185,129,0.45);box-shadow:0 0 10px rgba(16,185,129,0.12),0 2px 8px rgba(0,0,0,0.25);' :
+                       canBet ? 'border-color:rgba(251,191,36,0.3);box-shadow:0 0 8px rgba(251,191,36,0.08),0 2px 8px rgba(0,0,0,0.25);' : '';
+
+    return '<div class="'+cls+'" id="'+id+'"'+clickAttr+' style="position:relative;'+cursorStyle+glowBorder+'">'+
+      betBadge+
       '<div class="ko-team '+(hasResult?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score">'+sc1+'</span></div>'+
       '<div class="ko-team '+(hasResult?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score">'+sc2+'</span></div>'+
       infoStrip+
@@ -6054,19 +6083,47 @@ function renderBracket(){
 
   // ── Admin advance popup: delegate click on any clickable ko-team ──
   bk.onclick=function(e){
-    if(!MEDATA||!MEDATA.isAdmin) return;
-    const t=e.target.closest('[data-ko-adv]');
-    if(!t) return;
-    const matchId=t.dataset.koAdv, teamKey=t.dataset.koTk;
-    if(!matchId||!teamKey) return;
-    openKoAdvancePopup(matchId, teamKey);
+    // Admin advance — click on team name
+    if(MEDATA&&MEDATA.isAdmin){
+      const t=e.target.closest('[data-ko-adv]');
+      if(t){ openKoAdvancePopup(t.dataset.koAdv, t.dataset.koTk); return; }
+    }
+    // Everyone — click on match card to bet
+    const card=e.target.closest('[data-ko-bet]');
+    if(card && !e.target.closest('[data-ko-adv]')){
+      openBetModal(card.dataset.koBet); return;
+    }
   };
+
+  // Show/hide "bet all" button
+  const betAllBtn = el('ko-bet-all-btn');
+  if(betAllBtn){
+    const openUnbet = Object.entries(MATCHES).filter(([id,m])=>{
+      if(!m.team1||!m.team2||m.stage==='group'||m.result!==undefined) return false;
+      if(koPlaceholderDisplay(m.team1).isPlaceholder||koPlaceholderDisplay(m.team2).isPlaceholder) return false;
+      if(Date.now()>=new Date(m.datetime).getTime()) return false;
+      const myB=ME&&BETS[ME.uid]&&BETS[ME.uid][id];
+      return !(myB&&Array.isArray(myB));
+    });
+    betAllBtn.style.display = openUnbet.length ? 'block' : 'none';
+    betAllBtn.textContent = '🎯 המר על הכל ('+ openUnbet.length +')';
+  }
 
   requestAnimationFrame(()=>{ try{layoutKoBracket();}catch(e){} });
   setTimeout(()=>{ try{layoutKoBracket();}catch(e){} },180);
 }
 
-// ── KO Advance Popup (admin) ──
+window.koBetAll=async function(){
+  const openUnbet=Object.entries(MATCHES).filter(([id,m])=>{
+    if(!m.team1||!m.team2||m.stage==='group'||m.result!==undefined) return false;
+    if(koPlaceholderDisplay(m.team1).isPlaceholder||koPlaceholderDisplay(m.team2).isPlaceholder) return false;
+    if(Date.now()>=new Date(m.datetime).getTime()) return false;
+    const myB=ME&&BETS[ME.uid]&&BETS[ME.uid][id];
+    return !(myB&&Array.isArray(myB));
+  }).sort(([,a],[,b])=>a.datetime>b.datetime?1:-1);
+  if(!openUnbet.length){ toast('✅ הימרת על כל המשחקים הפתוחים!'); return; }
+  openBetModal(openUnbet[0][0]);
+};
 function openKoAdvancePopup(matchId, clickedTk){
   const m=MATCHES[matchId]; if(!m) return;
   const d1=koTeamDisplay(m.team1), d2=koTeamDisplay(m.team2);
