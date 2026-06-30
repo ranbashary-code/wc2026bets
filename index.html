@@ -6041,7 +6041,6 @@ function renderBracket(){
     const adm2='';
 
     // ── Score display logic ──
-    // Primary display: resultFull (ET) if exists, else result (90min)
     const hasResult = m.result !== undefined;
     const hasEt     = !!(m.resultFull);
     const hasPen    = !!(m.penalties);
@@ -6059,20 +6058,14 @@ function renderBracket(){
       }
     }
 
-    // Info strip: shown only when ET or pen exist — compact single line below teams
-    let infoStrip = '';
-    if(hasResult && (hasEt || hasPen)){
-      const parts = [];
-      if(hasEt && hasPen){
-        // Show 90min + pen, skip repeating aet score (implicit from context)
-        parts.push('<span style="color:var(--text2);">90\'</span> <span style="font-weight:900;">'+m.result[0]+':'+m.result[1]+'</span>');
-        parts.push('<span style="color:#f87171;font-weight:900;">פנד\' '+m.penalties[0]+':'+m.penalties[1]+'</span>');
-      } else if(hasEt){
-        parts.push('<span style="color:var(--text2);">90\'</span> <span style="font-weight:900;">'+m.result[0]+':'+m.result[1]+'</span>');
-        parts.push('<span style="color:#fbbf24;">ET</span>');
-      }
-      infoStrip = '<div style="text-align:center;font-size:8px;padding:2px 4px;border-top:1px solid rgba(255,255,255,0.06);color:var(--text2);letter-spacing:0.3px;">'+parts.join(' · ')+'</div>';
-    }
+    // Score column: real result (ET if exists, else 90min), with small 90' marker when no ET
+    const sc1 = dispRes!==undefined ? String(dispRes[0]) : '';
+    const sc2 = dispRes!==undefined ? String(dispRes[1]) : '';
+    const scLabel = (hasResult && !hasEt) ? '<span style="font-size:7px;color:var(--text2);font-weight:700;display:block;line-height:1;">90\'</span>' : '';
+
+    // Per-team penalty score, shown below each team's flag/name when pens exist
+    const penLine1 = hasPen ? '<div style="text-align:center;font-size:11px;font-weight:900;color:#f87171;padding:2px 4px;background:rgba(248,113,113,0.1);">פנדלים: '+m.penalties[0]+'</div>' : '';
+    const penLine2 = hasPen ? '<div style="text-align:center;font-size:11px;font-weight:900;color:#f87171;padding:2px 4px;background:rgba(248,113,113,0.1);">פנדלים: '+m.penalties[1]+'</div>' : '';
 
     // ── Bet status ──
     const myBetData = ME && BETS[ME.uid] && BETS[ME.uid][dbId];
@@ -6080,17 +6073,14 @@ function renderBracket(){
     const bothReal = !d1.isPlaceholder && !d2.isPlaceholder;
     const canBet = bothReal && !isLocked && !hasResult;
 
-    // Score column: real result if exists, else empty
-    const sc1 = dispRes!==undefined ? String(dispRes[0]) : '';
-    const sc2 = dispRes!==undefined ? String(dispRes[1]) : '';
-
-    // Bet row — always show if user has a bet, even if locked or has result
+    // Bet row — show bet if exists; only show "edit" hint while still editable (not locked, no result)
     let betRow = '';
     if(bothReal){
       if(myBetData && Array.isArray(myBetData)){
+        const editable = !isLocked && !hasResult;
         betRow = '<div style="text-align:center;padding:5px 4px;border-top:1px solid rgba(99,102,241,0.4);background:linear-gradient(135deg,rgba(30,58,138,0.7),rgba(67,56,202,0.5));">'+
           '<div style="font-size:11px;font-weight:900;color:#fff;">ההימור שלי: <span style="color:var(--gold);font-size:13px;">'+myBetData[0]+':'+myBetData[1]+'</span></div>'+
-          '<div style="font-size:11px;color:#fff;font-weight:900;margin-top:2px;">✏️ לעריכה</div>'+
+          (editable?'<div style="font-size:11px;color:#fff;font-weight:900;margin-top:2px;">✏️ לעריכה</div>':'')+
         '</div>';
       } else if(!isLocked && !hasResult){
         betRow = '<div style="text-align:center;font-size:11px;color:#fff;font-weight:900;padding:5px 4px;border-top:1px solid rgba(251,191,36,0.3);background:linear-gradient(135deg,rgba(124,58,237,0.35),rgba(190,18,60,0.35));letter-spacing:0.5px;">⚡ לחץ להימור</div>';
@@ -6105,9 +6095,10 @@ function renderBracket(){
                        canBet ? 'border-color:rgba(251,191,36,0.3);box-shadow:0 0 8px rgba(251,191,36,0.08),0 2px 8px rgba(0,0,0,0.25);' : '';
 
     return '<div class="'+cls+'" id="'+id+'"'+clickAttr+' style="position:relative;'+cursorStyle+glowBorder+'">'+
-      '<div class="ko-team '+(hasResult?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score">'+sc1+'</span></div>'+
-      '<div class="ko-team '+(hasResult?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score">'+sc2+'</span></div>'+
-      infoStrip+
+      '<div class="ko-team '+(hasResult?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score" style="font-size:14px;text-align:center;">'+sc1+scLabel+'</span></div>'+
+      penLine1+
+      '<div class="ko-team '+(hasResult?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score" style="font-size:14px;text-align:center;">'+sc2+scLabel+'</span></div>'+
+      penLine2+
       betRow+
     '</div>';
   }
