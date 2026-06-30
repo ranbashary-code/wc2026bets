@@ -502,12 +502,11 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
 .ko-team{
   display:flex;align-items:center;justify-content:space-between;
   padding:6px 8px;font-weight:700;
-  border-bottom:1px solid rgba(255,255,255,0.07);
+  border-bottom:2px solid rgba(255,215,0,0.18);
   min-height:26px;
   direction:rtl;
   color:var(--text);
 }
-.ko-team:last-child{border-bottom:none;}
 .ko-team.winner{color:var(--gold);}
 .ko-team.winner .ko-score{color:var(--gold);}
 .ko-team.loser{color:var(--text2);opacity:0.75;}
@@ -6081,12 +6080,12 @@ function renderBracket(){
     if(bothReal){
       if(myBetData && Array.isArray(myBetData)){
         const editable = !isLocked && !hasResult;
-        betRow = '<div style="text-align:center;padding:5px 4px;border-top:1px solid rgba(99,102,241,0.4);background:linear-gradient(135deg,rgba(30,58,138,0.7),rgba(67,56,202,0.5));">'+
+        betRow = '<div style="text-align:center;padding:5px 4px;border-top:2px solid rgba(99,102,241,0.6);background:linear-gradient(135deg,rgba(30,58,138,0.7),rgba(67,56,202,0.5));">'+
           '<div style="font-size:11px;font-weight:900;color:#fff;">ההימור שלי: <span style="color:var(--gold);font-size:13px;">'+myBetData[0]+':'+myBetData[1]+'</span></div>'+
           (editable?'<div style="font-size:11px;color:#fff;font-weight:900;margin-top:2px;">✏️ לעריכה</div>':'')+
         '</div>';
       } else if(!isLocked && !hasResult){
-        betRow = '<div style="text-align:center;font-size:11px;color:#fff;font-weight:900;padding:5px 4px;border-top:1px solid rgba(251,191,36,0.3);background:linear-gradient(135deg,rgba(124,58,237,0.35),rgba(190,18,60,0.35));letter-spacing:0.5px;">⚡ לחץ להימור</div>';
+        betRow = '<div style="text-align:center;font-size:11px;color:#fff;font-weight:900;padding:5px 4px;border-top:2px solid rgba(251,191,36,0.45);background:linear-gradient(135deg,rgba(124,58,237,0.35),rgba(190,18,60,0.35));letter-spacing:0.5px;">⚡ לחץ להימור</div>';
       } else if(isLocked && !hasResult){
         betRow = '<div style="text-align:center;font-size:8px;color:rgba(255,255,255,0.3);padding:2px 4px;border-top:1px solid rgba(255,255,255,0.05);">🔒 נעול</div>';
       }
