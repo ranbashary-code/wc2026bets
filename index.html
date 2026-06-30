@@ -6044,7 +6044,6 @@ function renderBracket(){
     const hasResult = m.result !== undefined;
     const hasEt     = !!(m.resultFull);
     const hasPen    = !!(m.penalties);
-    const dispRes   = hasEt ? m.resultFull : m.result;
 
     // Winner determined by: penalties > resultFull > result
     let wFull = null;
@@ -6058,10 +6057,14 @@ function renderBracket(){
       }
     }
 
-    // Score column: real result (ET if exists, else 90min), with small 90' marker when no ET
-    const sc1 = dispRes!==undefined ? String(dispRes[0]) : '';
-    const sc2 = dispRes!==undefined ? String(dispRes[1]) : '';
-    const scLabel = (hasResult && !hasEt) ? '<span style="font-size:7px;color:var(--text2);font-weight:700;display:block;line-height:1;">90\'</span>' : '';
+    // Primary score column = always the 90min result, labeled "90'" when there's extra info
+    const sc1 = hasResult ? String(m.result[0]) : '';
+    const sc2 = hasResult ? String(m.result[1]) : '';
+    const scLabel = (hasResult && (hasEt||hasPen)) ? '<span style="font-size:7px;color:var(--text2);font-weight:700;display:block;line-height:1;">90\'</span>' : '';
+
+    // Extra lines per team: ET (if exists) then penalties (if exists)
+    const etLine1 = hasEt ? '<div style="text-align:center;font-size:11px;font-weight:900;color:#fbbf24;padding:2px 4px;background:rgba(251,191,36,0.1);">הארכה: '+m.resultFull[0]+'</div>' : '';
+    const etLine2 = hasEt ? '<div style="text-align:center;font-size:11px;font-weight:900;color:#fbbf24;padding:2px 4px;background:rgba(251,191,36,0.1);">הארכה: '+m.resultFull[1]+'</div>' : '';
 
     // Per-team penalty score, shown below each team's flag/name when pens exist
     const penLine1 = hasPen ? '<div style="text-align:center;font-size:11px;font-weight:900;color:#f87171;padding:2px 4px;background:rgba(248,113,113,0.1);">פנדלים: '+m.penalties[0]+'</div>' : '';
@@ -6096,8 +6099,10 @@ function renderBracket(){
 
     return '<div class="'+cls+'" id="'+id+'"'+clickAttr+' style="position:relative;'+cursorStyle+glowBorder+'">'+
       '<div class="ko-team '+(hasResult?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score" style="font-size:14px;text-align:center;">'+sc1+scLabel+'</span></div>'+
+      etLine1+
       penLine1+
       '<div class="ko-team '+(hasResult?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score" style="font-size:14px;text-align:center;">'+sc2+scLabel+'</span></div>'+
+      etLine2+
       penLine2+
       betRow+
     '</div>';
