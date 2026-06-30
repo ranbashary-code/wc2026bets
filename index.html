@@ -502,10 +502,12 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
 .ko-team{
   display:flex;align-items:center;justify-content:space-between;
   padding:6px 8px;font-weight:700;
-  border-bottom:2px solid rgba(255,215,0,0.18);
+  border-bottom:3px solid rgba(255,215,0,0.45);
+  box-shadow:0 2px 4px -2px rgba(0,0,0,0.5);
   min-height:26px;
   direction:rtl;
   color:var(--text);
+  position:relative;
 }
 .ko-team.winner{color:var(--gold);}
 .ko-team.winner .ko-score{color:var(--gold);}
@@ -6059,7 +6061,7 @@ function renderBracket(){
     // Primary score column = always the 90min result, labeled "90'" when there's extra info
     const sc1 = hasResult ? String(m.result[0]) : '';
     const sc2 = hasResult ? String(m.result[1]) : '';
-    const scLabel = (hasResult && (hasEt||hasPen)) ? '<span style="font-size:7px;color:var(--text2);font-weight:700;display:block;line-height:1;">90\'</span>' : '';
+    const scLabel = hasResult ? '<span style="font-size:7px;color:var(--text2);font-weight:700;display:block;line-height:1;">90\'</span>' : '';
 
     // Extra lines per team: ET (if exists) then penalties (if exists)
     const etLine1 = hasEt ? '<div style="text-align:center;font-size:11px;font-weight:900;color:#fbbf24;padding:2px 4px;background:rgba(251,191,36,0.1);">הארכה: '+m.resultFull[0]+'</div>' : '';
@@ -6100,6 +6102,7 @@ function renderBracket(){
       '<div class="ko-team '+(hasResult?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score" style="font-size:14px;text-align:center;">'+sc1+scLabel+'</span></div>'+
       etLine1+
       penLine1+
+      ((etLine1||penLine1)?'<div style="height:5px;background:rgba(0,0,0,0.25);"></div>':'')+
       '<div class="ko-team '+(hasResult?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score" style="font-size:14px;text-align:center;">'+sc2+scLabel+'</span></div>'+
       etLine2+
       penLine2+
