@@ -502,8 +502,6 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
 .ko-team{
   display:flex;align-items:center;justify-content:space-between;
   padding:6px 8px;font-weight:700;
-  border-bottom:3px solid rgba(255,215,0,0.45);
-  box-shadow:0 2px 4px -2px rgba(0,0,0,0.5);
   min-height:26px;
   direction:rtl;
   color:var(--text);
@@ -6102,7 +6100,7 @@ function renderBracket(){
       '<div class="ko-team '+(hasResult?(wFull===m.team1?'winner':'loser'):'')+'"'+adm1+'>'+f1+'<span class="ko-team-name" style="'+s1+'" title="'+t1fe+'">'+t1e+'</span><span class="ko-score" style="font-size:14px;text-align:center;">'+sc1+scLabel+'</span></div>'+
       etLine1+
       penLine1+
-      ((etLine1||penLine1)?'<div style="height:5px;background:rgba(0,0,0,0.25);"></div>':'')+
+      '<div style="border-bottom:3px solid rgba(255,215,0,0.45);box-shadow:0 2px 4px -2px rgba(0,0,0,0.5);"></div>'+
       '<div class="ko-team '+(hasResult?(wFull===m.team2?'winner':'loser'):'')+'"'+adm2+'>'+f2+'<span class="ko-team-name" style="'+s2+'" title="'+t2fe+'">'+t2e+'</span><span class="ko-score" style="font-size:14px;text-align:center;">'+sc2+scLabel+'</span></div>'+
       etLine2+
       penLine2+
