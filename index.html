@@ -500,6 +500,16 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
 .ko-match:hover{border-color:rgba(255,215,0,0.5);box-shadow:0 4px 16px rgba(255,215,0,0.15);transform:translateY(-1px);}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
 @keyframes koSpin{to{transform:rotate(360deg);}}
+.stt-tip{
+  position:fixed;z-index:99999;
+  background:#1e3a5f;border:1px solid rgba(255,215,0,0.4);
+  color:#fff;font-size:12px;font-weight:700;
+  padding:6px 12px;border-radius:8px;
+  pointer-events:none;white-space:nowrap;
+  box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  transform:translateX(-50%);
+  animation:fadeIn 0.15s ease;
+}
 .ko-team{
   display:flex;align-items:center;justify-content:space-between;
   padding:6px 8px;font-weight:700;
@@ -2508,6 +2518,23 @@ async function loadSpecialBets() {
   renderSpecialBetsReveal(lk);
 }
 
+// ── Mobile tap tooltip for truncated text ──
+window.showSttTip=function(el,text){
+  document.querySelectorAll('.stt-tip').forEach(t=>t.remove());
+  if(!text||!text.trim()) return;
+  // Only show if text is actually truncated
+  if(el.scrollWidth <= el.clientWidth) return;
+  const tip=document.createElement('div');
+  tip.className='stt-tip';
+  tip.textContent=text;
+  document.body.appendChild(tip);
+  const r=el.getBoundingClientRect();
+  tip.style.left=(r.left+r.width/2)+'px';
+  tip.style.top=(r.top+window.scrollY-36)+'px';
+  setTimeout(()=>tip.remove(),2500);
+  document.addEventListener('click',function h(){ tip.remove(); document.removeEventListener('click',h); },{once:true, capture:true});
+};
+
 // ── Scorer Goals Admin ──
 function renderScorerGoalsAdmin(){
   const lst=el('scorer-goals-list'); if(!lst) return;
@@ -2611,13 +2638,14 @@ async function renderSpecialBetsReveal(lk) {
     html += '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">';
     champBets.forEach(b=>{
       const code = getCountryCode(b.val);
-      const flag = code ? '<span class="fi fi-'+code+'" style="width:20px;height:20px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;flex-shrink:0;"></span>' : '';
+      const flag = code ? '<span class="fi fi-'+code+'" style="width:20px;height:20px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;"></span>' : '<span style="display:inline-block;width:20px;"></span>';
       const isElim = eliminated.has(b.val);
       const rowOp = isElim ? 'opacity:0.45;' : '';
       const teamStyle = isElim ? 'text-decoration:line-through;' : '';
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);'+rowOp+'">';
-      html += '<td style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:40%;" title="'+b.name+'">'+b.name+'</td>';
-      html += '<td style="padding:7px 4px;white-space:nowrap;text-align:right;font-size:12px;font-weight:700;'+teamStyle+'width:60%;" title="'+b.val+'">'+flag+' '+b.val+(isElim?' <span style="font-size:9px;color:#f87171;">✗</span>':'')+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+b.name.replace(/'/g,"\\'")+'\')" style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:35%;cursor:pointer;" title="'+b.name+'">'+b.name+'</td>';
+      html += '<td style="padding:7px 6px;text-align:center;width:28px;white-space:nowrap;">'+flag+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+b.val.replace(/'/g,"\\'")+'\')" style="padding:7px 0;font-size:12px;font-weight:700;'+teamStyle+'text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" title="'+b.val+'">'+b.val+(isElim?' <span style="font-size:9px;color:#f87171;">✗</span>':'')+'</td>';
       html += '</tr>';
     });
     html += '</table>';
@@ -2651,8 +2679,8 @@ async function renderSpecialBetsReveal(lk) {
         ? '<span style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:900;color:var(--gold);">'+goals+'</span>'
         : '<span style="font-size:10px;color:var(--text2);">—</span>';
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-      html += '<td style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:30%;" title="'+b.name+'">'+b.name+'</td>';
-      html += '<td style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:45%;" title="'+b.val+'">'+b.val+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+b.name.replace(/'/g,"\\'")+'\')" style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:30%;cursor:pointer;" title="'+b.name+'">'+b.name+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+b.val.replace(/'/g,"\\'")+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:45%;cursor:pointer;" title="'+b.val+'">'+b.val+'</td>';
       html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:25%;">'+goalsHtml+'</td>';
       html += '</tr>';
     });
