@@ -2616,8 +2616,8 @@ async function renderSpecialBetsReveal(lk) {
       const rowOp = isElim ? 'opacity:0.45;' : '';
       const teamStyle = isElim ? 'text-decoration:line-through;' : '';
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);'+rowOp+'">';
-      html += '<td style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:40%;">'+b.name+'</td>';
-      html += '<td style="padding:7px 4px;white-space:nowrap;text-align:right;font-size:12px;font-weight:700;'+teamStyle+'width:60%;">'+flag+' '+b.val+(isElim?' <span style="font-size:9px;color:#f87171;">✗</span>':'')+'</td>';
+      html += '<td style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:40%;" title="'+b.name+'">'+b.name+'</td>';
+      html += '<td style="padding:7px 4px;white-space:nowrap;text-align:right;font-size:12px;font-weight:700;'+teamStyle+'width:60%;" title="'+b.val+'">'+flag+' '+b.val+(isElim?' <span style="font-size:9px;color:#f87171;">✗</span>':'')+'</td>';
       html += '</tr>';
     });
     html += '</table>';
@@ -2648,11 +2648,11 @@ async function renderSpecialBetsReveal(lk) {
     scorerBets.forEach(b=>{
       const goals=findGoals(b.val);
       const goalsHtml = goals!==null
-        ? '<span style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:900;color:var(--gold);white-space:nowrap;">⚽ '+goals+'</span>'
+        ? '<span style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:900;color:var(--gold);">'+goals+'</span>'
         : '<span style="font-size:10px;color:var(--text2);">—</span>';
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-      html += '<td style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:30%;">'+b.name+'</td>';
-      html += '<td style="padding:7px 6px;font-size:12px;color:var(--gold);white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis;width:45%;">'+b.val+'</td>';
+      html += '<td style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:30%;" title="'+b.name+'">'+b.name+'</td>';
+      html += '<td style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:45%;" title="'+b.val+'">'+b.val+'</td>';
       html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:25%;">'+goalsHtml+'</td>';
       html += '</tr>';
     });
