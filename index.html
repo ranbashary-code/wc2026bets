@@ -1018,7 +1018,17 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
         <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:var(--gold);text-transform:uppercase;opacity:0.8;margin-bottom:6px;">FIFA World Cup 2026</div>
         <div style="font-size:26px;font-weight:900;color:var(--text);letter-spacing:1px;margin-bottom:4px;">שלבי הנוקאאוט</div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">לחץ על משחק כדי להמר</div>
-        <div id="ko-leaderboard-links" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"></div>
+        <div id="ko-leaderboard-links" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <button onclick="document.querySelector('[data-page=main]').click();setTimeout(()=>{const t=document.getElementById('special-bets-reveal');if(t){const y=t.getBoundingClientRect().top+window.scrollY-60;window.scrollTo({top:y,behavior:'smooth'});}},300)"
+            style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.25);border-radius:20px;padding:6px 14px;color:rgba(255,215,0,0.8);font-size:11px;font-weight:900;cursor:pointer;">
+            🏆 נבחרת זוכה
+          </button>
+          <button onclick="document.querySelector('[data-page=main]').click();setTimeout(()=>{const t=document.getElementById('special-bets-reveal');if(t){const y=t.getBoundingClientRect().top+window.scrollY-60;window.scrollTo({top:y,behavior:'smooth'});}},300)"
+            style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:6px 14px;color:rgba(255,255,255,0.6);font-size:11px;font-weight:900;cursor:pointer;">
+            👟 מלך השערים
+          </button>
+        </div>
       </div>
       <!-- ── Tab bar + Bet-all button ── -->
       <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
