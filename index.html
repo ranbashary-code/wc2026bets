@@ -2522,17 +2522,17 @@ async function loadSpecialBets() {
 window.showSttTip=function(el,text){
   document.querySelectorAll('.stt-tip').forEach(t=>t.remove());
   if(!text||!text.trim()) return;
-  // Only show if text is actually truncated
-  if(el.scrollWidth <= el.clientWidth) return;
   const tip=document.createElement('div');
   tip.className='stt-tip';
   tip.textContent=text;
   document.body.appendChild(tip);
   const r=el.getBoundingClientRect();
-  tip.style.left=(r.left+r.width/2)+'px';
-  tip.style.top=(r.top+window.scrollY-36)+'px';
+  tip.style.left=(r.left+r.width/2+window.scrollX)+'px';
+  tip.style.top=(r.top+window.scrollY-40)+'px';
   setTimeout(()=>tip.remove(),2500);
-  document.addEventListener('click',function h(){ tip.remove(); document.removeEventListener('click',h); },{once:true, capture:true});
+  setTimeout(()=>{
+    document.addEventListener('click',function h(){ tip.remove(); document.removeEventListener('click',h); },{once:true,capture:true});
+  },50);
 };
 
 // ── Scorer Goals Admin ──
@@ -2635,17 +2635,19 @@ async function renderSpecialBetsReveal(lk) {
       return ae-be;
     });
 
-    html += '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">';
+    html += '<table style="width:100%;border-collapse:collapse;">';
     champBets.forEach(b=>{
       const code = getCountryCode(b.val);
       const flag = code ? '<span class="fi fi-'+code+'" style="width:20px;height:20px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;"></span>' : '<span style="display:inline-block;width:20px;"></span>';
       const isElim = eliminated.has(b.val);
       const rowOp = isElim ? 'opacity:0.45;' : '';
       const teamStyle = isElim ? 'text-decoration:line-through;' : '';
+      const safeN=b.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);'+rowOp+'">';
-      html += '<td onclick="window.showSttTip(this,\''+b.name.replace(/'/g,"\\'")+'\')" style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:35%;cursor:pointer;" title="'+b.name+'">'+b.name+'</td>';
-      html += '<td style="padding:7px 6px;text-align:center;width:28px;white-space:nowrap;">'+flag+'</td>';
-      html += '<td onclick="window.showSttTip(this,\''+b.val.replace(/'/g,"\\'")+'\')" style="padding:7px 0;font-size:12px;font-weight:700;'+teamStyle+'text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" title="'+b.val+'">'+b.val+(isElim?' <span style="font-size:9px;color:#f87171;">✗</span>':'')+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;cursor:default;">'+b.name+'</td>';
+      html += '<td style="padding:7px 4px;text-align:center;width:26px;white-space:nowrap;flex-shrink:0;">'+flag+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 0 7px 8px;font-size:12px;font-weight:700;'+teamStyle+'text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+b.val+(isElim?' <span style="font-size:9px;color:#f87171;">✗</span>':'')+'</td>';
       html += '</tr>';
     });
     html += '</table>';
@@ -2672,16 +2674,18 @@ async function renderSpecialBetsReveal(lk) {
       const ga=findGoals(a.val)??-1, gb=findGoals(b.val)??-1;
       return gb-ga || a.val.localeCompare(b.val);
     });
-    html += '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">';
+    html += '<table style="width:100%;border-collapse:collapse;">';
     scorerBets.forEach(b=>{
       const goals=findGoals(b.val);
       const goalsHtml = goals!==null
         ? '<span style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:900;color:var(--gold);">'+goals+'</span>'
         : '<span style="font-size:10px;color:var(--text2);">—</span>';
+      const safeN=b.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-      html += '<td onclick="window.showSttTip(this,\''+b.name.replace(/'/g,"\\'")+'\')" style="padding:7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:30%;cursor:pointer;" title="'+b.name+'">'+b.name+'</td>';
-      html += '<td onclick="window.showSttTip(this,\''+b.val.replace(/'/g,"\\'")+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:45%;cursor:pointer;" title="'+b.val+'">'+b.val+'</td>';
-      html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:25%;">'+goalsHtml+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;cursor:default;">'+b.name+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+b.val+'</td>';
+      html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:52px;">'+goalsHtml+'</td>';
       html += '</tr>';
     });
     html += '</table>';
