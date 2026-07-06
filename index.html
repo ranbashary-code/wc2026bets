@@ -2642,29 +2642,29 @@ async function renderSpecialBetsReveal(lk) {
     return null;
   }
 
+  // Determine eliminated teams: teams that lost in KO — computed once for both tables
+  const eliminated = new Set();
+  Object.values(MATCHES).forEach(m=>{
+    if(m.stage==='group'||!m.result) return;
+    const r=m.result;
+    let loser=null;
+    if(r[0]>r[1]) loser=m.team2;
+    else if(r[1]>r[0]) loser=m.team1;
+    else if(m.penalties){
+      loser=m.penalties[0]>m.penalties[1]?m.team2:m.team1;
+    } else if(m.resultFull){
+      loser=m.resultFull[0]>m.resultFull[1]?m.team2:m.team1;
+    }
+    if(loser && m.stage!=='sf') eliminated.add(loser);
+    if(loser && m.stage==='3rd') eliminated.add(loser);
+  });
+
   // Champion bets reveal
   html += '<div class="card" style="padding:14px;">';
   html += '<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">🥇 הימורי נבחרת מנצחת — כולם</div>';
   if(!champBets.length) {
     html += '<div style="font-size:12px;color:var(--text2);">אף אחד לא הימר</div>';
   } else {
-    // Determine eliminated teams: teams that played KO but lost all their matches
-    const eliminated = new Set();
-    Object.values(MATCHES).forEach(m=>{
-      if(m.stage==='group'||!m.result) return;
-      const r=m.result;
-      let loser=null;
-      if(r[0]>r[1]) loser=m.team2;
-      else if(r[1]>r[0]) loser=m.team1;
-      else if(m.penalties){
-        loser=m.penalties[0]>m.penalties[1]?m.team2:m.team1;
-      } else if(m.resultFull){
-        loser=m.resultFull[0]>m.resultFull[1]?m.team2:m.team1;
-      }
-      if(loser && m.stage!=='sf') eliminated.add(loser); // sf losers may play 3rd place
-      if(loser && m.stage==='3rd') eliminated.add(loser); // 3rd place loser is truly out
-    });
-
     // Sort: active teams first, eliminated to bottom
     champBets.sort((a,b)=>{
       const ae=eliminated.has(a.val)?1:0, be=eliminated.has(b.val)?1:0;
