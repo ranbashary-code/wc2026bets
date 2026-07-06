@@ -2681,11 +2681,10 @@ async function renderSpecialBetsReveal(lk) {
       const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
       if(isElim){
-        html += '<td style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:var(--text2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;position:relative;" onclick="window.showSttTip(this,\''+safeN+'\')">'+b.name+'</td>';
-        html += '<td style="padding:7px 4px;text-align:center;width:26px;white-space:nowrap;opacity:0.45;">'+flag+'</td>';
-        html += '<td style="padding:7px 0 7px 8px;font-size:12px;font-weight:700;color:var(--text2);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;" onclick="window.showSttTip(this,\''+safeV+'\')">'+b.val+' <span style="font-size:16px;display:inline-block;transform-origin:70% 70%;animation:waveHand 1.8s ease-in-out infinite;vertical-align:middle;">👋</span></td>';
-        // Overlay line across entire row
-        html += '</tr><tr style="height:0;border:none;"><td colspan="3" style="padding:0;position:relative;height:0;"><div style="position:absolute;bottom:12px;right:0;left:0;height:2px;background:rgba(255,255,255,0.35);pointer-events:none;"></div></td></tr>';
+        const lineDiv='<div style="position:absolute;top:50%;right:0;left:0;height:1.5px;background:rgba(255,255,255,0.4);transform:translateY(-50%);pointer-events:none;"></div>';
+        html += '<td style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:var(--text2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;position:relative;" onclick="window.showSttTip(this,\''+safeN+'\')">'+b.name+lineDiv+'</td>';
+        html += '<td style="padding:7px 4px;text-align:center;width:26px;white-space:nowrap;opacity:0.4;position:relative;">'+flag+lineDiv+'</td>';
+        html += '<td style="padding:7px 0 7px 8px;font-size:12px;font-weight:700;color:var(--text2);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;" onclick="window.showSttTip(this,\''+safeV+'\')"><span style="position:relative;z-index:0;">'+b.val+'</span><div style="position:absolute;top:50%;right:0;left:0;height:1.5px;background:rgba(255,255,255,0.4);transform:translateY(-50%);pointer-events:none;"></div> <span style="position:relative;z-index:1;text-decoration:none;font-size:16px;display:inline-block;transform-origin:70% 70%;animation:waveHand 1.8s ease-in-out infinite;vertical-align:middle;">👋</span></td>';
       } else {
         html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;cursor:default;">'+b.name+'</td>';
         html += '<td style="padding:7px 4px;text-align:center;width:26px;white-space:nowrap;flex-shrink:0;">'+flag+'</td>';
@@ -2728,10 +2727,10 @@ async function renderSpecialBetsReveal(lk) {
       const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
       if(showStrike){
-        html += '<td style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:var(--text2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;" onclick="window.showSttTip(this,\''+safeN+'\')">'+b.name+'</td>';
-        html += '<td style="padding:7px 6px;font-size:12px;color:var(--text2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="window.showSttTip(this,\''+safeV+'\')">'+b.val+' <span style="font-size:16px;display:inline-block;transform-origin:70% 70%;animation:waveHand 1.8s ease-in-out infinite;vertical-align:middle;">👋</span></td>';
-        html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:52px;opacity:0.45;">'+goalsHtml+'</td>';
-        html += '</tr><tr style="height:0;border:none;"><td colspan="3" style="padding:0;position:relative;height:0;"><div style="position:absolute;bottom:12px;right:0;left:0;height:2px;background:rgba(255,255,255,0.35);pointer-events:none;"></div></td></tr>';
+        const lineDiv='<div style="position:absolute;top:50%;right:0;left:0;height:1.5px;background:rgba(255,255,255,0.4);transform:translateY(-50%);pointer-events:none;"></div>';
+        html += '<td style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:var(--text2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;position:relative;" onclick="window.showSttTip(this,\''+safeN+'\')">'+b.name+lineDiv+'</td>';
+        html += '<td style="padding:7px 6px;font-size:12px;color:var(--text2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;" onclick="window.showSttTip(this,\''+safeV+'\')"><span style="position:relative;z-index:0;">'+b.val+'</span>'+lineDiv+' <span style="position:relative;z-index:1;font-size:16px;display:inline-block;transform-origin:70% 70%;animation:waveHand 1.8s ease-in-out infinite;vertical-align:middle;">👋</span></td>';
+        html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:52px;opacity:0.4;position:relative;">'+goalsHtml+lineDiv+'</td>';
       } else {
         html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;cursor:default;">'+b.name+'</td>';
         html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+b.val+'</td>';
