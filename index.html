@@ -1125,9 +1125,10 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
           </div>
           <p style="font-size:11px;color:var(--text2);margin-bottom:12px;">הוסף שחקנים ועדכן כמות שערים — יוצג בזמן אמת בהימורים המיוחדים</p>
           <!-- Add new scorer -->
-          <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <input id="new-scorer-name" class="inp" type="text" placeholder="שם שחקן (כפי שהוזן)" style="flex:1;font-size:13px;">
-            <input id="new-scorer-goals" class="inp" type="number" min="0" value="0" style="width:70px;font-size:13px;">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <input id="new-scorer-name" class="inp" type="text" placeholder="שם שחקן" style="flex:2;min-width:100px;font-size:13px;">
+            <input id="new-scorer-team" class="inp" type="text" placeholder="נבחרת" style="flex:2;min-width:80px;font-size:13px;">
+            <input id="new-scorer-goals" class="inp" type="number" min="0" value="0" style="width:60px;font-size:13px;">
             <button class="btn btn-grad btn-xs" onclick="window.addScorerGoal()">+ הוסף</button>
           </div>
           <div id="scorer-goals-list" style="display:flex;flex-direction:column;gap:6px;"></div>
@@ -2538,31 +2539,42 @@ window.showSttTip=function(el,text){
 // ── Scorer Goals Admin ──
 function renderScorerGoalsAdmin(){
   const lst=el('scorer-goals-list'); if(!lst) return;
-  const entries=Object.entries(SCORER_GOALS||{}).sort(([,a],[,b])=>b-a);
+  const entries=Object.entries(SCORER_GOALS||{}).sort(([,a],[,b])=>(b.goals||b||0)-(a.goals||a||0));
   if(!entries.length){ lst.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:8px;">אין שחקנים עדיין</div>'; return; }
-  lst.innerHTML=entries.map(([name,goals])=>`
-    <div style="display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">
-      <span style="flex:1;font-size:13px;font-weight:700;color:var(--text);">⚽ ${name}</span>
-      <input type="number" min="0" value="${goals}" style="width:60px;background:var(--navy);border:1px solid var(--border);border-radius:6px;padding:4px;color:var(--text);font-size:13px;text-align:center;"
-        onchange="window.updateScorerGoal('${name.replace(/'/g,"\\'")}',this.value)">
-      <button onclick="window.deleteScorerGoal('${name.replace(/'/g,"\\'")}'')" style="background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:6px;padding:4px 8px;color:#f87171;cursor:pointer;font-size:12px;">🗑</button>
-    </div>`).join('');
+  lst.innerHTML=entries.map(([name,val])=>{
+    const goals=typeof val==='object'?val.goals:val;
+    const team=typeof val==='object'?val.team||'':'';
+    const safeName=name.replace(/'/g,"\\'");
+    return `
+    <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;flex-wrap:wrap;">
+      <span style="flex:2;min-width:80px;font-size:13px;font-weight:700;color:var(--text);">⚽ ${name}</span>
+      <input type="text" value="${team}" placeholder="נבחרת" style="flex:2;min-width:70px;background:var(--navy);border:1px solid var(--border);border-radius:6px;padding:4px 6px;color:var(--text);font-size:12px;"
+        onchange="window.updateScorerGoal('${safeName}',null,this.value)">
+      <input type="number" min="0" value="${goals}" style="width:55px;background:var(--navy);border:1px solid var(--border);border-radius:6px;padding:4px;color:var(--text);font-size:13px;text-align:center;"
+        onchange="window.updateScorerGoal('${safeName}',this.value,null)">
+      <button onclick="window.deleteScorerGoal('${safeName}')" style="background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:6px;padding:4px 8px;color:#f87171;cursor:pointer;font-size:12px;">🗑</button>
+    </div>`;
+  }).join('');
 }
 
 window.addScorerGoal=async function(){
-  const nameEl=el('new-scorer-name'), goalsEl=el('new-scorer-goals');
-  const name=(nameEl.value||'').trim(); const goals=parseInt(goalsEl.value)||0;
+  const nameEl=el('new-scorer-name'), goalsEl=el('new-scorer-goals'), teamEl=el('new-scorer-team');
+  const name=(nameEl.value||'').trim(); const goals=parseInt(goalsEl.value)||0; const team=(teamEl.value||'').trim();
   if(!name){ toast('⚠️ הכנס שם שחקן'); return; }
   const st=el('scorer-goals-status');
   try{
-    await update(ref(db,'admin/scorerGoals'),{[name]:goals});
-    nameEl.value=''; goalsEl.value='0';
+    await update(ref(db,'admin/scorerGoals'),{[name]:{goals,team}});
+    nameEl.value=''; goalsEl.value='0'; teamEl.value='';
     if(st){st.style.color='#34d399';st.textContent='✅ '+name+' נוסף';}
   }catch(e){ if(st){st.style.color='#f87171';st.textContent='❌ שגיאה';} }
 };
 
-window.updateScorerGoal=async function(name,goals){
-  try{ await update(ref(db,'admin/scorerGoals'),{[name]:parseInt(goals)||0}); }catch(e){}
+window.updateScorerGoal=async function(name,goals,team){
+  const cur=SCORER_GOALS[name];
+  const existing=typeof cur==='object'?{...cur}:{goals:cur||0,team:''};
+  if(goals!==null) existing.goals=parseInt(goals)||0;
+  if(team!==null) existing.team=team||'';
+  try{ await update(ref(db,'admin/scorerGoals'),{[name]:existing}); }catch(e){}
 };
 
 window.deleteScorerGoal=async function(name){
@@ -2647,7 +2659,7 @@ async function renderSpecialBetsReveal(lk) {
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);'+rowOp+'">';
       html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;cursor:default;">'+b.name+'</td>';
       html += '<td style="padding:7px 4px;text-align:center;width:26px;white-space:nowrap;flex-shrink:0;">'+flag+'</td>';
-      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 0 7px 8px;font-size:12px;font-weight:700;'+teamStyle+'text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+b.val+(isElim?' <span style="font-size:9px;color:#f87171;">✗</span>':'')+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 0 7px 8px;font-size:12px;font-weight:700;'+teamStyle+'text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+(isElim?'👋 ':'')+b.val+'</td>';
       html += '</tr>';
     });
     html += '</table>';
@@ -2664,12 +2676,26 @@ async function renderSpecialBetsReveal(lk) {
       if(!SCORER_GOALS||!playerName) return null;
       const pn=playerName.trim().toLowerCase();
       for(const [k,v] of Object.entries(SCORER_GOALS)){
-        if(k.trim().toLowerCase()===pn) return v;
-        if(pn.includes(k.trim().toLowerCase())||k.trim().toLowerCase().includes(pn)) return v;
+        if(k.trim().toLowerCase()===pn||pn.includes(k.trim().toLowerCase())||k.trim().toLowerCase().includes(pn)){
+          return typeof v==='object'?v.goals:v;
+        }
       }
       return null;
     }
-    // Sort by goals desc, then alphabetically
+    function findScorerEntry(playerName){
+      if(!SCORER_GOALS||!playerName) return null;
+      const pn=playerName.trim().toLowerCase();
+      for(const [k,v] of Object.entries(SCORER_GOALS)){
+        if(k.trim().toLowerCase()===pn||pn.includes(k.trim().toLowerCase())||k.trim().toLowerCase().includes(pn)){
+          return typeof v==='object'?v:{goals:v,team:''};
+        }
+      }
+      return null;
+    }
+    // Find max goals
+    const maxGoals=Math.max(0,...scorerBets.map(b=>findGoals(b.val)||0));
+
+    // Sort by goals desc
     scorerBets.sort((a,b)=>{
       const ga=findGoals(a.val)??-1, gb=findGoals(b.val)??-1;
       return gb-ga || a.val.localeCompare(b.val);
@@ -2677,14 +2703,22 @@ async function renderSpecialBetsReveal(lk) {
     html += '<table style="width:100%;border-collapse:collapse;">';
     scorerBets.forEach(b=>{
       const goals=findGoals(b.val);
+      const entry=findScorerEntry(b.val);
+      const scorerTeam=entry?entry.team:'';
+      const scorerElim=scorerTeam&&eliminated.has(scorerTeam);
+      const isLeading=goals!==null&&goals===maxGoals&&maxGoals>0;
+      const showStrike=scorerElim&&!isLeading;
       const goalsHtml = goals!==null
         ? '<span style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:900;color:var(--gold);">'+goals+'</span>'
         : '<span style="font-size:10px;color:var(--text2);">—</span>';
+      const rowOp=showStrike?'opacity:0.5;':'';
+      const strikeStyle=showStrike?'text-decoration:line-through;':'';
+      const waveBadge=showStrike?'<span style="font-size:11px;margin-right:2px;">👋</span>':'';
       const safeN=b.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+      html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);'+rowOp+'">';
       html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;cursor:default;">'+b.name+'</td>';
-      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+b.val+'</td>';
+      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'+strikeStyle+'cursor:default;">'+waveBadge+b.val+'</td>';
       html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:52px;">'+goalsHtml+'</td>';
       html += '</tr>';
     });
