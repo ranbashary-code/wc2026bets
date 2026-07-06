@@ -2683,7 +2683,7 @@ async function renderSpecialBetsReveal(lk) {
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);'+rowOp+'">';
       html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;cursor:default;">'+b.name+'</td>';
       html += '<td style="padding:7px 4px;text-align:center;width:26px;white-space:nowrap;flex-shrink:0;">'+flag+'</td>';
-      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 0 7px 8px;font-size:12px;font-weight:700;'+teamStyle+'text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;"><span style="text-decoration:none;font-size:14px;">'+(isElim?'👋 ':'')+b.val+'</span></td>';
+      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 0 7px 8px;font-size:12px;font-weight:700;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+(isElim?'<span style="font-size:15px;text-decoration:none;display:inline-block;">👋</span> ':'')+'<span style="'+teamStyle+'">'+b.val+'</span></td>';
       html += '</tr>';
     });
     html += '</table>';
@@ -2722,7 +2722,7 @@ async function renderSpecialBetsReveal(lk) {
       const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);'+rowOp+'">';
       html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;cursor:default;">'+b.name+'</td>';
-      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'+strikeStyle+'cursor:default;"><span style="text-decoration:none;font-size:14px;">'+(showStrike?'👋 ':'')+b.val+'</span></td>';
+      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+(showStrike?'<span style="font-size:15px;text-decoration:none;display:inline-block;">👋</span> ':'')+'<span style="'+strikeStyle+'">'+b.val+'</span></td>';
       html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:52px;">'+goalsHtml+'</td>';
       html += '</tr>';
     });
