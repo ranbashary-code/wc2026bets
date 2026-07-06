@@ -2676,14 +2676,23 @@ async function renderSpecialBetsReveal(lk) {
       const code = getCountryCode(b.val);
       const flag = code ? '<span class="fi fi-'+code+'" style="width:20px;height:20px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;"></span>' : '<span style="display:inline-block;width:20px;"></span>';
       const isElim = eliminated.has(b.val);
-      const dimOp = isElim ? 'opacity:0.45;' : '';
-      const teamStyle = isElim ? 'text-decoration:line-through;' : '';
       const safeN=b.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-      html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;cursor:default;'+dimOp+'">'+b.name+'</td>';
-      html += '<td style="padding:7px 4px;text-align:center;width:26px;white-space:nowrap;flex-shrink:0;'+dimOp+'">'+flag+'</td>';
-      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 0 7px 8px;font-size:12px;font-weight:700;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+(isElim?'<span style="font-size:15px;opacity:1;">👋</span> ':'')+'<span style="'+teamStyle+dimOp+'">'+b.val+'</span></td>';
+      if(isElim){
+        // Single merged cell: continuous strikethrough across name+flag+team, wave outside (to the left)
+        html += '<td colspan="3" style="padding:7px 0;">';
+        html += '<div style="display:flex;align-items:center;gap:0;">';
+        html += '<span style="text-decoration:line-through;color:var(--text2);font-size:12px;font-weight:700;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;flex-shrink:0;" onclick="window.showSttTip(this,\''+safeN+'\')">'+b.name+'</span>';
+        html += '<span style="text-decoration:line-through;padding:0 4px;flex-shrink:0;">'+flag+'</span>';
+        html += '<span style="text-decoration:line-through;color:var(--text2);font-size:12px;font-weight:700;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;" onclick="window.showSttTip(this,\''+safeV+'\')">'+b.val+'</span>';
+        html += '<span style="font-size:15px;flex-shrink:0;margin-left:4px;">👋</span>';
+        html += '</div></td>';
+      } else {
+        html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;cursor:default;">'+b.name+'</td>';
+        html += '<td style="padding:7px 4px;text-align:center;width:26px;white-space:nowrap;flex-shrink:0;">'+flag+'</td>';
+        html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 0 7px 8px;font-size:12px;font-weight:700;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+b.val+'</td>';
+      }
       html += '</tr>';
     });
     html += '</table>';
@@ -2720,9 +2729,19 @@ async function renderSpecialBetsReveal(lk) {
       const safeN=b.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-      html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;cursor:default;'+dimOp+'">'+b.name+'</td>';
-      html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+(showStrike?'<span style="font-size:15px;opacity:1;">👋</span> ':'')+'<span style="'+strikeStyle+dimOp+'">'+b.val+'</span></td>';
-      html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:52px;'+dimOp+'">'+goalsHtml+'</td>';
+      if(showStrike){
+        html += '<td colspan="3" style="padding:7px 0;">';
+        html += '<div style="display:flex;align-items:center;gap:0;">';
+        html += '<span style="text-decoration:line-through;color:var(--text2);font-size:12px;font-weight:700;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;flex-shrink:0;" onclick="window.showSttTip(this,\''+safeN+'\')">'+b.name+'</span>';
+        html += '<span style="text-decoration:line-through;color:var(--text2);font-size:12px;padding:0 6px;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="window.showSttTip(this,\''+safeV+'\')">'+b.val+'</span>';
+        html += '<span style="flex-shrink:0;opacity:0.45;">'+goalsHtml+'</span>';
+        html += '<span style="font-size:15px;flex-shrink:0;margin-left:4px;">👋</span>';
+        html += '</div></td>';
+      } else {
+        html += '<td onclick="window.showSttTip(this,\''+safeN+'\')" style="padding:7px 8px 7px 0;font-size:12px;font-weight:700;color:'+(b.isBot?'#74b9e0':'var(--text)')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;cursor:default;">'+b.name+'</td>';
+        html += '<td onclick="window.showSttTip(this,\''+safeV+'\')" style="padding:7px 6px;font-size:12px;color:var(--gold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;">'+b.val+'</td>';
+        html += '<td style="padding:7px 0;white-space:nowrap;text-align:left;width:52px;">'+goalsHtml+'</td>';
+      }
       html += '</tr>';
     });
     html += '</table>';
