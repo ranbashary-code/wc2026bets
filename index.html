@@ -505,10 +505,12 @@ body.light-mode .ko-lines{color:rgba(60,90,130,0.45);}
   position:fixed;z-index:99999;
   background:#1e3a5f;border:1px solid rgba(255,215,0,0.4);
   color:#fff;font-size:12px;font-weight:700;
-  padding:6px 12px;border-radius:8px;
-  pointer-events:none;white-space:nowrap;
-  box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  padding:8px 14px;border-radius:10px;
+  pointer-events:none;white-space:normal;
+  max-width:min(85vw,320px);text-align:center;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
   transform:translateX(-50%);
+  line-height:1.5;
   animation:fadeIn 0.15s ease;
 }
 .ko-team{
@@ -2545,11 +2547,18 @@ window.showSttTip=function(el,text){
   tip.textContent=text;
   document.body.appendChild(tip);
   const r=el.getBoundingClientRect();
-  tip.style.left=(r.left+r.width/2)+'px';
-  tip.style.top=(r.top-40)+'px';
-  // If tooltip goes off screen top, show below instead
-  if(r.top-40 < 5) tip.style.top=(r.bottom+8)+'px';
-  setTimeout(()=>{if(tip.parentNode)tip.remove();},2500);
+  // Position centered above element
+  let left=r.left+r.width/2;
+  let top=r.top-tip.offsetHeight-8;
+  // If tooltip goes off screen top, show below
+  if(top<5) top=r.bottom+8;
+  // Clamp horizontal position to stay within viewport
+  const tw=tip.offsetWidth;
+  if(left-tw/2<8) left=tw/2+8;
+  if(left+tw/2>window.innerWidth-8) left=window.innerWidth-tw/2-8;
+  tip.style.left=left+'px';
+  tip.style.top=top+'px';
+  setTimeout(()=>{if(tip.parentNode)tip.remove();},3000);
   setTimeout(()=>{
     document.addEventListener('click',function h(){ if(tip.parentNode)tip.remove(); document.removeEventListener('click',h); },{once:true,capture:true});
   },50);
