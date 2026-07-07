@@ -2545,11 +2545,13 @@ window.showSttTip=function(el,text){
   tip.textContent=text;
   document.body.appendChild(tip);
   const r=el.getBoundingClientRect();
-  tip.style.left=(r.left+r.width/2+window.scrollX)+'px';
-  tip.style.top=(r.top+window.scrollY-40)+'px';
-  setTimeout(()=>tip.remove(),2500);
+  tip.style.left=(r.left+r.width/2)+'px';
+  tip.style.top=(r.top-40)+'px';
+  // If tooltip goes off screen top, show below instead
+  if(r.top-40 < 5) tip.style.top=(r.bottom+8)+'px';
+  setTimeout(()=>{if(tip.parentNode)tip.remove();},2500);
   setTimeout(()=>{
-    document.addEventListener('click',function h(){ tip.remove(); document.removeEventListener('click',h); },{once:true,capture:true});
+    document.addEventListener('click',function h(){ if(tip.parentNode)tip.remove(); document.removeEventListener('click',h); },{once:true,capture:true});
   },50);
 };
 
