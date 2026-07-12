@@ -6662,6 +6662,47 @@ function renderBracket(){
       }
     }catch(e){}
   },300);
+
+  // Pinch-to-zoom on mobile for bracket
+  if(!window._koPinchInit){
+    window._koPinchInit=true;
+    const scroller=document.querySelector('.ko-bracket-scroll');
+    const wrap=document.getElementById('ko-wrap');
+    if(scroller&&wrap){
+      let startDist=0, startScale=1, curScale=1;
+      scroller.style.touchAction='pan-x pan-y';
+      scroller.addEventListener('touchstart',function(e){
+        if(e.touches.length===2){
+          startDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+          startScale=curScale;
+        }
+      },{passive:true});
+      scroller.addEventListener('touchmove',function(e){
+        if(e.touches.length===2){
+          const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+          const newScale=Math.min(1.5, Math.max(0.35, startScale*(dist/startDist)));
+          curScale=newScale;
+          wrap.style.transform='scale('+curScale+')';
+          wrap.style.transformOrigin='top center';
+        }
+      },{passive:true});
+      scroller.addEventListener('touchend',function(e){
+        if(e.touches.length<2 && curScale!==1){
+          // Snap back if very close to 1
+          if(curScale>0.9 && curScale<1.1){ curScale=1; wrap.style.transform=''; }
+        }
+      },{passive:true});
+      // Double-tap to reset zoom
+      let lastTap=0;
+      scroller.addEventListener('touchend',function(e){
+        if(e.touches.length===0){
+          const now=Date.now();
+          if(now-lastTap<300){ curScale=1; wrap.style.transform=''; wrap.style.transformOrigin=''; }
+          lastTap=now;
+        }
+      },{passive:true});
+    }
+  }
 }
 
 window.koBetAllOpenMatch=function(matchId){
