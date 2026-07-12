@@ -6652,6 +6652,16 @@ function renderBracket(){
 
   requestAnimationFrame(()=>{ try{layoutKoBracket();}catch(e){} });
   setTimeout(()=>{ try{layoutKoBracket();}catch(e){} },180);
+  // Auto-center bracket scroll on mobile
+  setTimeout(()=>{
+    try{
+      const scroller=document.querySelector('.ko-bracket-scroll');
+      if(scroller && scroller.scrollWidth > scroller.clientWidth){
+        const center=(scroller.scrollWidth - scroller.clientWidth)/2;
+        scroller.scrollTo({left:center, behavior:'smooth'});
+      }
+    }catch(e){}
+  },300);
 }
 
 window.koBetAllOpenMatch=function(matchId){
