@@ -2661,6 +2661,7 @@ window.deleteScorerGoal=async function(name){
   try{ await update(ref(db,'admin/scorerGoals'),{[name]:null}); }catch(e){}
 };
 
+window._refreshSpecialBets=function(){ renderSpecialBetsReveal(specialLocked()); };
 async function renderSpecialBetsReveal(lk) {
   const revealDiv = el('special-bets-reveal');
   if(!revealDiv) return;
@@ -2701,13 +2702,13 @@ async function renderSpecialBetsReveal(lk) {
   if(myGrps.length > 1 || isAdm){
     const selectedGrp = window._specialBetsGroupFilter || 'all';
     filterHtml = '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;">';
-    filterHtml += `<button onclick="window._specialBetsGroupFilter='all';renderSpecialBetsReveal(true)" style="padding:4px 12px;border-radius:16px;border:1px solid ${selectedGrp==='all'?'var(--gold)':'var(--border)'};background:${selectedGrp==='all'?'rgba(255,215,0,0.15)':'transparent'};color:${selectedGrp==='all'?'var(--gold)':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer;">הכל</button>`;
+    filterHtml += `<button onclick="window._specialBetsGroupFilter='all';window._refreshSpecialBets()" style="padding:4px 12px;border-radius:16px;border:1px solid ${selectedGrp==='all'?'var(--gold)':'var(--border)'};background:${selectedGrp==='all'?'rgba(255,215,0,0.15)':'transparent'};color:${selectedGrp==='all'?'var(--gold)':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer;">הכל</button>`;
     myGrps.forEach(gid=>{
       const g = ALL_GROUPS && ALL_GROUPS[gid];
       if(!g) return;
       const active = selectedGrp === gid;
       const color = g.color || 'var(--gold)';
-      filterHtml += `<button onclick="window._specialBetsGroupFilter='${gid}';renderSpecialBetsReveal(true)" style="padding:4px 12px;border-radius:16px;border:1px solid ${active?color:'var(--border)'};background:${active?'rgba(255,255,255,0.08)':'transparent'};color:${active?color:'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer;">${g.name}</button>`;
+      filterHtml += `<button onclick="window._specialBetsGroupFilter='${gid}';window._refreshSpecialBets()" style="padding:4px 12px;border-radius:16px;border:1px solid ${active?color:'var(--border)'};background:${active?'rgba(255,255,255,0.08)':'transparent'};color:${active?color:'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer;">${g.name}</button>`;
     });
     filterHtml += '</div>';
   }
@@ -4310,6 +4311,68 @@ function renderTicker(){
       items.push('📋 עוד לא בחרת '+what+' — ננעל בתחילת המונדיאל!');
     }
   }
+
+  // ── Special bets live updates: top scorer + champion ──
+  try{
+    // Top scorer race
+    if(SCORER_GOALS && Object.keys(SCORER_GOALS).length){
+      var scorerEntries=Object.entries(SCORER_GOALS).map(function(e){
+        var v=e[1]; return {name:e[0], goals:typeof v==='object'?(v.goals||0):Number(v), team:typeof v==='object'?(v.team||''):''};
+      }).sort(function(a,b){return b.goals-a.goals;});
+      if(scorerEntries.length>=1 && scorerEntries[0].goals>0){
+        var top=scorerEntries[0];
+        items.push('👟 מוביל במירוץ מלך השערים: '+top.name+' עם '+top.goals+' שערים');
+        // Tight race
+        if(scorerEntries.length>=2 && scorerEntries[1].goals>0){
+          var gap=top.goals-scorerEntries[1].goals;
+          if(gap<=1) items.push('🔥 מירוץ צמוד! '+scorerEntries[1].name+' ('+scorerEntries[1].goals+') רודף אחרי '+top.name+' ('+top.goals+')');
+        }
+      }
+    }
+
+    // Eliminated teams from champion race
+    var elimTeams=[];
+    Object.values(MATCHES).forEach(function(m){
+      if(m.stage==='group'||!m.result) return;
+      var r=m.result, loser=null;
+      if(r[0]>r[1]) loser=m.team2;
+      else if(r[1]>r[0]) loser=m.team1;
+      else if(m.penalties) loser=m.penalties[0]>m.penalties[1]?m.team2:m.team1;
+      else if(m.resultFull) loser=m.resultFull[0]>m.resultFull[1]?m.team2:m.team1;
+      if(loser) elimTeams.push({team:loser, stage:m.stage});
+    });
+    // Show who bet on eliminated teams (latest elimination only)
+    if(elimTeams.length && SPECIAL_BETS){
+      var latestElim=elimTeams[elimTeams.length-1];
+      var bettors=[];
+      Object.entries(SPECIAL_BETS).forEach(function(e){
+        var uid=e[0], sb=e[1];
+        if(!sb||!sb.champion) return;
+        var u=USERS[uid]||{};
+        if(sb.champion===latestElim.team){
+          bettors.push(u.nickname||u.name||'?');
+        }
+      });
+      if(bettors.length){
+        items.push('👋 '+displayName(latestElim.team)+' הודחה! '+bettors.join(', ')+' הימרו עליה כנבחרת זוכה');
+      }
+    }
+
+    // Champion set — announce winner
+    if(SPECIAL_RESULT && SPECIAL_RESULT.champion){
+      items.push('🏆 '+displayName(SPECIAL_RESULT.champion)+' אלופת העולם 2026!');
+      // Who guessed correctly
+      var correctChamp=[];
+      Object.entries(SPECIAL_BETS||{}).forEach(function(e){
+        var sb=e[1]; if(!sb||!sb.champion) return;
+        if(sb.champion===SPECIAL_RESULT.champion){
+          var u=USERS[e[0]]||{};
+          correctChamp.push(u.nickname||u.name||'?');
+        }
+      });
+      if(correctChamp.length) items.push('🎯 ניחשו נכון את האלופה: '+correctChamp.join(', '));
+    }
+  }catch(e){}
 
   if(!items.length){ bar.style.display='none'; return; }
   var track=items.map(function(it){return '<span class="ticker-item">'+it+'</span>';}).join('');
