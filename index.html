@@ -2681,7 +2681,7 @@ async function renderSpecialBetsReveal(lk) {
   const myGrps = (ME && USERS[ME.uid] && USERS[ME.uid].groups) || [];
   const isAdm = MEDATA && MEDATA.isAdmin;
 
-  // Build champion bets list (filtered by group)
+  // Build champion bets list (with group info for filtering)
   const champBets = [], scorerBets = [];
   allSpecial.forEach(([uid, d])=>{
     const u = USERS[uid] || {};
@@ -2692,11 +2692,37 @@ async function renderSpecialBetsReveal(lk) {
     if(!sameGrp) return;
     const name = u.nickname || u.name || '?';
     const isBot = u.isBot;
-    if(d.champion) champBets.push({name, val:d.champion, isBot});
-    if(d.scorer)   scorerBets.push({name, val:d.scorer, isBot});
+    if(d.champion) champBets.push({name, val:d.champion, isBot, groups:uGrps, uid});
+    if(d.scorer)   scorerBets.push({name, val:d.scorer, isBot, groups:uGrps, uid});
   });
 
-  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+  // Group filter pills — only if user is in more than 1 group
+  let filterHtml = '';
+  if(myGrps.length > 1 || isAdm){
+    const selectedGrp = window._specialBetsGroupFilter || 'all';
+    filterHtml = '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;">';
+    filterHtml += `<button onclick="window._specialBetsGroupFilter='all';renderSpecialBetsReveal(true)" style="padding:4px 12px;border-radius:16px;border:1px solid ${selectedGrp==='all'?'var(--gold)':'var(--border)'};background:${selectedGrp==='all'?'rgba(255,215,0,0.15)':'transparent'};color:${selectedGrp==='all'?'var(--gold)':'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer;">הכל</button>`;
+    myGrps.forEach(gid=>{
+      const g = ALL_GROUPS && ALL_GROUPS[gid];
+      if(!g) return;
+      const active = selectedGrp === gid;
+      const color = g.color || 'var(--gold)';
+      filterHtml += `<button onclick="window._specialBetsGroupFilter='${gid}';renderSpecialBetsReveal(true)" style="padding:4px 12px;border-radius:16px;border:1px solid ${active?color:'var(--border)'};background:${active?'rgba(255,255,255,0.08)':'transparent'};color:${active?color:'var(--text2)'};font-size:11px;font-weight:700;cursor:pointer;">${g.name}</button>`;
+    });
+    filterHtml += '</div>';
+  }
+
+  // Apply group filter
+  const filterGrp = window._specialBetsGroupFilter || 'all';
+  function passesFilter(bet){
+    if(filterGrp === 'all') return true;
+    if(bet.isBot) return true; // bot always visible
+    return (bet.groups||[]).includes(filterGrp);
+  }
+  const filteredChamp = champBets.filter(passesFilter);
+  const filteredScorer = scorerBets.filter(passesFilter);
+
+  let html = filterHtml + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
 
   // Helper functions — defined at function scope
   function findGoals(playerName){
@@ -2749,17 +2775,17 @@ async function renderSpecialBetsReveal(lk) {
   // Champion bets reveal
   html += '<div class="card" style="padding:14px;">';
   html += '<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">🥇 הימורי נבחרת מנצחת — כולם</div>';
-  if(!champBets.length) {
+  if(!filteredChamp.length) {
     html += '<div style="font-size:12px;color:var(--text2);">אף אחד לא הימר</div>';
   } else {
     // Sort: active teams first, eliminated to bottom
-    champBets.sort((a,b)=>{
+    filteredChamp.sort((a,b)=>{
       const ae=elimChamp.has(a.val)?1:0, be=elimChamp.has(b.val)?1:0;
       return ae-be;
     });
 
     html += '<table style="width:100%;border-collapse:collapse;">';
-    champBets.forEach(b=>{
+    filteredChamp.forEach(b=>{
       const code = getCountryCode(b.val);
       const flag = code ? '<span class="fi fi-'+code+'" style="width:20px;height:20px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;"></span>' : '<span style="display:inline-block;width:20px;"></span>';
       const isElim = elimChamp.has(b.val);
@@ -2785,19 +2811,19 @@ async function renderSpecialBetsReveal(lk) {
   // Scorer bets reveal — sorted by goal count desc, filtered by group
   html += '<div class="card" style="padding:14px;">';
   html += '<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">👟 הימורי מלך שערים — כולם</div>';
-  if(!scorerBets.length) {
+  if(!filteredScorer.length) {
     html += '<div style="font-size:12px;color:var(--text2);">אף אחד לא הימר</div>';
   } else {
     // Find max goals
-    const maxGoals=Math.max(0,...scorerBets.map(b=>findGoals(b.val)||0));
+    const maxGoals=Math.max(0,...filteredScorer.map(b=>findGoals(b.val)||0));
 
     // Sort by goals desc
-    scorerBets.sort((a,b)=>{
+    filteredScorer.sort((a,b)=>{
       const ga=findGoals(a.val)??-1, gb=findGoals(b.val)??-1;
       return gb-ga || a.val.localeCompare(b.val);
     });
     html += '<table style="width:100%;border-collapse:collapse;">';
-    scorerBets.forEach(b=>{
+    filteredScorer.forEach(b=>{
       const goals=findGoals(b.val);
       const entry=findScorerEntry(b.val);
       const scorerTeam=entry?entry.team:'';
