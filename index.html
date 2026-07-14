@@ -2722,8 +2722,11 @@ async function renderSpecialBetsReveal(lk) {
     return null;
   }
 
-  // Determine eliminated teams: teams that lost in KO — computed once for both tables
-  const eliminated = new Set();
+  // Two elimination sets:
+  // elimChamp: teams that can't win the cup (any KO loser including SF)
+  // elimScorer: teams with no more matches (SF losers still play 3rd place)
+  const elimChamp = new Set();
+  const elimScorer = new Set();
   Object.values(MATCHES).forEach(m=>{
     if(m.stage==='group'||!m.result) return;
     const r=m.result;
@@ -2735,8 +2738,12 @@ async function renderSpecialBetsReveal(lk) {
     } else if(m.resultFull){
       loser=m.resultFull[0]>m.resultFull[1]?m.team2:m.team1;
     }
-    if(loser && m.stage!=='sf') eliminated.add(loser);
-    if(loser && m.stage==='3rd') eliminated.add(loser);
+    if(loser){
+      // Champion: any KO loser can't win
+      elimChamp.add(loser);
+      // Scorer: SF losers still play 3rd place, only truly out after 3rd place match
+      if(m.stage!=='sf') elimScorer.add(loser);
+    }
   });
 
   // Champion bets reveal
@@ -2747,7 +2754,7 @@ async function renderSpecialBetsReveal(lk) {
   } else {
     // Sort: active teams first, eliminated to bottom
     champBets.sort((a,b)=>{
-      const ae=eliminated.has(a.val)?1:0, be=eliminated.has(b.val)?1:0;
+      const ae=elimChamp.has(a.val)?1:0, be=elimChamp.has(b.val)?1:0;
       return ae-be;
     });
 
@@ -2755,7 +2762,7 @@ async function renderSpecialBetsReveal(lk) {
     champBets.forEach(b=>{
       const code = getCountryCode(b.val);
       const flag = code ? '<span class="fi fi-'+code+'" style="width:20px;height:20px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;"></span>' : '<span style="display:inline-block;width:20px;"></span>';
-      const isElim = eliminated.has(b.val);
+      const isElim = elimChamp.has(b.val);
       const safeN=b.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
@@ -2794,7 +2801,7 @@ async function renderSpecialBetsReveal(lk) {
       const goals=findGoals(b.val);
       const entry=findScorerEntry(b.val);
       const scorerTeam=entry?entry.team:'';
-      const scorerElim=scorerTeam&&eliminated.has(scorerTeam);
+      const scorerElim=scorerTeam&&elimScorer.has(scorerTeam);
       const isLeading=goals!==null&&goals===maxGoals&&maxGoals>0;
       const showStrike=scorerElim&&!isLeading;
       const goalsHtml = goals!==null
