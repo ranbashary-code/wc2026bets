@@ -4341,36 +4341,74 @@ function renderTicker(){
       else if(m.resultFull) loser=m.resultFull[0]>m.resultFull[1]?m.team2:m.team1;
       if(loser) elimTeams.push({team:loser, stage:m.stage});
     });
-    // Show who bet on eliminated teams (latest elimination only)
+    // Show who bet on eliminated teams (latest elimination only) — filtered by group
     if(elimTeams.length && SPECIAL_BETS){
       var latestElim=elimTeams[elimTeams.length-1];
-      var bettors=[];
-      Object.entries(SPECIAL_BETS).forEach(function(e){
-        var uid=e[0], sb=e[1];
-        if(!sb||!sb.champion) return;
-        var u=USERS[uid]||{};
-        if(sb.champion===latestElim.team){
-          bettors.push(u.nickname||u.name||'?');
+      var _elimGroupDone=false;
+      if(viewGroups.length){
+        viewGroups.forEach(function(gid){
+          var guids=groupUids(gid);
+          var bettors=[];
+          Object.entries(SPECIAL_BETS).forEach(function(e){
+            var uid=e[0], sb=e[1];
+            if(!sb||!sb.champion||sb.champion!==latestElim.team) return;
+            if(guids.indexOf(uid)===-1) return;
+            var u=USERS[uid]||{};
+            bettors.push(u.nickname||u.name||'?');
+          });
+          if(bettors.length){
+            items.push('\u{1F44B} '+tag(gid)+displayName(latestElim.team)+' הודחה! '+bettors.join(', ')+' הימרו עליה כנבחרת זוכה');
+            _elimGroupDone=true;
+          }
+        });
+      }
+      if(!_elimGroupDone){
+        var bettorsAll=[];
+        Object.entries(SPECIAL_BETS).forEach(function(e){
+          var uid=e[0], sb=e[1];
+          if(!sb||!sb.champion||sb.champion!==latestElim.team) return;
+          var u=USERS[uid]||{};
+          bettorsAll.push(u.nickname||u.name||'?');
+        });
+        if(bettorsAll.length){
+          items.push('\u{1F44B} '+displayName(latestElim.team)+' הודחה! '+bettorsAll.join(', ')+' הימרו עליה כנבחרת זוכה');
         }
-      });
-      if(bettors.length){
-        items.push('👋 '+displayName(latestElim.team)+' הודחה! '+bettors.join(', ')+' הימרו עליה כנבחרת זוכה');
       }
     }
 
-    // Champion set — announce winner
+    // Champion set — announce winner (generic, no names)
     if(SPECIAL_RESULT && SPECIAL_RESULT.champion){
-      items.push('🏆 '+displayName(SPECIAL_RESULT.champion)+' אלופת העולם 2026!');
-      // Who guessed correctly
-      var correctChamp=[];
-      Object.entries(SPECIAL_BETS||{}).forEach(function(e){
-        var sb=e[1]; if(!sb||!sb.champion) return;
-        if(sb.champion===SPECIAL_RESULT.champion){
-          var u=USERS[e[0]]||{};
-          correctChamp.push(u.nickname||u.name||'?');
-        }
-      });
-      if(correctChamp.length) items.push('🎯 ניחשו נכון את האלופה: '+correctChamp.join(', '));
+      items.push('\u{1F3C6} '+displayName(SPECIAL_RESULT.champion)+' אלופת העולם 2026!');
+      // Who guessed correctly — filtered by group
+      var _champGroupDone=false;
+      if(viewGroups.length){
+        viewGroups.forEach(function(gid){
+          var guids=groupUids(gid);
+          var correctChamp=[];
+          Object.entries(SPECIAL_BETS||{}).forEach(function(e){
+            var uid=e[0], sb=e[1];
+            if(!sb||!sb.champion||sb.champion!==SPECIAL_RESULT.champion) return;
+            if(guids.indexOf(uid)===-1) return;
+            var u=USERS[uid]||{};
+            correctChamp.push(u.nickname||u.name||'?');
+          });
+          if(correctChamp.length){
+            items.push('\u{1F3AF} '+tag(gid)+'\u05E0\u05D9\u05D7\u05E9\u05D5 \u05E0\u05DB\u05D5\u05DF \u05D0\u05EA \u05D4\u05D0\u05DC\u05D5\u05E4\u05D4: '+correctChamp.join(', '));
+            _champGroupDone=true;
+          }
+        });
+      }
+      if(!_champGroupDone){
+        var correctAll=[];
+        Object.entries(SPECIAL_BETS||{}).forEach(function(e){
+          var sb=e[1]; if(!sb||!sb.champion) return;
+          if(sb.champion===SPECIAL_RESULT.champion){
+            var u=USERS[e[0]]||{};
+            correctAll.push(u.nickname||u.name||'?');
+          }
+        });
+        if(correctAll.length) items.push('\u{1F3AF} \u05E0\u05D9\u05D7\u05E9\u05D5 \u05E0\u05DB\u05D5\u05DF \u05D0\u05EA \u05D4\u05D0\u05DC\u05D5\u05E4\u05D4: '+correctAll.join(', '));
+      }
     }
   }catch(e){}
 
