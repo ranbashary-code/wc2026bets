@@ -5356,67 +5356,56 @@ function renderToday(){
       ? `<span class="fi fi-${code}" style="position:relative;z-index:2;width:108px;height:108px;border-radius:50%;display:inline-block;background-size:cover;background-position:center;box-shadow:0 0 28px rgba(255,215,0,0.3);"></span>`
       : '<span style="font-size:64px;position:relative;z-index:2;">🏆</span>';
 
-    // Scorer — auto-derive from SCORER_GOALS
-    let scorerName = '';
+    // Scorer — auto-derive ALL tied leaders from SCORER_GOALS
+    let topScorers = [];
     if(SCORER_GOALS && Object.keys(SCORER_GOALS).length){
       const srAll=Object.entries(SCORER_GOALS).map(([k,v])=>{
         const sv=typeof v==='object'?v:{goals:Number(v),team:''};
         return {name:k, goals:sv.goals||0, team:sv.team||''};
       }).sort((a,b)=>b.goals-a.goals);
-      if(srAll.length && srAll[0].goals>0) scorerName=srAll[0].name;
+      if(srAll.length && srAll[0].goals>0){
+        const topG=srAll[0].goals;
+        topScorers=srAll.filter(s=>s.goals===topG);
+      }
     }
-    if(!scorerName) scorerName = SPECIAL_RESULT.topScorer || SPECIAL_RESULT.scorer || '';
     let scorerHtml = '';
-    if(scorerName){
-      let scorerTeamHtml = '';
-      if(SCORER_GOALS){
-        const pn=scorerName.trim().toLowerCase();
-        for(const [k,v] of Object.entries(SCORER_GOALS)){
-          if(k.trim().toLowerCase()===pn||pn.includes(k.trim().toLowerCase())||k.trim().toLowerCase().includes(pn)){
-            const entry=typeof v==='object'?v:{goals:Number(v),team:''};
-            const tc=entry.team?getCountryCode(entry.team):null;
-            const tFlag=tc?`<span class="fi fi-${tc}" style="width:14px;height:14px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;margin-left:3px;"></span>`:'';
-            const goals=entry.goals||0;
-            const tName=entry.team?displayName(entry.team):'';
-            scorerTeamHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${tFlag} ${tName}</div>`;
-            scorerHtml=`
-              <div style="display:flex;align-items:center;gap:12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;">
-                <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,215,0,0.05));border:1px solid rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">👟</div>
-                <div style="flex:1;">
-                  <div style="font-size:15px;font-weight:900;color:#fff;">${scorerName}</div>
-                  ${scorerTeamHtml}
-                </div>
-                <div style="text-align:center;">
-                  <div style="font-size:24px;font-weight:900;color:#fbbf24;line-height:1;">${goals}</div>
-                  <div style="font-size:9px;color:rgba(255,255,255,0.4);">שערים</div>
-                </div>
-              </div>`;
-            break;
-          }
-        }
-      }
-      if(!scorerHtml){
-        scorerHtml=`<div style="display:flex;align-items:center;gap:12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;">
-          <div style="font-size:20px;">👟</div>
-          <div style="font-size:15px;font-weight:900;color:#fff;">${scorerName}</div>
+    if(topScorers.length){
+      const scorerCards=topScorers.map(sc=>{
+        const tc=sc.team?getCountryCode(sc.team):null;
+        const tFlag=tc?`<span class="fi fi-${tc}" style="width:14px;height:14px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;margin-left:3px;"></span>`:'';
+        const tName=sc.team?displayName(sc.team):'';
+        const teamLine=tName?`<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${tFlag} ${tName}</div>`:'';
+        return `<div style="display:flex;align-items:center;gap:12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;margin-bottom:8px;">
+          <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,215,0,0.05));border:1px solid rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">👟</div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:900;color:#fff;">${sc.name}</div>
+            ${teamLine}
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:24px;font-weight:900;color:#fbbf24;line-height:1;">${sc.goals}</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.4);">שערים</div>
+          </div>
         </div>`;
-      }
+      }).join('');
+      const scorerTitle = topScorers.length>1 ? '👟 מלכי השערים' : '👟 מלך השערים';
+      scorerHtml=`<div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:10px;">${scorerTitle}</div>${scorerCards}`;
     }
 
-    // Group winners — only groups the current user belongs to
+    // Group winners — build data for all groups the user can see
     const myGrps=(ME&&USERS[ME.uid]&&USERS[ME.uid].groups)||[];
     const isAdm=MEDATA&&MEDATA.isAdmin;
     let groupWinnersHtml='';
     if(ALL_GROUPS && Object.keys(ALL_GROUPS).length){
       const groupsToShow=isAdm?Object.keys(ALL_GROUPS):myGrps.filter(g=>ALL_GROUPS[g]);
+      const showFilter=groupsToShow.length>1;
+      // Build winner card for each group
       const winnerCards=groupsToShow.map(gid=>{
         const g=ALL_GROUPS[gid]; if(!g) return '';
-        // Find top scorer in this group by actual points
+        // Find top player in this group by actual points
         let topUid=null, topPts=-1;
         Object.entries(USERS).forEach(([uid,u])=>{
           if(!(u.groups||[]).includes(gid)) return;
           if(u.isBot) return;
-          // Sum points: match bets + special bets
           let pts=0;
           const myBets=BETS[uid]||{};
           Object.entries(MATCHES).forEach(([mid,m])=>{
@@ -5424,39 +5413,52 @@ function renderToday(){
             const r=calcPts(m,myBets[mid]);
             if(r) pts+=r.total||0;
           });
-          // Special bets bonus
-          if(SPECIAL_RESULT&&SPECIAL_RESULT.champion){
-            const sb=((BETS[uid]&&BETS[uid].special)||{});
-            // check from specialBets
-          }
           if(pts>topPts){ topPts=pts; topUid=uid; }
         });
         if(!topUid) return '';
         const wu=USERS[topUid];
         const wName=wu.nickname||wu.name||'?';
-        const iconHtml=renderIcon(g.logo||g.icon||'🏆','36px');
+        const iconHtml=renderIcon(g.logo||g.icon||'\u{1F3C6}','36px');
         const color=g.color||'var(--gold)';
-        return `<div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 16px;margin-bottom:8px;">
+        return `<div class="cele-group-card" data-cele-gid="${gid}" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 16px;margin-bottom:8px;">
           <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid ${color};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(0,0,0,0.2);">${iconHtml}</div>
           <div style="flex:1;">
             <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:2px;">${g.name}</div>
             <div style="font-size:14px;font-weight:900;color:#fff;">${wName}</div>
-            <div style="font-size:11px;font-weight:900;color:${color};">${topPts} נקודות</div>
+            <div style="font-size:11px;font-weight:900;color:${color};">${topPts} \u05E0\u05E7\u05D5\u05D3\u05D5\u05EA</div>
           </div>
-          <div style="font-size:22px;">🥇</div>
+          <div style="font-size:22px;">\u{1F947}</div>
         </div>`;
       }).filter(Boolean).join('');
-      if(winnerCards) groupWinnersHtml=`
-        <div style="border-top:1px solid rgba(255,255,255,0.06);padding:16px 20px 0;">
-          <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">🏅 מנצחי הקבוצות</div>
-          ${winnerCards}
-        </div>`;
+      if(winnerCards){
+        // Filter buttons — only if user is in 2+ groups
+        let filterHtml='';
+        if(showFilter){
+          const allBtn=`<button class="cele-gfilter active" data-cele-filter="all" style="padding:5px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,215,0,0.15);color:#fbbf24;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;">\u05D4\u05DB\u05DC</button>`;
+          const gBtns=groupsToShow.map(gid=>{
+            const g=ALL_GROUPS[gid]; if(!g) return '';
+            const color=g.color||'#888';
+            return `<button class="cele-gfilter" data-cele-filter="${gid}" style="padding:5px 12px;border-radius:10px;border:1px solid ${color}33;background:transparent;color:${color};font-size:11px;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;">${g.name}</button>`;
+          }).join('');
+          filterHtml=`<div id="cele-group-filter" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">${allBtn}${gBtns}</div>`;
+        }
+        groupWinnersHtml=`
+          <div style="border-top:1px solid rgba(255,255,255,0.06);padding:16px 20px 0;">
+            <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">\u{1F3C5} \u05DE\u05E0\u05E6\u05D7\u05D9 \u05D4\u05E7\u05D1\u05D5\u05E6\u05D5\u05EA</div>
+            ${filterHtml}
+            <div id="cele-group-cards">${winnerCards}</div>
+          </div>`;
+      }
     }
 
-    const divider=`<div style="display:flex;align-items:center;gap:10px;padding:0 20px;margin:4px 0;"><div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div><div style="font-size:12px;color:rgba(255,255,255,0.15);">✦</div><div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div></div>`;
+    const divider=`<div style="display:flex;align-items:center;gap:10px;padding:0 20px;margin:4px 0;"><div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div><div style="font-size:12px;color:rgba(255,255,255,0.15);">\u2726</div><div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div></div>`;
+
+    // Update hero label
+    const heroLabel=document.querySelector('.hero-day-label');
+    if(heroLabel) heroLabel.textContent='\u{1F3C6} \u05D4\u05D8\u05D5\u05E8\u05E0\u05D9\u05E8 \u05D4\u05E1\u05EA\u05D9\u05D9\u05DD';
 
     container.innerHTML=`
-      <div style="position:relative;overflow:hidden;border-radius:16px;">
+      <div style="position:relative;overflow:hidden;border-radius:16px;max-width:520px;margin:0 auto;">
         <canvas id="fw-canvas-today" style="position:absolute;inset:0;pointer-events:none;z-index:0;width:100%;height:100%;"></canvas>
         <div style="position:relative;z-index:1;">
           <!-- Champion -->
@@ -5467,19 +5469,38 @@ function renderToday(){
               <div style="position:absolute;inset:5px;border-radius:50%;background:var(--card2,#0f1f35);"></div>
               ${flagSpan}
             </div>
-            <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:2px;margin-bottom:6px;">🏆 אלופת העולם 2026</div>
+            <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:2px;margin-bottom:6px;">\u{1F3C6} \u05D0\u05DC\u05D5\u05E4\u05EA \u05D4\u05E2\u05D5\u05DC\u05DD 2026</div>
             <div style="font-size:30px;font-weight:900;color:#fbbf24;letter-spacing:2px;animation:glow 2s ease-in-out infinite alternate;">${displayName(champion)}</div>
           </div>
-          ${scorerHtml?divider+'<div style="padding:14px 20px;">'+
-            '<div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:10px;">👟 מלך השערים</div>'+
-            scorerHtml+'</div>':''}
+          ${scorerHtml?divider+'<div style="padding:14px 20px;">'+scorerHtml+'</div>':''}
           ${groupWinnersHtml}
           <!-- Footer -->
           <div style="text-align:center;padding:16px 20px 20px;font-size:11px;color:rgba(255,255,255,0.25);line-height:1.7;border-top:1px solid rgba(255,255,255,0.05);">
-            הטורניר הסתיים — ברכות לזוכים ותודה לכל המשתתפים<br>נתראה ביורו 2028 ⚽
+            \u05D4\u05D8\u05D5\u05E8\u05E0\u05D9\u05E8 \u05D4\u05E1\u05EA\u05D9\u05D9\u05DD \u2014 \u05D1\u05E8\u05DB\u05D5\u05EA \u05DC\u05D6\u05D5\u05DB\u05D9\u05DD \u05D5\u05EA\u05D5\u05D3\u05D4 \u05DC\u05DB\u05DC \u05D4\u05DE\u05E9\u05EA\u05EA\u05E4\u05D9\u05DD<br>\u05E0\u05EA\u05E8\u05D0\u05D4 \u05D1\u05D9\u05D5\u05E8\u05D5 2028 \u26BD
           </div>
         </div>
       </div>`;
+
+    // Group filter interactivity
+    const filterWrap=document.getElementById('cele-group-filter');
+    if(filterWrap){
+      filterWrap.addEventListener('click', function(ev){
+        const btn=ev.target.closest('.cele-gfilter'); if(!btn) return;
+        const filt=btn.getAttribute('data-cele-filter');
+        // Update active button
+        filterWrap.querySelectorAll('.cele-gfilter').forEach(function(b){
+          b.classList.remove('active');
+          b.style.background='transparent';
+        });
+        btn.classList.add('active');
+        btn.style.background=filt==='all'?'rgba(255,215,0,0.15)':'rgba(255,255,255,0.08)';
+        // Show/hide cards
+        document.querySelectorAll('.cele-group-card').forEach(function(card){
+          if(filt==='all') card.style.display='flex';
+          else card.style.display=card.getAttribute('data-cele-gid')===filt?'flex':'none';
+        });
+      });
+    }
 
     // Fireworks — upgraded
     requestAnimationFrame(()=>{
