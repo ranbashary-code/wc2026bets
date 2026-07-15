@@ -4792,7 +4792,7 @@ function renderLeader() {
 
     const groupColor = g.color||'#7c3aed';
 
-    html += '<div class="group-leaderboard">';
+    html += '<div class="group-leaderboard" data-gid="'+gid+'">';
     html += '<div class="group-header" style="background:'+groupColor+'22;border:1px solid '+groupColor+'44;cursor:pointer;" onclick="openGroupStats(\'' + gid + '\')">';;
     html += g.logo?'<img src="'+g.logo+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">':renderIcon(g.icon||'🏆','24px');
     html += '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:2px;color:'+groupColor+';">'+g.name+'</span>';
@@ -5494,10 +5494,15 @@ function renderToday(){
         });
         btn.classList.add('active');
         btn.style.background=filt==='all'?'rgba(255,215,0,0.15)':'rgba(255,255,255,0.08)';
-        // Show/hide cards
+        // Show/hide celebration group winner cards
         document.querySelectorAll('.cele-group-card').forEach(function(card){
           if(filt==='all') card.style.display='flex';
           else card.style.display=card.getAttribute('data-cele-gid')===filt?'flex':'none';
+        });
+        // Also filter leaderboard group sections
+        document.querySelectorAll('.group-leaderboard').forEach(function(sec){
+          if(filt==='all') sec.style.display='';
+          else sec.style.display=sec.getAttribute('data-gid')===filt?'':'none';
         });
       });
     }
