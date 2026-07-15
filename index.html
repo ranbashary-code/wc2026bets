@@ -4662,10 +4662,27 @@ function _allBetsSection(id, m, hasRes) {
     '<div style="margin-top:10px;">'+html+'</div></details></div>';
 }
 
-function _ldrRow(s,i,extraStyle){
+// Shared comparator: points desc, then hits (bulls) desc, then dirs (direction) desc
+function _cmpScore(a,b){
+  if(b.pts!==a.pts) return b.pts-a.pts;
+  if(b.hits!==a.hits) return b.hits-a.hits;
+  return (b.dirs||0)-(a.dirs||0);
+}
+
+// Compute competition-style ranks: only a FULL tie (pts, hits, dirs all equal) shares the same rank
+function _computeRanks(sortedArr){
+  var ranks=[];
+  for(var i=0;i<sortedArr.length;i++){
+    if(i>0 && sortedArr[i].pts===sortedArr[i-1].pts && sortedArr[i].hits===sortedArr[i-1].hits && (sortedArr[i].dirs||0)===(sortedArr[i-1].dirs||0)) ranks.push(ranks[i-1]);
+    else ranks.push(i+1);
+  }
+  return ranks;
+}
+
+function _ldrRow(s,rank,extraStyle){
   var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
-  var rankCls=i<3?' rank-'+(i+1):'';
-  var rankInner=i<3?'<span class="leader-rank-medal">'+medals[i]+'</span>':'<span class="leader-rank-num">#'+(i+1)+'</span>';
+  var rankCls=rank<=3?' rank-'+rank:'';
+  var rankInner=rank<=3?'<span class="leader-rank-medal">'+medals[rank-1]+'</span>':'<span class="leader-rank-num">#'+rank+'</span>';
   var avatar=s.isBot?'<img src="'+BOT_AVATAR+'" style="width:26px;height:26px;border-radius:50%;margin-left:8px;">':'';
   var miss=0;
   if(BETS[s.uid]){Object.keys(BETS[s.uid]).forEach(function(mid){var m2=MATCHES[mid];if(m2&&m2.result!==undefined){var p=calcPts(m2,BETS[s.uid][mid]);if(!p.hit&&!p.dir)miss++;}});}
@@ -4754,13 +4771,14 @@ function renderLeader() {
 
   // If no groups defined yet - show simple leaderboard
   if(!gkeys.length) {
-    const sorted = Object.values(sc).sort((a,b)=>b.pts-a.pts);
+    const sorted = Object.values(sc).sort(_cmpScore);
     if(!sorted.length){ lst.innerHTML="<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>הטבלה תתעדכן לאחר המשחקים הראשונים</div>"; return; }
     var _uidsAll = sorted.map(function(s){return s.uid;});
     var _dAll = _rankDeltas(_uidsAll), _aAll = _achievements(_uidsAll);
     sorted.forEach(function(s){ s.delta=_dAll[s.uid]||0; s.badges=_aAll[s.uid]||[]; });
+    var _ranksAll = _computeRanks(sorted);
     lst.innerHTML='<div class="leader-table-wrap"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטאות</span><span>נק׳</span></div>'+
-      sorted.map(function(s,i){return _ldrRow(s,i,'');}).join('')+'</div>';
+      sorted.map(function(s,i){return _ldrRow(s,_ranksAll[i],'');}).join('')+'</div>';
     return;
   }
 
@@ -4782,7 +4800,7 @@ function renderLeader() {
     // Include: users in this group + admin + bot
     const groupScores = Object.values(sc).filter(s=>
       s.isBot || (USERS[s.uid]&&USERS[s.uid].isAdmin) || (s.groups||[]).includes(gid)
-    ).sort((a,b)=>b.pts-a.pts);
+    ).sort(_cmpScore);
 
     if(!groupScores.length) return;
 
@@ -4798,7 +4816,8 @@ function renderLeader() {
     html += '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:2px;color:'+groupColor+';">'+g.name+'</span>';
     html += '</div>';
 
-    html += '<div class="leader-table-wrap" style="border-radius:0 0 12px 12px;margin-bottom:0;"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטאות</span><span>נק׳</span></div>'+groupScores.map(function(s,i){return _ldrRow(s,i,'border-right:3px solid '+groupColor+';');}).join('')+'</div>';
+    var _ranksG = _computeRanks(groupScores);
+    html += '<div class="leader-table-wrap" style="border-radius:0 0 12px 12px;margin-bottom:0;"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטאות</span><span>נק׳</span></div>'+groupScores.map(function(s,i){return _ldrRow(s,_ranksG[i],'border-right:3px solid '+groupColor+';');}).join('')+'</div>';
 
     html += '</div>';
   });
@@ -5398,38 +5417,47 @@ function renderToday(){
     if(ALL_GROUPS && Object.keys(ALL_GROUPS).length){
       const groupsToShow=isAdm?Object.keys(ALL_GROUPS):myGrps.filter(g=>ALL_GROUPS[g]);
       const showFilter=groupsToShow.length>1;
-      // Build winner card for each group
-      const winnerCards=groupsToShow.map(gid=>{
-        const g=ALL_GROUPS[gid]; if(!g) return '';
-        // Find top player in this group by actual points
-        let topUid=null, topPts=-1;
+      // Build winner card(s) for each group — supports ties (co-champions)
+      let winnerCards='';
+      groupsToShow.forEach(gid=>{
+        const g=ALL_GROUPS[gid]; if(!g) return;
+        // Compute pts/hits/dirs for every real player in this group
+        const groupPlayers=[];
         Object.entries(USERS).forEach(([uid,u])=>{
           if(!(u.groups||[]).includes(gid)) return;
           if(u.isBot) return;
-          let pts=0;
+          let pts=0, hits=0, dirs=0;
           const myBets=BETS[uid]||{};
           Object.entries(MATCHES).forEach(([mid,m])=>{
             if(!m.result||!myBets[mid]) return;
             const r=calcPts(m,myBets[mid]);
-            if(r) pts+=r.total||0;
+            if(!r) return;
+            pts+=r.total||0;
+            if(r.hit) hits++; else if(r.dir) dirs++;
           });
-          if(pts>topPts){ topPts=pts; topUid=uid; }
+          groupPlayers.push({uid, pts, hits, dirs});
         });
-        if(!topUid) return '';
-        const wu=USERS[topUid];
-        const wName=wu.nickname||wu.name||'?';
+        if(!groupPlayers.length) return;
+        groupPlayers.sort(_cmpScore);
+        const top=groupPlayers[0];
+        // Collect everyone fully tied with the top (pts, hits, dirs all equal)
+        const winners=groupPlayers.filter(p=>p.pts===top.pts && p.hits===top.hits && p.dirs===top.dirs);
         const iconHtml=renderIcon(g.logo||g.icon||'\u{1F3C6}','36px');
         const color=g.color||'var(--gold)';
-        return `<div class="cele-group-card" data-cele-gid="${gid}" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 16px;margin-bottom:8px;">
-          <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid ${color};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(0,0,0,0.2);">${iconHtml}</div>
-          <div style="flex:1;">
-            <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:2px;">${g.name}</div>
-            <div style="font-size:14px;font-weight:900;color:#fff;">${wName}</div>
-            <div style="font-size:11px;font-weight:900;color:${color};">${topPts} \u05E0\u05E7\u05D5\u05D3\u05D5\u05EA</div>
-          </div>
-          <div style="font-size:22px;">\u{1F947}</div>
-        </div>`;
-      }).filter(Boolean).join('');
+        winners.forEach(w=>{
+          const wu=USERS[w.uid];
+          const wName=wu.nickname||wu.name||'?';
+          winnerCards+=`<div class="cele-group-card" data-cele-gid="${gid}" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 16px;margin-bottom:8px;">
+            <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid ${color};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(0,0,0,0.2);">${iconHtml}</div>
+            <div style="flex:1;">
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:2px;">${g.name}${winners.length>1?' \u2022 \u05E9\u05D5\u05D5\u05D9\u05D5\u05DF':''}</div>
+              <div style="font-size:14px;font-weight:900;color:#fff;">${wName}</div>
+              <div style="font-size:11px;font-weight:900;color:${color};">${w.pts} \u05E0\u05E7\u05D5\u05D3\u05D5\u05EA</div>
+            </div>
+            <div style="font-size:22px;">\u{1F947}</div>
+          </div>`;
+        });
+      });
       if(winnerCards){
         // Filter buttons — only if user is in 2+ groups
         let filterHtml='';
@@ -5475,8 +5503,9 @@ function renderToday(){
           ${scorerHtml?divider+'<div style="padding:14px 20px;">'+scorerHtml+'</div>':''}
           ${groupWinnersHtml}
           <!-- Footer -->
-          <div style="text-align:center;padding:16px 20px 20px;font-size:11px;color:rgba(255,255,255,0.25);line-height:1.7;border-top:1px solid rgba(255,255,255,0.05);">
-            \u05D4\u05D8\u05D5\u05E8\u05E0\u05D9\u05E8 \u05D4\u05E1\u05EA\u05D9\u05D9\u05DD \u2014 \u05D1\u05E8\u05DB\u05D5\u05EA \u05DC\u05D6\u05D5\u05DB\u05D9\u05DD \u05D5\u05EA\u05D5\u05D3\u05D4 \u05DC\u05DB\u05DC \u05D4\u05DE\u05E9\u05EA\u05EA\u05E4\u05D9\u05DD<br>\u05E0\u05EA\u05E8\u05D0\u05D4 \u05D1\u05D9\u05D5\u05E8\u05D5 2028 \u26BD
+          <div style="text-align:center;padding:20px 20px 24px;border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.6);line-height:1.8;">\u05D4\u05D8\u05D5\u05E8\u05E0\u05D9\u05E8 \u05D4\u05E1\u05EA\u05D9\u05D9\u05DD \u2014 \u05D1\u05E8\u05DB\u05D5\u05EA \u05DC\u05D6\u05D5\u05DB\u05D9\u05DD \u05D5\u05EA\u05D5\u05D3\u05D4 \u05DC\u05DB\u05DC \u05D4\u05DE\u05E9\u05EA\u05EA\u05E4\u05D9\u05DD</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px;">\u05E0\u05EA\u05E8\u05D0\u05D4 \u05D1\u05D9\u05D5\u05E8\u05D5 2028 \u26BD</div>
           </div>
         </div>
       </div>`;
