@@ -4357,7 +4357,7 @@ function renderTicker(){
             bettors.push(u.nickname||u.name||'?');
           });
           if(bettors.length){
-            items.push('\u{1F44B} '+tag(gid)+displayName(latestElim.team)+' הודחה! '+bettors.join(', ')+' הימרו עליה כנבחרת זוכה');
+            items.push('\u{1F44B} '+tag(gid)+displayName(latestElim.team)+' הודחה! '+bettors.join(', ')+(bettors.length===1?' הימר':' הימרו')+' עליה כנבחרת זוכה');
             _elimGroupDone=true;
           }
         });
@@ -4371,7 +4371,7 @@ function renderTicker(){
           bettorsAll.push(u.nickname||u.name||'?');
         });
         if(bettorsAll.length){
-          items.push('\u{1F44B} '+displayName(latestElim.team)+' הודחה! '+bettorsAll.join(', ')+' הימרו עליה כנבחרת זוכה');
+          items.push('\u{1F44B} '+displayName(latestElim.team)+' הודחה! '+bettorsAll.join(', ')+(bettorsAll.length===1?' הימר':' הימרו')+' עליה כנבחרת זוכה');
         }
       }
     }
