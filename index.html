@@ -2748,19 +2748,26 @@ async function renderSpecialBetsReveal(lk) {
   Object.values(MATCHES).forEach(m=>{
     if(m.stage==='group'||!m.result) return;
     const r=m.result;
-    let loser=null;
-    if(r[0]>r[1]) loser=m.team2;
-    else if(r[1]>r[0]) loser=m.team1;
+    let loser=null, winner=null;
+    if(r[0]>r[1]){ loser=m.team2; winner=m.team1; }
+    else if(r[1]>r[0]){ loser=m.team1; winner=m.team2; }
     else if(m.penalties){
-      loser=m.penalties[0]>m.penalties[1]?m.team2:m.team1;
+      if(m.penalties[0]>m.penalties[1]){ winner=m.team1; loser=m.team2; }
+      else { winner=m.team2; loser=m.team1; }
     } else if(m.resultFull){
-      loser=m.resultFull[0]>m.resultFull[1]?m.team2:m.team1;
+      if(m.resultFull[0]>m.resultFull[1]){ winner=m.team1; loser=m.team2; }
+      else { winner=m.team2; loser=m.team1; }
     }
     if(loser){
       // Champion: any KO loser can't win
       elimChamp.add(loser);
       // Scorer: SF losers still play 3rd place, only truly out after 3rd place match
       if(m.stage!=='sf') elimScorer.add(loser);
+    }
+    // 3rd place & final are terminal for BOTH teams — win or lose, no more matches follow
+    if(m.stage==='3rd'||m.stage==='final'){
+      if(winner) elimScorer.add(winner);
+      if(loser) elimScorer.add(loser);
     }
   });
 
