@@ -1094,6 +1094,15 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
         </div>
         <button class="btn btn-green" id="save-scoring" style="width:100%;margin-bottom:20px;">💾 שמור שינויים</button>
 
+        <div class="sec-head"><span style="font-size:20px;">🏆</span><div class="sec-title" style="font-size:17px;">תוצאת אמת — הימורים מיוחדים</div></div>
+        <div class="card" style="padding:14px;margin-bottom:20px;">
+          <p style="font-size:11px;color:var(--text2);margin-bottom:10px;">קבע מי הנבחרת האלופה ומלך השערים בפועל. כל שחקן שניחש נכון יקבל את הנקודות בטבלה אוטומטית.</p>
+          <div style="margin-bottom:8px;"><div style="font-size:11px;color:var(--text2);margin-bottom:3px;">🥇 נבחרת אלופה</div>
+            <select id="result-champion" class="inp" style="font-size:13px;"></select></div>
+          <div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text2);margin-bottom:3px;">👟 מלך שערים</div>
+            <input id="result-scorer" class="inp" type="text" placeholder="שם פרטי ושם משפחה" style="font-size:13px;"></div>
+          <button class="btn btn-grad" id="save-special-result" style="width:100%;font-size:13px;padding:9px;">💾 שמור תוצאת אמת</button>
+        </div>
       </div>
 
     </div>
@@ -2748,26 +2757,19 @@ async function renderSpecialBetsReveal(lk) {
   Object.values(MATCHES).forEach(m=>{
     if(m.stage==='group'||!m.result) return;
     const r=m.result;
-    let loser=null, winner=null;
-    if(r[0]>r[1]){ loser=m.team2; winner=m.team1; }
-    else if(r[1]>r[0]){ loser=m.team1; winner=m.team2; }
+    let loser=null;
+    if(r[0]>r[1]) loser=m.team2;
+    else if(r[1]>r[0]) loser=m.team1;
     else if(m.penalties){
-      if(m.penalties[0]>m.penalties[1]){ winner=m.team1; loser=m.team2; }
-      else { winner=m.team2; loser=m.team1; }
+      loser=m.penalties[0]>m.penalties[1]?m.team2:m.team1;
     } else if(m.resultFull){
-      if(m.resultFull[0]>m.resultFull[1]){ winner=m.team1; loser=m.team2; }
-      else { winner=m.team2; loser=m.team1; }
+      loser=m.resultFull[0]>m.resultFull[1]?m.team2:m.team1;
     }
     if(loser){
       // Champion: any KO loser can't win
       elimChamp.add(loser);
       // Scorer: SF losers still play 3rd place, only truly out after 3rd place match
       if(m.stage!=='sf') elimScorer.add(loser);
-    }
-    // 3rd place & final are terminal for BOTH teams — win or lose, no more matches follow
-    if(m.stage==='3rd'||m.stage==='final'){
-      if(winner) elimScorer.add(winner);
-      if(loser) elimScorer.add(loser);
     }
   });
 
@@ -4319,18 +4321,11 @@ function renderTicker(){
       }).sort(function(a,b){return b.goals-a.goals;});
       if(scorerEntries.length>=1 && scorerEntries[0].goals>0){
         var top=scorerEntries[0];
-        // Check for tie at the top
-        var tiedAtTop=scorerEntries.filter(function(s){return s.goals===top.goals;});
-        if(tiedAtTop.length>=2){
-          var tiedNames=tiedAtTop.map(function(s){return s.name;}).join(' ו');
-          items.push('🔥 שוויון בראש! '+tiedNames+' עם '+top.goals+' שערים כל אחד');
-        } else {
-          items.push('👟 מוביל במירוץ מלך השערים: '+top.name+' עם '+top.goals+' שערים');
-          // Tight race (gap of 1)
-          if(scorerEntries.length>=2 && scorerEntries[1].goals>0){
-            var gap=top.goals-scorerEntries[1].goals;
-            if(gap===1) items.push('🔥 מירוץ צמוד! '+scorerEntries[1].name+' ('+scorerEntries[1].goals+') רודף אחרי '+top.name+' ('+top.goals+')');
-          }
+        items.push('👟 מוביל במירוץ מלך השערים: '+top.name+' עם '+top.goals+' שערים');
+        // Tight race
+        if(scorerEntries.length>=2 && scorerEntries[1].goals>0){
+          var gap=top.goals-scorerEntries[1].goals;
+          if(gap<=1) items.push('🔥 מירוץ צמוד! '+scorerEntries[1].name+' ('+scorerEntries[1].goals+') רודף אחרי '+top.name+' ('+top.goals+')');
         }
       }
     }
@@ -4346,74 +4341,36 @@ function renderTicker(){
       else if(m.resultFull) loser=m.resultFull[0]>m.resultFull[1]?m.team2:m.team1;
       if(loser) elimTeams.push({team:loser, stage:m.stage});
     });
-    // Show who bet on eliminated teams (latest elimination only) — filtered by group
+    // Show who bet on eliminated teams (latest elimination only)
     if(elimTeams.length && SPECIAL_BETS){
       var latestElim=elimTeams[elimTeams.length-1];
-      var _elimGroupDone=false;
-      if(viewGroups.length){
-        viewGroups.forEach(function(gid){
-          var guids=groupUids(gid);
-          var bettors=[];
-          Object.entries(SPECIAL_BETS).forEach(function(e){
-            var uid=e[0], sb=e[1];
-            if(!sb||!sb.champion||sb.champion!==latestElim.team) return;
-            if(guids.indexOf(uid)===-1) return;
-            var u=USERS[uid]||{};
-            bettors.push(u.nickname||u.name||'?');
-          });
-          if(bettors.length){
-            items.push('\u{1F44B} '+tag(gid)+displayName(latestElim.team)+' הודחה! '+bettors.join(', ')+(bettors.length===1?' הימר':' הימרו')+' עליה כנבחרת זוכה');
-            _elimGroupDone=true;
-          }
-        });
-      }
-      if(!_elimGroupDone){
-        var bettorsAll=[];
-        Object.entries(SPECIAL_BETS).forEach(function(e){
-          var uid=e[0], sb=e[1];
-          if(!sb||!sb.champion||sb.champion!==latestElim.team) return;
-          var u=USERS[uid]||{};
-          bettorsAll.push(u.nickname||u.name||'?');
-        });
-        if(bettorsAll.length){
-          items.push('\u{1F44B} '+displayName(latestElim.team)+' הודחה! '+bettorsAll.join(', ')+(bettorsAll.length===1?' הימר':' הימרו')+' עליה כנבחרת זוכה');
+      var bettors=[];
+      Object.entries(SPECIAL_BETS).forEach(function(e){
+        var uid=e[0], sb=e[1];
+        if(!sb||!sb.champion) return;
+        var u=USERS[uid]||{};
+        if(sb.champion===latestElim.team){
+          bettors.push(u.nickname||u.name||'?');
         }
+      });
+      if(bettors.length){
+        items.push('👋 '+displayName(latestElim.team)+' הודחה! '+bettors.join(', ')+' הימרו עליה כנבחרת זוכה');
       }
     }
 
-    // Champion set — announce winner (generic, no names)
+    // Champion set — announce winner
     if(SPECIAL_RESULT && SPECIAL_RESULT.champion){
-      items.push('\u{1F3C6} '+displayName(SPECIAL_RESULT.champion)+' אלופת העולם 2026!');
-      // Who guessed correctly — filtered by group
-      var _champGroupDone=false;
-      if(viewGroups.length){
-        viewGroups.forEach(function(gid){
-          var guids=groupUids(gid);
-          var correctChamp=[];
-          Object.entries(SPECIAL_BETS||{}).forEach(function(e){
-            var uid=e[0], sb=e[1];
-            if(!sb||!sb.champion||sb.champion!==SPECIAL_RESULT.champion) return;
-            if(guids.indexOf(uid)===-1) return;
-            var u=USERS[uid]||{};
-            correctChamp.push(u.nickname||u.name||'?');
-          });
-          if(correctChamp.length){
-            items.push('\u{1F3AF} '+tag(gid)+'\u05E0\u05D9\u05D7\u05E9\u05D5 \u05E0\u05DB\u05D5\u05DF \u05D0\u05EA \u05D4\u05D0\u05DC\u05D5\u05E4\u05D4: '+correctChamp.join(', '));
-            _champGroupDone=true;
-          }
-        });
-      }
-      if(!_champGroupDone){
-        var correctAll=[];
-        Object.entries(SPECIAL_BETS||{}).forEach(function(e){
-          var sb=e[1]; if(!sb||!sb.champion) return;
-          if(sb.champion===SPECIAL_RESULT.champion){
-            var u=USERS[e[0]]||{};
-            correctAll.push(u.nickname||u.name||'?');
-          }
-        });
-        if(correctAll.length) items.push('\u{1F3AF} \u05E0\u05D9\u05D7\u05E9\u05D5 \u05E0\u05DB\u05D5\u05DF \u05D0\u05EA \u05D4\u05D0\u05DC\u05D5\u05E4\u05D4: '+correctAll.join(', '));
-      }
+      items.push('🏆 '+displayName(SPECIAL_RESULT.champion)+' אלופת העולם 2026!');
+      // Who guessed correctly
+      var correctChamp=[];
+      Object.entries(SPECIAL_BETS||{}).forEach(function(e){
+        var sb=e[1]; if(!sb||!sb.champion) return;
+        if(sb.champion===SPECIAL_RESULT.champion){
+          var u=USERS[e[0]]||{};
+          correctChamp.push(u.nickname||u.name||'?');
+        }
+      });
+      if(correctChamp.length) items.push('🎯 ניחשו נכון את האלופה: '+correctChamp.join(', '));
     }
   }catch(e){}
 
@@ -4669,27 +4626,10 @@ function _allBetsSection(id, m, hasRes) {
     '<div style="margin-top:10px;">'+html+'</div></details></div>';
 }
 
-// Shared comparator: points desc, then hits (bulls) desc, then dirs (direction) desc
-function _cmpScore(a,b){
-  if(b.pts!==a.pts) return b.pts-a.pts;
-  if(b.hits!==a.hits) return b.hits-a.hits;
-  return (b.dirs||0)-(a.dirs||0);
-}
-
-// Compute competition-style ranks: only a FULL tie (pts, hits, dirs all equal) shares the same rank
-function _computeRanks(sortedArr){
-  var ranks=[];
-  for(var i=0;i<sortedArr.length;i++){
-    if(i>0 && sortedArr[i].pts===sortedArr[i-1].pts && sortedArr[i].hits===sortedArr[i-1].hits && (sortedArr[i].dirs||0)===(sortedArr[i-1].dirs||0)) ranks.push(ranks[i-1]);
-    else ranks.push(i+1);
-  }
-  return ranks;
-}
-
-function _ldrRow(s,rank,extraStyle){
+function _ldrRow(s,i,extraStyle){
   var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
-  var rankCls=rank<=3?' rank-'+rank:'';
-  var rankInner=rank<=3?'<span class="leader-rank-medal">'+medals[rank-1]+'</span>':'<span class="leader-rank-num">#'+rank+'</span>';
+  var rankCls=i<3?' rank-'+(i+1):'';
+  var rankInner=i<3?'<span class="leader-rank-medal">'+medals[i]+'</span>':'<span class="leader-rank-num">#'+(i+1)+'</span>';
   var avatar=s.isBot?'<img src="'+BOT_AVATAR+'" style="width:26px;height:26px;border-radius:50%;margin-left:8px;">':'';
   var miss=0;
   if(BETS[s.uid]){Object.keys(BETS[s.uid]).forEach(function(mid){var m2=MATCHES[mid];if(m2&&m2.result!==undefined){var p=calcPts(m2,BETS[s.uid][mid]);if(!p.hit&&!p.dir)miss++;}});}
@@ -4739,30 +4679,15 @@ function renderLeader() {
     });
   });
 
-  // Special bets (champion / top scorer) — scorer auto-derived from SCORER_GOALS
+  // Special bets (champion / top scorer) — award once the actual result is set by admin
   var _spRes = SPECIAL_RESULT || {};
-  if(_spRes.champion || (SCORER_GOALS && Object.keys(SCORER_GOALS).length)){
+  if(_spRes.champion || _spRes.scorer){
     var _champPts = (SCORING.champion && SCORING.champion.h) || 10;
     var _scorerPts = (SCORING.scorer && SCORING.scorer.h) || 10;
-    // Derive top scorer(s) from SCORER_GOALS (award only when champion is set = tournament over)
-    var _topScorerNames=[];
-    if(_spRes.champion && SCORER_GOALS && Object.keys(SCORER_GOALS).length){
-      var _srAll=Object.entries(SCORER_GOALS).map(function(se){
-        var sv=se[1]; return {name:se[0], goals:typeof sv==='object'?(sv.goals||0):Number(sv)};
-      }).sort(function(a,b){return b.goals-a.goals;});
-      if(_srAll.length && _srAll[0].goals>0){
-        var _topG=_srAll[0].goals;
-        _topScorerNames=_srAll.filter(function(s){return s.goals===_topG;}).map(function(s){return s.name;});
-      }
-    }
     Object.entries(SPECIAL_BETS||{}).forEach(function(e){
       var uid=e[0], sb=e[1]; if(!sc[uid]||!sb) return;
       if(_spRes.champion && sb.champion && _sameTeam(sb.champion,_spRes.champion)) sc[uid].pts += _champPts;
-      if(_topScorerNames.length && sb.scorer){
-        if(_topScorerNames.some(function(tn){return _sameName(tn,sb.scorer);})){
-          sc[uid].pts += _scorerPts;
-        }
-      }
+      if(_spRes.scorer && sb.scorer && _sameName(sb.scorer,_spRes.scorer)) sc[uid].pts += _scorerPts;
     });
   }
 
@@ -4778,14 +4703,13 @@ function renderLeader() {
 
   // If no groups defined yet - show simple leaderboard
   if(!gkeys.length) {
-    const sorted = Object.values(sc).sort(_cmpScore);
+    const sorted = Object.values(sc).sort((a,b)=>b.pts-a.pts);
     if(!sorted.length){ lst.innerHTML="<div style='text-align:center;padding:30px;color:var(--text2);font-weight:700;'>הטבלה תתעדכן לאחר המשחקים הראשונים</div>"; return; }
     var _uidsAll = sorted.map(function(s){return s.uid;});
     var _dAll = _rankDeltas(_uidsAll), _aAll = _achievements(_uidsAll);
     sorted.forEach(function(s){ s.delta=_dAll[s.uid]||0; s.badges=_aAll[s.uid]||[]; });
-    var _ranksAll = _computeRanks(sorted);
     lst.innerHTML='<div class="leader-table-wrap"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטאות</span><span>נק׳</span></div>'+
-      sorted.map(function(s,i){return _ldrRow(s,_ranksAll[i],'');}).join('')+'</div>';
+      sorted.map(function(s,i){return _ldrRow(s,i,'');}).join('')+'</div>';
     return;
   }
 
@@ -4807,7 +4731,7 @@ function renderLeader() {
     // Include: users in this group + admin + bot
     const groupScores = Object.values(sc).filter(s=>
       s.isBot || (USERS[s.uid]&&USERS[s.uid].isAdmin) || (s.groups||[]).includes(gid)
-    ).sort(_cmpScore);
+    ).sort((a,b)=>b.pts-a.pts);
 
     if(!groupScores.length) return;
 
@@ -4817,14 +4741,13 @@ function renderLeader() {
 
     const groupColor = g.color||'#7c3aed';
 
-    html += '<div class="group-leaderboard" data-gid="'+gid+'">';
+    html += '<div class="group-leaderboard">';
     html += '<div class="group-header" style="background:'+groupColor+'22;border:1px solid '+groupColor+'44;cursor:pointer;" onclick="openGroupStats(\'' + gid + '\')">';;
     html += g.logo?'<img src="'+g.logo+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">':renderIcon(g.icon||'🏆','24px');
     html += '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:2px;color:'+groupColor+';">'+g.name+'</span>';
     html += '</div>';
 
-    var _ranksG = _computeRanks(groupScores);
-    html += '<div class="leader-table-wrap" style="border-radius:0 0 12px 12px;margin-bottom:0;"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטאות</span><span>נק׳</span></div>'+groupScores.map(function(s,i){return _ldrRow(s,_ranksG[i],'border-right:3px solid '+groupColor+';');}).join('')+'</div>';
+    html += '<div class="leader-table-wrap" style="border-radius:0 0 12px 12px;margin-bottom:0;"><div class="leader-table-head"><span></span><span>שחקן</span><span>\uD83C\uDFAF בול</span><span>↑ כיוון</span><span>\u2715 החטאות</span><span>נק׳</span></div>'+groupScores.map(function(s,i){return _ldrRow(s,i,'border-right:3px solid '+groupColor+';');}).join('')+'</div>';
 
     html += '</div>';
   });
@@ -5273,7 +5196,7 @@ function initData(){
   onValue(ref(db,'users'),  s=>{ if(s.exists()) USERS=s.val();   refreshAll(); renderGroupsSummary(); loadUsers(); });
   onValue(ref(db,'scoring'),s=>{ if(s.exists()){ SCORING=s.val(); renderScoringTable(); if(MEDATA&&MEDATA.isAdmin) renderScoringEdit(); } });
   onValue(ref(db,'specialBets'),s=>{ SPECIAL_BETS=s.exists()?s.val():{}; renderLeader(); });
-  onValue(ref(db,'admin/special_result'),s=>{ SPECIAL_RESULT=s.exists()?s.val():{}; renderLeader(); try{renderToday();}catch(e){} try{renderTicker();}catch(e){} });
+  onValue(ref(db,'admin/special_result'),s=>{ SPECIAL_RESULT=s.exists()?s.val():{}; renderLeader(); if(MEDATA&&MEDATA.isAdmin) renderSpecialResultEditor(); });
   onValue(ref(db,'admin/scorerGoals'),s=>{ SCORER_GOALS=s.exists()?s.val():{}; renderSpecialBetsReveal(specialLocked()); if(MEDATA&&MEDATA.isAdmin) renderScorerGoalsAdmin(); });
   onValue(ref(db,'admin/bonusPoints'),s=>{ BONUS_POINTS=s.exists()?s.val():{}; refreshAll(); if(MEDATA&&MEDATA.isAdmin) renderBonusAdmin(); });
 }
@@ -5382,118 +5305,104 @@ function renderToday(){
       ? `<span class="fi fi-${code}" style="position:relative;z-index:2;width:108px;height:108px;border-radius:50%;display:inline-block;background-size:cover;background-position:center;box-shadow:0 0 28px rgba(255,215,0,0.3);"></span>`
       : '<span style="font-size:64px;position:relative;z-index:2;">🏆</span>';
 
-    // Scorer — auto-derive ALL tied leaders from SCORER_GOALS
-    let topScorers = [];
-    if(SCORER_GOALS && Object.keys(SCORER_GOALS).length){
-      const srAll=Object.entries(SCORER_GOALS).map(([k,v])=>{
-        const sv=typeof v==='object'?v:{goals:Number(v),team:''};
-        return {name:k, goals:sv.goals||0, team:sv.team||''};
-      }).sort((a,b)=>b.goals-a.goals);
-      if(srAll.length && srAll[0].goals>0){
-        const topG=srAll[0].goals;
-        topScorers=srAll.filter(s=>s.goals===topG);
+    // Scorer
+    const scorerName = SPECIAL_RESULT.topScorer || SPECIAL_RESULT.scorer || '';
+    let scorerHtml = '';
+    if(scorerName){
+      let scorerTeamHtml = '';
+      if(SCORER_GOALS){
+        const pn=scorerName.trim().toLowerCase();
+        for(const [k,v] of Object.entries(SCORER_GOALS)){
+          if(k.trim().toLowerCase()===pn||pn.includes(k.trim().toLowerCase())||k.trim().toLowerCase().includes(pn)){
+            const entry=typeof v==='object'?v:{goals:Number(v),team:''};
+            const tc=entry.team?getCountryCode(entry.team):null;
+            const tFlag=tc?`<span class="fi fi-${tc}" style="width:14px;height:14px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;margin-left:3px;"></span>`:'';
+            const goals=entry.goals||0;
+            const tName=entry.team?displayName(entry.team):'';
+            scorerTeamHtml=`<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${tFlag} ${tName}</div>`;
+            scorerHtml=`
+              <div style="display:flex;align-items:center;gap:12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;">
+                <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,215,0,0.05));border:1px solid rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">👟</div>
+                <div style="flex:1;">
+                  <div style="font-size:15px;font-weight:900;color:#fff;">${scorerName}</div>
+                  ${scorerTeamHtml}
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-size:24px;font-weight:900;color:#fbbf24;line-height:1;">${goals}</div>
+                  <div style="font-size:9px;color:rgba(255,255,255,0.4);">שערים</div>
+                </div>
+              </div>`;
+            break;
+          }
+        }
+      }
+      if(!scorerHtml){
+        scorerHtml=`<div style="display:flex;align-items:center;gap:12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;">
+          <div style="font-size:20px;">👟</div>
+          <div style="font-size:15px;font-weight:900;color:#fff;">${scorerName}</div>
+        </div>`;
       }
     }
-    let scorerHtml = '';
-    if(topScorers.length){
-      const scorerCards=topScorers.map(sc=>{
-        const tc=sc.team?getCountryCode(sc.team):null;
-        const tFlag=tc?`<span class="fi fi-${tc}" style="width:14px;height:14px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;margin-left:3px;"></span>`:'';
-        const tName=sc.team?displayName(sc.team):'';
-        const teamLine=tName?`<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${tFlag} ${tName}</div>`:'';
-        return `<div style="display:flex;align-items:center;gap:12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;margin-bottom:8px;">
-          <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,215,0,0.05));border:1px solid rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">👟</div>
-          <div style="flex:1;">
-            <div style="font-size:15px;font-weight:900;color:#fff;">${sc.name}</div>
-            ${teamLine}
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:24px;font-weight:900;color:#fbbf24;line-height:1;">${sc.goals}</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.4);">שערים</div>
-          </div>
-        </div>`;
-      }).join('');
-      const scorerTitle = topScorers.length>1 ? '👟 מלכי השערים' : '👟 מלך השערים';
-      scorerHtml=`<div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:10px;">${scorerTitle}</div>${scorerCards}`;
-    }
 
-    // Group winners — build data for all groups the user can see
+    // Group winners — only groups the current user belongs to
     const myGrps=(ME&&USERS[ME.uid]&&USERS[ME.uid].groups)||[];
     const isAdm=MEDATA&&MEDATA.isAdmin;
     let groupWinnersHtml='';
     if(ALL_GROUPS && Object.keys(ALL_GROUPS).length){
       const groupsToShow=isAdm?Object.keys(ALL_GROUPS):myGrps.filter(g=>ALL_GROUPS[g]);
-      const showFilter=groupsToShow.length>1;
-      // Build winner card(s) for each group — supports ties (co-champions)
-      let winnerCards='';
-      groupsToShow.forEach(gid=>{
-        const g=ALL_GROUPS[gid]; if(!g) return;
-        // Compute pts/hits/dirs for every real player in this group
-        const groupPlayers=[];
+      const winnerCards=groupsToShow.map(gid=>{
+        const g=ALL_GROUPS[gid]; if(!g) return '';
+        // Find top scorer in this group by actual points
+        let topUid=null, topPts=-1;
         Object.entries(USERS).forEach(([uid,u])=>{
           if(!(u.groups||[]).includes(gid)) return;
           if(u.isBot) return;
-          let pts=0, hits=0, dirs=0;
+          // Sum points: match bets
+          let pts=0;
           const myBets=BETS[uid]||{};
           Object.entries(MATCHES).forEach(([mid,m])=>{
             if(!m.result||!myBets[mid]) return;
             const r=calcPts(m,myBets[mid]);
-            if(!r) return;
-            pts+=r.total||0;
-            if(r.hit) hits++; else if(r.dir) dirs++;
+            if(r) pts+=r.total||0;
           });
-          groupPlayers.push({uid, pts, hits, dirs});
+          // Special bets points — use same logic as leaderboard
+          const _spRes=SPECIAL_RESULT||{};
+          const sb=SPECIAL_BETS[uid]||{};
+          const _champPts=(SCORING.champion&&SCORING.champion.h)||10;
+          const _scorerPts=(SCORING.scorer&&SCORING.scorer.h)||10;
+          if(_spRes.champion&&sb.champion&&_sameTeam(sb.champion,_spRes.champion)) pts+=_champPts;
+          if(_spRes.scorer&&sb.scorer&&_sameName(sb.scorer,_spRes.scorer)) pts+=_scorerPts;
+          // Bonus points
+          const bp=BONUS_POINTS[uid];
+          if(bp) pts+=(bp.points||0);
+          if(pts>topPts){ topPts=pts; topUid=uid; }
         });
-        if(!groupPlayers.length) return;
-        groupPlayers.sort(_cmpScore);
-        const top=groupPlayers[0];
-        // Collect everyone fully tied with the top (pts, hits, dirs all equal)
-        const winners=groupPlayers.filter(p=>p.pts===top.pts && p.hits===top.hits && p.dirs===top.dirs);
-        const iconHtml=renderIcon(g.logo||g.icon||'\u{1F3C6}','36px');
+        if(!topUid) return '';
+        const wu=USERS[topUid];
+        const wName=wu.nickname||wu.name||'?';
+        const iconHtml=renderIcon(g.logo||g.icon||'🏆','36px');
         const color=g.color||'var(--gold)';
-        winners.forEach(w=>{
-          const wu=USERS[w.uid];
-          const wName=wu.nickname||wu.name||'?';
-          winnerCards+=`<div class="cele-group-card" data-cele-gid="${gid}" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 16px;margin-bottom:8px;">
-            <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid ${color};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(0,0,0,0.2);">${iconHtml}</div>
-            <div style="flex:1;">
-              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:2px;">${g.name}${winners.length>1?' \u2022 \u05E9\u05D5\u05D5\u05D9\u05D5\u05DF':''}</div>
-              <div style="font-size:14px;font-weight:900;color:#fff;">${wName}</div>
-              <div style="font-size:11px;font-weight:900;color:${color};">${w.pts} \u05E0\u05E7\u05D5\u05D3\u05D5\u05EA</div>
-            </div>
-            <div style="font-size:22px;">\u{1F947}</div>
-          </div>`;
-        });
-      });
-      if(winnerCards){
-        // Filter buttons — only if user is in 2+ groups
-        let filterHtml='';
-        if(showFilter){
-          const allBtn=`<button class="cele-gfilter active" data-cele-filter="all" style="padding:5px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,215,0,0.15);color:#fbbf24;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;">\u05D4\u05DB\u05DC</button>`;
-          const gBtns=groupsToShow.map(gid=>{
-            const g=ALL_GROUPS[gid]; if(!g) return '';
-            const color=g.color||'#888';
-            return `<button class="cele-gfilter" data-cele-filter="${gid}" style="padding:5px 12px;border-radius:10px;border:1px solid ${color}33;background:transparent;color:${color};font-size:11px;font-weight:700;cursor:pointer;font-family:'Rubik',sans-serif;">${g.name}</button>`;
-          }).join('');
-          filterHtml=`<div id="cele-group-filter" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">${allBtn}${gBtns}</div>`;
-        }
-        groupWinnersHtml=`
-          <div style="border-top:1px solid rgba(255,255,255,0.06);padding:16px 20px 0;">
-            <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">\u{1F3C5} \u05DE\u05E0\u05E6\u05D7\u05D9 \u05D4\u05E7\u05D1\u05D5\u05E6\u05D5\u05EA</div>
-            ${filterHtml}
-            <div id="cele-group-cards">${winnerCards}</div>
-          </div>`;
-      }
+        return `<div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 16px;margin-bottom:8px;">
+          <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid ${color};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(0,0,0,0.2);">${iconHtml}</div>
+          <div style="flex:1;">
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:2px;">${g.name}</div>
+            <div style="font-size:14px;font-weight:900;color:#fff;">${wName}</div>
+            <div style="font-size:11px;font-weight:900;color:${color};">${topPts} נקודות</div>
+          </div>
+          <div style="font-size:22px;">🥇</div>
+        </div>`;
+      }).filter(Boolean).join('');
+      if(winnerCards) groupWinnersHtml=`
+        <div style="border-top:1px solid rgba(255,255,255,0.06);padding:16px 20px 0;">
+          <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">🏅 מנצחי הקבוצות</div>
+          ${winnerCards}
+        </div>`;
     }
 
-    const divider=`<div style="display:flex;align-items:center;gap:10px;padding:0 20px;margin:4px 0;"><div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div><div style="font-size:12px;color:rgba(255,255,255,0.15);">\u2726</div><div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div></div>`;
-
-    // Update hero label
-    const heroLabel=document.querySelector('.hero-day-label');
-    if(heroLabel) heroLabel.textContent='\u{1F3C6} \u05D4\u05D8\u05D5\u05E8\u05E0\u05D9\u05E8 \u05D4\u05E1\u05EA\u05D9\u05D9\u05DD';
+    const divider=`<div style="display:flex;align-items:center;gap:10px;padding:0 20px;margin:4px 0;"><div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div><div style="font-size:12px;color:rgba(255,255,255,0.15);">✦</div><div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div></div>`;
 
     container.innerHTML=`
-      <div style="position:relative;overflow:hidden;border-radius:16px;max-width:520px;margin:0 auto;">
+      <div style="position:relative;overflow:hidden;border-radius:16px;">
         <canvas id="fw-canvas-today" style="position:absolute;inset:0;pointer-events:none;z-index:0;width:100%;height:100%;"></canvas>
         <div style="position:relative;z-index:1;">
           <!-- Champion -->
@@ -5504,44 +5413,19 @@ function renderToday(){
               <div style="position:absolute;inset:5px;border-radius:50%;background:var(--card2,#0f1f35);"></div>
               ${flagSpan}
             </div>
-            <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:2px;margin-bottom:6px;">\u{1F3C6} \u05D0\u05DC\u05D5\u05E4\u05EA \u05D4\u05E2\u05D5\u05DC\u05DD 2026</div>
+            <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:2px;margin-bottom:6px;">🏆 אלופת העולם 2026</div>
             <div style="font-size:30px;font-weight:900;color:#fbbf24;letter-spacing:2px;animation:glow 2s ease-in-out infinite alternate;">${displayName(champion)}</div>
           </div>
-          ${scorerHtml?divider+'<div style="padding:14px 20px;">'+scorerHtml+'</div>':''}
+          ${scorerHtml?divider+'<div style="padding:14px 20px;">'+
+            '<div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:10px;">👟 מלך השערים</div>'+
+            scorerHtml+'</div>':''}
           ${groupWinnersHtml}
           <!-- Footer -->
-          <div style="text-align:center;padding:20px 20px 24px;border-top:1px solid rgba(255,255,255,0.08);">
-            <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.6);line-height:1.8;">\u05D4\u05D8\u05D5\u05E8\u05E0\u05D9\u05E8 \u05D4\u05E1\u05EA\u05D9\u05D9\u05DD \u2014 \u05D1\u05E8\u05DB\u05D5\u05EA \u05DC\u05D6\u05D5\u05DB\u05D9\u05DD \u05D5\u05EA\u05D5\u05D3\u05D4 \u05DC\u05DB\u05DC \u05D4\u05DE\u05E9\u05EA\u05EA\u05E4\u05D9\u05DD</div>
-            <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px;">\u05E0\u05EA\u05E8\u05D0\u05D4 \u05D1\u05D9\u05D5\u05E8\u05D5 2028 \u26BD</div>
+          <div style="text-align:center;padding:16px 20px 20px;font-size:11px;color:rgba(255,255,255,0.25);line-height:1.7;border-top:1px solid rgba(255,255,255,0.05);">
+            הטורניר הסתיים — ברכות לזוכים ותודה לכל המשתתפים<br>נתראה ביורו 2028 ⚽
           </div>
         </div>
       </div>`;
-
-    // Group filter interactivity
-    const filterWrap=document.getElementById('cele-group-filter');
-    if(filterWrap){
-      filterWrap.addEventListener('click', function(ev){
-        const btn=ev.target.closest('.cele-gfilter'); if(!btn) return;
-        const filt=btn.getAttribute('data-cele-filter');
-        // Update active button
-        filterWrap.querySelectorAll('.cele-gfilter').forEach(function(b){
-          b.classList.remove('active');
-          b.style.background='transparent';
-        });
-        btn.classList.add('active');
-        btn.style.background=filt==='all'?'rgba(255,215,0,0.15)':'rgba(255,255,255,0.08)';
-        // Show/hide celebration group winner cards
-        document.querySelectorAll('.cele-group-card').forEach(function(card){
-          if(filt==='all') card.style.display='flex';
-          else card.style.display=card.getAttribute('data-cele-gid')===filt?'flex':'none';
-        });
-        // Also filter leaderboard group sections
-        document.querySelectorAll('.group-leaderboard').forEach(function(sec){
-          if(filt==='all') sec.style.display='';
-          else sec.style.display=sec.getAttribute('data-gid')===filt?'':'none';
-        });
-      });
-    }
 
     // Fireworks — upgraded
     requestAnimationFrame(()=>{
@@ -6059,11 +5943,24 @@ function renderScoringEdit(){
     html+="<div class='score-edit-row'><span style='font-weight:700;font-size:13px;'>"+labels[stage]+"</span><div style='display:flex;align-items:center;gap:12px;'><div style='display:flex;align-items:center;gap:6px;'><span style='font-size:11px;color:var(--text2);'>כיוון:</span><input type='number' class='inp' style='width:60px;padding:6px;' id='sc-d-"+stage+"' value='"+cur.d+"' min='0'></div><div style='display:flex;align-items:center;gap:6px;'><span style='font-size:11px;color:var(--text2);'>מדויק:</span><input type='number' class='inp' style='width:60px;padding:6px;' id='sc-h-"+stage+"' value='"+cur.h+"' min='0'></div></div></div>";
   });
   lst.innerHTML=html;
+  renderSpecialResultEditor();
 }
 
 // ── Special-bet result editor + advanced-KO fill + scoring helpers ──
 function _sameTeam(a,b){ return (a||'').trim()===(b||'').trim(); }
 function _sameName(a,b){ return (a||'').trim().toLowerCase().replace(/\s+/g,' ')===(b||'').trim().toLowerCase().replace(/\s+/g,' '); }
+
+function renderSpecialResultEditor(){
+  var sel=el('result-champion'); if(!sel) return;
+  var teamSet=new Set();
+  Object.values(MATCHES).forEach(function(m){
+    if(m.stage==='group'){ if(m.team1&&m.team1!=='TBD')teamSet.add(m.team1); if(m.team2&&m.team2!=='TBD')teamSet.add(m.team2); }
+  });
+  var teams=['—', ...Array.from(teamSet).sort()];
+  var cur=(SPECIAL_RESULT&&SPECIAL_RESULT.champion)||'';
+  sel.innerHTML=teams.map(function(t){ var v=t==='—'?'':t; return '<option value="'+v+'" '+(cur===v?'selected':'')+'>'+t+'</option>'; }).join('');
+  var sc=el('result-scorer'); if(sc && document.activeElement!==sc) sc.value=(SPECIAL_RESULT&&SPECIAL_RESULT.scorer)||'';
+}
 
 // Group standings from entered results (for resolving 1A/2B/3C codes)
 function _groupStandings(){
@@ -6230,6 +6127,15 @@ el('fix-bracket-order-btn')&&el('fix-bracket-order-btn').addEventListener('click
   finally{ if(btn)btn.disabled=false; }
 });
 
+el('save-special-result')&&el('save-special-result').addEventListener('click',async function(){
+  var champ=el('result-champion')?el('result-champion').value:'';
+  var scorer=(el('result-scorer')?el('result-scorer').value:'').trim();
+  try{
+    await set(ref(db,'admin/special_result'),{champion:champ||null,scorer:scorer||null});
+    toast('✅ תוצאת אמת נשמרה');
+    renderLeader();
+  }catch(e){ toast('❌ שגיאה בשמירה'); }
+});
 el('save-scoring')&&el('save-scoring').addEventListener('click', async()=>{
   const stages=['group','r32','r16','qf','sf','3rd','final'];
   const newSc={};
