@@ -1160,6 +1160,7 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
             <button class="btn btn-ghost btn-xs" onclick="window.runScoringAudit()">▶ הפעל</button>
           </div>
           <p style="font-size:11px;color:var(--text2);margin-bottom:12px;">בודק את הניקוד המלא של כל משתתף — משחקים, הימורים מיוחדים, בונוס</p>
+          <button class="btn btn-grad btn-xs" onclick="window.autoSetScorer()" style="margin-bottom:10px;">👟 קבע מלך שערים אוטומטית מטבלת השערים</button>
           <div id="audit-results" style="max-height:400px;overflow-y:auto;"></div>
         </div>
         <div class="card" style="padding:18px;margin-bottom:14px;">
@@ -2574,6 +2575,19 @@ window.showSttTip=function(el,text){
 };
 
 // ── Scoring Audit Tool ──
+window.autoSetScorer=async function(){
+  if(!SCORER_GOALS||!Object.keys(SCORER_GOALS).length){ toast('⚠️ אין שחקנים בטבלת שערים'); return; }
+  let topName=null, maxG=0;
+  Object.entries(SCORER_GOALS).forEach(([name,v])=>{
+    const g=typeof v==='object'?(v.goals||0):Number(v);
+    if(g>maxG){ maxG=g; topName=name; }
+  });
+  if(!topName){ toast('⚠️ לא נמצא מוביל'); return; }
+  const cur=SPECIAL_RESULT||{};
+  await set(ref(db,'admin/special_result'),{...cur, scorer:topName});
+  toast('👟 '+topName+' נקבע כמלך השערים עם '+maxG+' שערים!');
+};
+
 window.runScoringAudit=function(){
   const div=el('audit-results'); if(!div) return;
   const _spRes=SPECIAL_RESULT||{};
@@ -2858,7 +2872,8 @@ async function renderSpecialBetsReveal(lk) {
     filteredChamp.forEach(b=>{
       const code = getCountryCode(b.val);
       const flag = code ? '<span class="fi fi-'+code+'" style="width:20px;height:20px;border-radius:50%;display:inline-block;background-size:cover;vertical-align:middle;"></span>' : '<span style="display:inline-block;width:20px;"></span>';
-      const isElim = elimChamp.has(b.val);
+      const officialChamp=SPECIAL_RESULT&&SPECIAL_RESULT.champion;
+      const isElim = officialChamp ? !_sameTeam(b.val, officialChamp) : elimChamp.has(b.val);
       const safeN=b.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const safeV=b.val.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
@@ -2899,7 +2914,10 @@ async function renderSpecialBetsReveal(lk) {
       const scorerTeam=entry?entry.team:'';
       const scorerElim=scorerTeam&&elimScorer.has(scorerTeam);
       const isLeading=goals!==null&&goals===maxGoals&&maxGoals>0;
-      const showStrike=scorerElim&&!isLeading;
+      // If official scorer result is set — show strike on anyone who bet differently
+      const officialScorer=SPECIAL_RESULT&&SPECIAL_RESULT.scorer;
+      const betMatchesOfficial=officialScorer&&_sameName(b.val,officialScorer);
+      const showStrike=officialScorer?(!!officialScorer&&!betMatchesOfficial):(scorerElim&&!isLeading);
       const goalsHtml = goals!==null
         ? '<span style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:900;color:var(--gold);">'+goals+'</span>'
         : '<span style="font-size:10px;color:var(--text2);">—</span>';
@@ -5964,8 +5982,20 @@ el('confirm-res').addEventListener('click', async()=>{
       else if(r&&r[0]!==r[1]) winner=r[0]>r[1]?fm.team1:fm.team2;
       if(winner){
         const cur=SPECIAL_RESULT||{};
-        await set(ref(db,'admin/special_result'),{...cur, champion:winner});
+        // Auto-set top scorer from SCORER_GOALS
+        let topScorer=cur.scorer||null;
+        if(!topScorer && SCORER_GOALS && Object.keys(SCORER_GOALS).length){
+          let maxG=0;
+          Object.entries(SCORER_GOALS).forEach(([name,v])=>{
+            const g=typeof v==='object'?(v.goals||0):Number(v);
+            if(g>maxG){ maxG=g; topScorer=name; }
+          });
+        }
+        const updates={...cur, champion:winner};
+        if(topScorer) updates.scorer=topScorer;
+        await set(ref(db,'admin/special_result'),updates);
         toast('🏆 '+winner+' נקבעה אוטומטית כאלופה!');
+        if(topScorer) toast('👟 '+topScorer+' נקבע אוטומטית כמלך השערים!');
       }
     }
   }catch(e){}
