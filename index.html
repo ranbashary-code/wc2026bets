@@ -1153,6 +1153,15 @@ body.light-mode #bracket-ko.ko-fullbleed::before{opacity:0.06;}
           <div id="bonus-list" style="display:flex;flex-direction:column;gap:6px;"></div>
           <div id="bonus-status" style="font-size:11px;text-align:center;margin-top:8px;min-height:14px;color:var(--text2);"></div>
         </div>
+        <!-- ── Scoring Audit Tool ── -->
+        <div class="card" style="padding:18px;margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <p style="font-size:15px;font-weight:700;color:var(--gold);">🔍 בדיקת ניקוד</p>
+            <button class="btn btn-ghost btn-xs" onclick="window.runScoringAudit()">▶ הפעל</button>
+          </div>
+          <p style="font-size:11px;color:var(--text2);margin-bottom:12px;">בודק את הניקוד המלא של כל משתתף — משחקים, הימורים מיוחדים, בונוס</p>
+          <div id="audit-results" style="max-height:400px;overflow-y:auto;"></div>
+        </div>
         <div class="card" style="padding:18px;margin-bottom:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <p style="font-size:15px;font-weight:700;color:var(--gold);">📊 אנליטיקס</p>
@@ -2562,6 +2571,66 @@ window.showSttTip=function(el,text){
   setTimeout(()=>{
     document.addEventListener('click',function h(){ if(tip.parentNode)tip.remove(); document.removeEventListener('click',h); },{once:true,capture:true});
   },50);
+};
+
+// ── Scoring Audit Tool ──
+window.runScoringAudit=function(){
+  const div=el('audit-results'); if(!div) return;
+  const _spRes=SPECIAL_RESULT||{};
+  const _champPts=(SCORING.champion&&SCORING.champion.h)||10;
+  const _scorerPts=(SCORING.scorer&&SCORING.scorer.h)||10;
+
+  // Debug special result
+  let debugHtml='<div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;">';
+  debugHtml+='<div style="font-weight:900;margin-bottom:4px;">⚙️ הגדרות:</div>';
+  debugHtml+='<div>נבחרת אלופה (תוצאה): <b style="color:var(--gold);">'+((_spRes.champion)||'לא נקבע')+'</b> | ניקוד: '+_champPts+'</div>';
+  debugHtml+='<div>מלך שערים (תוצאה): <b style="color:var(--gold);">'+((_spRes.scorer)||'לא נקבע')+'</b> | ניקוד: '+_scorerPts+'</div>';
+  debugHtml+='<div>שלבי ניקוד: '+Object.entries(SCORING).map(function(e){return e[0]+'=בול:'+((e[1]&&e[1].h)||0)+'/כיוון:'+((e[1]&&e[1].d)||0);}).join(', ')+'</div>';
+  debugHtml+='</div>';
+
+  // Per-user breakdown
+  const users=Object.entries(USERS).filter(([,u])=>u.approved).sort(([,a],[,b])=>(a.nickname||a.name||'').localeCompare(b.nickname||b.name||''));
+  users.forEach(([uid,u])=>{
+    const name=u.nickname||u.name||uid;
+    const ub=BETS[uid]||{};
+    const sb=SPECIAL_BETS[uid]||{};
+    const bp=BONUS_POINTS[uid];
+
+    // Match points by stage
+    const byStage={};
+    let matchTotal=0;
+    Object.entries(ub).forEach(([mid,bet])=>{
+      const m=MATCHES[mid]; if(!m||m.result===undefined) return;
+      const p=calcPts(m,bet);
+      const st=m.stage||'unknown';
+      if(!byStage[st]) byStage[st]={pts:0,hits:0,dirs:0,miss:0};
+      byStage[st].pts+=p.total;
+      if(p.hit) byStage[st].hits++; else if(p.dir) byStage[st].dirs++; else byStage[st].miss++;
+      matchTotal+=p.total;
+    });
+
+    // Special bets
+    let champOk=false, scorerOk=false, champPtsEarned=0, scorerPtsEarned=0;
+    if(_spRes.champion&&sb.champion&&_sameTeam(sb.champion,_spRes.champion)){ champOk=true; champPtsEarned=_champPts; }
+    if(_spRes.scorer&&sb.scorer&&_sameName(sb.scorer,_spRes.scorer)){ scorerOk=true; scorerPtsEarned=_scorerPts; }
+
+    const bonusPts=bp?(bp.points||0):0;
+    const total=matchTotal+champPtsEarned+scorerPtsEarned+bonusPts;
+
+    debugHtml+='<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:6px;font-size:11px;">';
+    debugHtml+='<div style="font-weight:900;font-size:13px;margin-bottom:4px;color:var(--text);">'+(u.isBot?'🤖 ':'')+name+' — <span style="color:var(--gold);font-size:15px;">'+total+' נק</span></div>';
+    // Stage breakdown
+    debugHtml+='<div style="color:var(--text2);margin-bottom:4px;">משחקים ('+matchTotal+'): ';
+    debugHtml+=Object.entries(byStage).map(function(e){return e[0]+'='+e[1].pts+' ('+e[1].hits+'B/'+e[1].dirs+'D/'+e[1].miss+'X)';}).join(' | ');
+    debugHtml+='</div>';
+    // Special
+    debugHtml+='<div style="margin-bottom:2px;">אלופה: הימר <b>'+(sb.champion||'—')+'</b> → '+(champOk?'<span style="color:#34d399;">✓ +'+champPtsEarned+'</span>':'<span style="color:#f87171;">✗</span>')+'</div>';
+    debugHtml+='<div style="margin-bottom:2px;">מלך שערים: הימר <b>'+(sb.scorer||'—')+'</b> → '+(scorerOk?'<span style="color:#34d399;">✓ +'+scorerPtsEarned+'</span>':'<span style="color:#f87171;">✗</span>')+'</div>';
+    if(bonusPts) debugHtml+='<div>בונוס: <span style="color:var(--gold);">+'+bonusPts+'</span> ('+(bp.reason||'')+')</div>';
+    debugHtml+='</div>';
+  });
+
+  div.innerHTML=debugHtml;
 };
 
 // ── Bonus Points Admin ──
@@ -5356,7 +5425,6 @@ function renderToday(){
         let topUid=null, topPts=-1;
         Object.entries(USERS).forEach(([uid,u])=>{
           if(!(u.groups||[]).includes(gid)) return;
-          if(u.isBot) return;
           // Sum points: match bets
           let pts=0;
           const myBets=BETS[uid]||{};
